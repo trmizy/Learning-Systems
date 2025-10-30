@@ -2,3 +2,13 @@
 vendor/
 .idea/
 .vscode/
+
+# Backup files (không cần push)
+backup_scripts/
+
+# Documentation (tùy chọn - có thể bỏ comment nếu không muốn push)
+docs/
+
+scripts/
+
+
