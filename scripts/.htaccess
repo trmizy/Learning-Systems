@@ -1,0 +1,5 @@
+# Chặn truy cập trực tiếp vào thư mục scripts
+# Development scripts không được truy cập từ browser
+
+Order Deny,Allow
+Deny from all

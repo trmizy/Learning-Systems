@@ -1,0 +1,20 @@
+{
+    "name": "learning-systems/project",
+    "description": "PTUD Learning System - PHP MVC",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "Controllers\\": "controllers/",
+            "Models\\": "models/",
+            "Config\\": "config/"
+        },
+        "classmap": [
+            "controllers/",
+            "models/",
+            "config/"
+        ]
+    },
+    "require": {
+        "vlucas/phpdotenv": "^5.5"
+    }
+}

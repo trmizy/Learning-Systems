@@ -70,3 +70,7 @@ $MENU_ITEMS = [
 // Add any other global configurations here
 define('BASE_PATH', __DIR__ . '/..');
 define('BASE_URL', '/');
+
+// Giới hạn phân công giảng dạy
+define('MAX_CLASSES_PER_TEACHER', 5); // Số lớp tối đa một giáo viên có thể dạy trong một học kỳ
+define('MAX_SUBJECTS_PER_TEACHER', 3); // Số môn tối đa một giáo viên có thể dạy (tùy chọn)

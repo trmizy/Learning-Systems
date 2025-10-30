@@ -1,17 +1,24 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use Dotenv\Dotenv; // 🔹 Bắt buộc phải có dòng này để PHP nhận diện class Dotenv
+use Dotenv\Dotenv; // Ensure Dotenv class is available
 
-// Load .env file
+// Load .env if present but don't throw if missing (safeLoad)
 $dotenv = Dotenv::createImmutable(__DIR__ . '/..');
-$dotenv->load();
+$dotenv->safeLoad();
 
-// Use environment variables
-define('DB_HOST', $_ENV['DB_HOST']);
-define('DB_NAME', $_ENV['DB_NAME']);
-define('DB_USER', $_ENV['DB_USER']);
-define('DB_PASS', $_ENV['DB_PASS']);
+// Helper to read environment variables with fallbacks
+function env_var(string $key, $default = null) {
+    if (isset($_ENV[$key])) return $_ENV[$key];
+    $val = getenv($key);
+    return $val !== false ? $val : $default;
+}
+
+// Define DB constants with safe fallbacks to avoid fatal errors when .env is missing
+define('DB_HOST', env_var('DB_HOST', '127.0.0.1'));
+define('DB_NAME', env_var('DB_NAME', 'learning_systems'));
+define('DB_USER', env_var('DB_USER', 'root'));
+define('DB_PASS', env_var('DB_PASS', ''));
 
 class Database {
     private static $instance = null;

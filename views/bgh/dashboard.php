@@ -522,10 +522,10 @@ $notifications = [
                     <h5 class="card-title fw-bold">Phân công</h5>
                     <p class="text-muted small">Duyệt phân công giảng dạy</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/bgh/assignments/pending.php" class="btn btn-info btn-sm">
+                        <a href="/public/bgh/assignments/pending.php" class="btn btn-info btn-sm">
                             <i class="fa-solid fa-clock me-1"></i>Chờ duyệt (<?php echo $stats['teaching_assignments']; ?>)
                         </a>
-                        <a href="/modules/bgh/assignments/manage.php" class="btn btn-outline-info btn-sm">
+                        <a href="/public/bgh/assignments/manage.php" class="btn btn-outline-info btn-sm">
                             <i class="fa-solid fa-cog me-1"></i>Quản lý
                         </a>
                     </div>
