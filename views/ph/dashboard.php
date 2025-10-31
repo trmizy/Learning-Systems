@@ -385,7 +385,7 @@ $violations = [];
                     </div>
                     <h5 class="card-title fw-bold">Kết quả học tập</h5>
                     <p class="text-muted small">Điểm số, xếp loại học lực chi tiết</p>
-                    <a href="/modules/parents/grades.php" class="btn btn-primary w-100 mt-3">
+                    <a href="/public/ph/grades.php" class="btn btn-primary w-100 mt-3">
                         <i class="fa-solid fa-eye me-2"></i>Xem chi tiết
                     </a>
                 </div>

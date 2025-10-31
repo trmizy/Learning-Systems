@@ -369,7 +369,7 @@ $notifications = [
                     </div>
                     <h5 class="card-title fw-bold">Bảng điểm</h5>
                     <p class="text-muted small">Xem điểm chi tiết theo môn, kỳ học</p>
-                    <a href="/modules/students/grades.php" class="btn btn-primary w-100 mt-3">
+                    <a href="/public/hs/grades.php" class="btn btn-primary w-100 mt-3">
                         <i class="fa-solid fa-eye me-2"></i>Xem điểm
                     </a>
                 </div>
@@ -488,7 +488,7 @@ $notifications = [
                         </div>
                     </div>
                     <?php endforeach; ?>
-                    <a href="/modules/students/grades.php" class="btn btn-outline-warning w-100 mt-3">
+                    <a href="/public/hs/grades.php" class="btn btn-outline-warning w-100 mt-3">
                         <i class="fa-solid fa-chart-line me-2"></i>Xem tất cả điểm
                     </a>
                 </div>
