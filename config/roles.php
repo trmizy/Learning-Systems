@@ -2,6 +2,7 @@
 const ROLES = [
     'admin' => 'Admin Nhân viên phòng giáo vụ',
     'bgh' => 'Ban giám hiệu',
+    'nhanvienso' => 'Nhân viên Sở Giáo dục',
     'totruong' => 'Tổ trưởng bộ môn',
     'gvcn' => 'Giáo viên chủ nhiệm',
     'gvbm' => 'Giáo viên bộ môn',
@@ -11,6 +12,7 @@ const ROLES = [
 
 // Định nghĩa quyền cho từng role
 const ROLE_PERMISSIONS = [
+    'nhanvienso' => ['nhanvienso', 'admin', 'giaovu', 'vanphong', 'gvcn', 'gvbm'], // Nhân viên sở có full quyền
     'giaovu' => ['admin', 'giaovu', 'vanphong', 'gvcn', 'gvbm'], // Giáo vụ có full quyền admin
     'admin' => ['admin', 'gvcn', 'gvbm'], // BGH có quyền hạn chế hơn
     'totruong' => ['totruong', 'gvbm'],

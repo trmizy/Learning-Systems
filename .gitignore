@@ -1,4 +1,111 @@
+# ===================================
+# .gitignore for PHP Learning Systems
+# ===================================
+
+# Environment & Configuration
+# ----------------------------
 .env
+.env.local
+.env.*.local
+config/database.php
+config/config.local.php
+
+# Dependencies
+# ----------------------------
 vendor/
-.idea/
+node_modules/
+composer.phar
+package-lock.json
+
+# IDE & Editors
+# ----------------------------
 .vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# Logs
+# ----------------------------
+*.log
+logs/
+error_log
+debug.log
+
+# Cache & Temporary Files
+# ----------------------------
+cache/
+temp/
+tmp/
+*.cache
+*.tmp
+
+# Uploads & User Data
+# ----------------------------
+uploads/*
+!uploads/.gitkeep
+storage/*
+!storage/.gitkeep
+
+# OS Files
+# ----------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Backup Files
+# ----------------------------
+*.bak
+*.backup
+*.old
+*~
+
+# Database
+# ----------------------------
+*.sql
+*.sqlite
+*.sqlite3
+*.db
+
+# Compiled Files
+# ----------------------------
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Package Files
+# ----------------------------
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Testing
+# ----------------------------
+.phpunit.result.cache
+coverage/
+tests/coverage/
+phpunit.xml.cache
+
+# Documentation (không ignore các file README quan trọng)
+# ----------------------------
+# Uncomment dòng dưới nếu muốn ignore tất cả README
+# README_*.md
+
+# Project Specific
+# ----------------------------
+# Thêm các file cụ thể của project ở đây
