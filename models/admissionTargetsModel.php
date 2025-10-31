@@ -61,6 +61,45 @@ class AdmissionTargetsModel {
     }
 
     /**
+     * Lấy mã nhân viên sở từ username (tenDangNhap)
+     * @param string $username - Tên đăng nhập từ session
+     * @return string|null - maNhanVienSo hoặc NULL nếu không tìm thấy
+     */
+    public function getMaNhanVienSoByUsername($username) {
+        try {
+            // Bước 1: Lấy maTaiKhoan từ TaiKhoan
+            $stmt = $this->db->prepare("
+                SELECT maTaiKhoan 
+                FROM TaiKhoan 
+                WHERE tenDangNhap = ? AND trangThai = 'ACTIVE'
+                LIMIT 1
+            ");
+            $stmt->execute([$username]);
+            $taiKhoan = $stmt->fetch();
+            
+            if (!$taiKhoan) {
+                return null;
+            }
+            
+            // Bước 2: Lấy maNhanVienSo từ bảng NhanVienSo
+            $stmt2 = $this->db->prepare("
+                SELECT maNhanVienSo 
+                FROM NhanVienSo 
+                WHERE maTaiKhoan = ?
+                LIMIT 1
+            ");
+            $stmt2->execute([$taiKhoan['maTaiKhoan']]);
+            $nhanVien = $stmt2->fetch();
+            
+            return $nhanVien ? $nhanVien['maNhanVienSo'] : null;
+            
+        } catch (PDOException $e) {
+            error_log("Error getMaNhanVienSoByUsername: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Lấy chỉ tiêu tuyển sinh đã phân bổ cho các trường theo năm học
      */
     public function getChiTieuTheoNamHoc($namHoc) {

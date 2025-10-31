@@ -80,14 +80,13 @@ class TargetsController {
         
         $chiTieuData = [];
 
-        // Lấy mã nhân viên sở từ session
+        // Lấy mã nhân viên sở từ database thông qua username
         $user = current_user();
-        // Ưu tiên lấy từ id, nếu không có thì lấy từ username, nếu vẫn không có thì NULL
         $maNhanVienSo = null;
-        if (isset($user['id'])) {
-            $maNhanVienSo = $user['id'];
-        } elseif (isset($user['username'])) {
-            $maNhanVienSo = $user['username'];
+        
+        if ($user && isset($user['username'])) {
+            // Gọi method trong model để lấy maNhanVienSo từ username
+            $maNhanVienSo = $this->model->getMaNhanVienSoByUsername($user['username']);
         }
 
         // Thu thập dữ liệu chỉ tiêu từ form
