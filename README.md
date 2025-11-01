@@ -665,7 +665,7 @@ với thuật toán gợi ý thông minh và validation 3 lớp.
 - ✅ Controller: `targetsController.php` với 4 actions
 - ✅ View: `targetAllocation.php` với real-time validation
 - ✅ Router: Thêm route 'targets' và giữ 'chitieu' (legacy)
-- ✅ Documentation: `README_ADMISSION_TARGETS.md` (2290 dòng)
+- ✅ Documentation: `README.md` (690 dòng)
 
 ---
 
