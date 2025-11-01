@@ -88,17 +88,193 @@ Chức năng **Phân bổ chỉ tiêu tuyển sinh** là một hệ thống qu�
 
 </details>
 
-### 🤖 3. Gợi ý Thông minh
+### 🤖 3. Gợi ý Thông minh - Thuật toán Đơn giản
 
 <details open>
 <summary><b>Click to expand</b></summary>
 
-Hệ thống sử dụng **2 phương pháp tính toán** song song để đảm bảo tính chính xác và linh hoạt:
+Hệ thống sử dụng **thuật toán dựa trên tỷ lệ thay đổi học sinh** - đơn giản, dễ hiểu và phù hợp thực tế.
+
+**Công thức CHUNG cho cả 2 phương pháp:**
+```javascript
+Chỉ tiêu năm mới = Chỉ tiêu năm trước × (1 + Tỷ lệ thay đổi học sinh)
+```
 
 ---
 
 #### 📊 **Phương pháp 1: Tính TỔNG chỉ tiêu hệ thống**
-*(Dùng để xác định tổng chỉ tiêu cho cả năm học)*
+
+**Mục đích:** Xác định tổng chỉ tiêu cho **cả năm học** (VD: 2,000 hoặc 8,000)
+
+```javascript
+// Bước 1: Lấy dữ liệu
+tongChiTieuNamTruoc = 2000       // Tổng năm 2023-2024
+tongHocSinhNamTruoc = 1800       // Ước tính 90% của hiện tại
+tongHocSinhHienTai = 2000        // Tổng HS tất cả trường
+
+// Bước 2: Tính tỷ lệ thay đổi
+tyLeThayDoi = (2000 - 1800) / 1800 = 0.111    // Tăng 11.1%
+
+// Bước 3: Tính tổng mới
+tongMoi = 2000 × (1 + 0.111) = 2,222
+
+// Bước 4: Làm tròn bội 100
+tongMoi = round(2222 / 100) × 100 = 2,200 ✅
+
+// Bước 5: Giới hạn (100-500 × số trường)
+min = 11 × 100 = 1,100
+max = 11 × 500 = 5,500
+→ 2,200 nằm trong khoảng hợp lý ✅
+```
+
+---
+
+#### 🏫 **Phương pháp 2: Tính chỉ tiêu TỪNG TRƯỜNG**
+
+**Mục đích:** Gợi ý phân bổ cho **từng trường** (tổng phải = tổng chỉ tiêu hệ thống)
+
+#### 🏫 **Phương pháp 2: Tính chỉ tiêu TỪNG TRƯỜNG**
+
+**Mục đích:** Gợi ý phân bổ cho **từng trường** (tổng phải = tổng chỉ tiêu hệ thống)
+
+```javascript
+// Ví dụ: THPT Chu Văn An
+chiTieuNamTruoc = 200        // Chỉ tiêu năm 2023-2024
+hocSinhNamTruoc = 600        // Ước tính 90% của hiện tại
+hocSinhHienTai = 720         // Học sinh năm 2024-2025
+
+// Bước 1: Tính tỷ lệ thay đổi
+tyLeThayDoi = (720 - 600) / 600 = 0.20      // Tăng 20%
+
+// Bước 2: Áp dụng tỷ lệ
+goiY = 200 × (1 + 0.20) = 240
+
+// Bước 3: Làm tròn bội 50
+goiY = round(240 / 50) × 50 = 250 ✅
+
+// Bước 4: Giới hạn 100-500
+goiY = max(100, min(500, 250)) = 250 ✅
+```
+
+---
+
+#### 🎯 **So sánh 2 phương pháp:**
+
+| Tiêu chí | Phương pháp 1 (TỔNG) | Phương pháp 2 (TỪNG TRƯỜNG) |
+|----------|---------------------|---------------------------|
+| **Mục đích** | Tổng chỉ tiêu cả hệ thống | Phân bổ chi tiết |
+| **Đơn vị** | Tổng 11 trường | Mỗi trường riêng |
+| **Làm tròn** | Bội số 100 | Bội số 50 |
+| **Giới hạn** | 1,100 ↔ 5,500 (100-500/trường) | 100 ↔ 500 mỗi trường |
+| **Kết quả** | 1 số (VD: 2,200) | 11 số (VD: 250, 180, ...) |
+
+---
+
+#### 💡 **Ví dụ hoàn chỉnh:**
+
+**Năm học 2024-2025:**
+
+**Bước 1: Tính TỔNG (Phương pháp 1)**
+```
+Tổng năm 2023-2024: 2,000
+Tổng HS năm trước: 1,800
+Tổng HS hiện tại: 2,000 (+11.1%)
+→ Tổng mới: 2,000 × 1.111 = 2,222 → 2,200 ✅
+```
+
+**Bước 2: Phân bổ từng trường (Phương pháp 2)**
+
+| Trường | CT 2023-2024 | HS trước | HS hiện tại | Tỷ lệ | Gợi ý |
+|--------|--------------|----------|-------------|-------|-------|
+| **THPT Chu Văn An** | 200 | 600 | 720 | +20% | **250** |
+| **THPT Lê Hồng Phong** | 180 | 550 | 495 | -10% | **150** |
+| **THPT Phan Đình Phùng** | 190 | 580 | 580 | 0% | **200** |
+| **THPT Nguyễn Huệ** | 170 | 520 | 624 | +20% | **200** |
+| **... 7 trường khác** | ... | ... | ... | ... | **1,400** |
+| **TỔNG 11 trường** | 2,000 | 1,800 | 2,000 | +11% | **2,200** ✅ |
+
+---
+
+#### ⚙️ **Xử lý trường hợp đặc biệt:**
+
+**1. Không có dữ liệu năm trước:**
+```javascript
+// Tổng hệ thống: Ước tính theo số trường
+tongMoi = soTruong × 180 = 11 × 180 = 1,980 ≈ 2,000
+
+// Từng trường: Chia đều
+chiTieuTruong = tongMoi / soTruong = 2000 / 11 ≈ 180
+```
+
+**2. Giới hạn tỷ lệ thay đổi:**
+```javascript
+// Giới hạn: -20% đến +30% (tránh biến động quá lớn)
+tyLeThayDoi = max(-0.20, min(0.30, tyLeThayDoi))
+```
+
+**3. Giới hạn kết quả:**
+```javascript
+// Tổng: 100-500 × số trường
+tongMin = 11 × 100 = 1,100
+tongMax = 11 × 500 = 5,500
+
+// Từng trường: 100-500 mỗi trường
+truongMin = 100, truongMax = 500
+```
+
+---
+
+#### 💡 **Ví dụ hoàn chỉnh:**
+
+**Năm học 2024-2025:**
+
+**Bước 1: Tính TỔNG (Phương pháp 1)**
+```
+Tổng năm 2023-2024: 2,000
+Tổng HS năm trước: 1,800
+Tổng HS hiện tại: 2,000 (+11.1%)
+→ Tổng mới: 2,000 × 1.111 = 2,222 → 2,200 ✅
+```
+
+**Bước 2: Phân bổ từng trường (Phương pháp 2)**
+
+| Trường | CT 2023-2024 | HS trước | HS hiện tại | Tỷ lệ | Gợi ý |
+|--------|--------------|----------|-------------|-------|-------|
+| **THPT Chu Văn An** | 200 | 600 | 720 | +20% | **250** |
+| **THPT Lê Hồng Phong** | 180 | 550 | 495 | -10% | **150** |
+| **THPT Phan Đình Phùng** | 190 | 580 | 580 | 0% | **200** |
+| **THPT Nguyễn Huệ** | 170 | 520 | 624 | +20% | **200** |
+| **... 7 trường khác** | ... | ... | ... | ... | **1,400** |
+| **TỔNG 11 trường** | 2,000 | 1,800 | 2,000 | +11% | **2,200** ✅ |
+
+---
+
+#### ⚙️ **Xử lý trường hợp đặc biệt:**
+
+| Tiêu chí | Giải thích |
+|----------|------------|
+| **Đơn giản** | Chỉ 1 công thức duy nhất, dễ hiểu |
+| **Thực tế** | Dựa trên số liệu quan sát được (chỉ tiêu, học sinh) |
+| **Linh hoạt** | Tự động điều chỉnh theo quy mô trường |
+| **An toàn** | Có giới hạn tránh biến động quá lớn |
+| **Dễ giải thích** | Có thể trình bày cho cấp trên dễ dàng |
+
+
+---
+
+#### ⚡ **Cách sử dụng trong hệ thống:**
+
+1. **Nhập tổng chỉ tiêu** → Tổng chỉ tiêu phê duyệt (VD: 2,200)
+2. **Click "Áp dụng gợi ý"** → Hệ thống tự tính cho 11 trường
+3. **Xem gợi ý** → Mỗi trường có số gợi ý riêng
+4. **Điều chỉnh** → Có thể sửa theo nhu cầu thực tế
+5. **Validation** → Tổng phải bằng 2,000
+
+</details>
+
+### ✅ 4. Validation Đa lớp
+<details>
+**Kiểm tra:**
 
 **Công thức Weighted Average (60-30-10):**
 

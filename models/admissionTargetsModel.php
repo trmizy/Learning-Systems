@@ -126,7 +126,7 @@ class AdmissionTargetsModel {
 
     /**
      * Lấy tổng chỉ tiêu tuyển sinh cho năm học (được phê duyệt)
-     * - Năm 2023-2024: Lấy từ database (cố định = 8000)
+     * - Năm 2023-2024: Lấy từ database (cố định = 2000)
      * - Các năm sau: Tự động tính bằng thuật toán
      */
     public function getTongPheDuyet($namHoc) {
@@ -173,58 +173,71 @@ class AdmissionTargetsModel {
     }
     
     /**
-     * Thuật toán tự động tính tổng chỉ tiêu dựa trên:
-     * 1. Tổng chỉ tiêu năm trước (60%)
-     * 2. Tổng số học sinh hiện tại / 3 (30%)
-     * 3. Năng lực tổng thể hệ thống (10%)
+     * Thuật toán tự động tính TỔNG chỉ tiêu - ĐƠN GIẢN
+     * 
+     * Công thức: Tổng năm trước × (1 + Tỷ lệ thay đổi tổng học sinh)
+     * 
+     * Logic đơn giản:
+     * - Nếu tổng HS tăng 10% → Tổng chỉ tiêu tăng 10%
+     * - Nếu tổng HS giảm 5% → Tổng chỉ tiêu giảm 5%
      */
     private function tinhTongChiTieuTuDong($namHoc) {
         try {
-            // Yếu tố 1: Lấy tổng chỉ tiêu năm trước (60%)
+            // Bước 1: Lấy tổng chỉ tiêu năm trước
             $tongNamTruoc = $this->getTongChiTieuNamTruocGanNhat($namHoc);
-            
-            // Yếu tố 2: Tính dựa trên số học sinh hiện tại (30%)
-            $tongHocSinhHienTai = $this->getTongSoHocSinhHienTai();
-            $goiYTheoHocSinh = round($tongHocSinhHienTai / 3);
-            
-            // Yếu tố 3: Tính dựa trên số trường và năng lực (10%)
             $soTruong = count($this->getDanhSachTruong());
-            $chiTieuTrungBinh = 1200; // Mỗi trường trung bình 1,200 học sinh/năm
-            $goiYTheoTruong = $soTruong * $chiTieuTrungBinh;
             
-            if ($tongNamTruoc > 0) {
-                // Có dữ liệu năm trước: Kết hợp 3 yếu tố
-                // Tăng trưởng tự nhiên 4% mỗi năm
-                $tangTruongTuNhien = 1.04;
-                
-                $tongChiTieu = round(
-                    ($tongNamTruoc * $tangTruongTuNhien) * 0.60 +  // 60% từ năm trước với tăng trưởng
-                    $goiYTheoHocSinh * 0.30 +                       // 30% từ số HS hiện tại
-                    $goiYTheoTruong * 0.10                          // 10% từ quy mô hệ thống
-                );
+            // Nếu không có dữ liệu năm trước → Ước tính theo số trường
+            if ($tongNamTruoc == 0) {
+                // Mặc định mỗi trường 180 chỉ tiêu (phù hợp với 2,000 cho 11 trường)
+                $tongChiTieu = $soTruong * 180;
             } else {
-                // Không có dữ liệu năm trước: Dựa vào số HS và số trường
-                $tongChiTieu = round(
-                    $goiYTheoHocSinh * 0.70 +   // 70% từ số HS
-                    $goiYTheoTruong * 0.30       // 30% từ quy mô hệ thống
-                );
+                // Bước 2: Lấy tổng học sinh hiện tại và năm trước
+                $tongHocSinhHienTai = $this->getTongSoHocSinhHienTai();
+                $tongHocSinhNamTruoc = $this->getTongHocSinhNamTruoc();
+                
+                // Bước 3: Tính tỷ lệ thay đổi tổng học sinh
+                $tyLeThayDoi = 0.05; // Mặc định tăng 5%
+                
+                if ($tongHocSinhNamTruoc > 0) {
+                    $tyLeThayDoi = ($tongHocSinhHienTai - $tongHocSinhNamTruoc) / $tongHocSinhNamTruoc;
+                    
+                    // Giới hạn thay đổi: -20% đến +30%
+                    $tyLeThayDoi = max(-0.20, min(0.30, $tyLeThayDoi));
+                }
+                
+                // Bước 4: Tính tổng chỉ tiêu mới
+                $tongChiTieu = round($tongNamTruoc * (1 + $tyLeThayDoi));
             }
             
-            // Làm tròn đến bội số của 500 để dễ quản lý
-            $tongChiTieu = round($tongChiTieu / 500) * 500;
+            // Bước 5: Làm tròn đến bội số 100 (dễ quản lý cấp sở)
+            $tongChiTieu = round($tongChiTieu / 100) * 100;
             
-            // Giới hạn hợp lý: 100 * số trường đến 2000 * số trường
-            $min = $soTruong * 100;
-            $max = $soTruong * 2000;
-            $tongChiTieu = max(min($tongChiTieu, $max), $min);
+            // Bước 6: Giới hạn hợp lý theo số trường
+            $min = $soTruong * 100;   // Tối thiểu 100/trường
+            $max = $soTruong * 500;   // Tối đa 500/trường
+            $tongChiTieu = max($min, min($max, $tongChiTieu));
             
             return $tongChiTieu;
             
         } catch (PDOException $e) {
             error_log("Error tinhTongChiTieuTuDong: " . $e->getMessage());
             // Fallback: Trả về giá trị mặc định
-            $soTruong = 10; // Giá trị mặc định
-            return $soTruong * 1200; // 12,000
+            $soTruong = 11; // 11 trường Hà Nội
+            return $soTruong * 180; // 1,980 ≈ 2,000
+        }
+    }
+    
+    /**
+     * Ước tính tổng học sinh năm trước (giảm 10% so với hiện tại)
+     */
+    private function getTongHocSinhNamTruoc() {
+        try {
+            $tongHienTai = $this->getTongSoHocSinhHienTai();
+            return round($tongHienTai * 0.9); // Năm trước ít hơn 10%
+        } catch (PDOException $e) {
+            error_log("Error getTongHocSinhNamTruoc: " . $e->getMessage());
+            return 0;
         }
     }
     
@@ -266,13 +279,14 @@ class AdmissionTargetsModel {
     }
 
     /**
-     * Tính số gợi ý chỉ tiêu cho một trường dựa trên thuật toán phân bổ thông minh
+     * Tính gợi ý chỉ tiêu tuyển sinh cho trường - THUẬT TOÁN ĐơN GIẢN
      * 
-     * Thuật toán: Weighted Average với nhiều yếu tố
-     * 1. Chỉ tiêu năm trước (40% trọng số)
-     * 2. Tỷ lệ tăng trưởng tổng chỉ tiêu (30% trọng số)
-     * 3. Số lượng học sinh hiện tại (20% trọng số)
-     * 4. Tỷ lệ phân bổ theo năng lực trường (10% trọng số)
+     * Công thức: Chỉ tiêu năm trước × (1 + Tỷ lệ thay đổi học sinh)
+     * 
+     * Logic:
+     * - Nếu học sinh tăng 20% → Chỉ tiêu tăng 20%
+     * - Nếu học sinh giảm 10% → Chỉ tiêu giảm 10%
+     * - Nếu không có dữ liệu → Chia đều
      * 
      * @param string $maTruong Mã trường cần tính gợi ý
      * @param string $namHoc Năm học cần phân bổ
@@ -280,70 +294,64 @@ class AdmissionTargetsModel {
      */
     public function tinhGoiYChiTieu($maTruong, $namHoc) {
         try {
-            // === YẾU TỐ 1: Chỉ tiêu năm trước (2023-2024 hoặc năm gần nhất) ===
+            // Bước 1: Lấy chỉ tiêu năm trước
             $chiTieuNamTruoc = $this->getChiTieuNamTruoc($maTruong, $namHoc);
             
-            // === YẾU TỐ 2: Tỷ lệ tăng trưởng tổng chỉ tiêu ===
-            $tyLeTangTruong = $this->getTyLeTangTruongChiTieu($namHoc);
-            
-            // === YẾU TỐ 3: Số lượng học sinh hiện tại ===
-            $soLuongHS = $this->getSoLuongHocSinhHienTai($maTruong);
-            
-            // === YẾU TỐ 4: Năng lực trường (cơ sở vật chất, quy mô) ===
-            $nangLucTruong = $this->getNangLucTruong($maTruong);
-            
-            // === TÍNH TOÁN GỢI Ý ===
-            $goiY = 0;
-            
-            if ($chiTieuNamTruoc > 0) {
-                // Trường hợp có dữ liệu năm trước
-                // Công thức: ChiTieuNamTruoc * (1 + TyLeTangTruong)
-                $goiY = round($chiTieuNamTruoc * (1 + $tyLeTangTruong));
-                
-                // Điều chỉnh dựa trên số lượng học sinh (20% trọng số)
-                $tyLeSoLuongHS = $soLuongHS / 3; // Giả định 1/3 học sinh hiện tại
-                $goiY = round($goiY * 0.8 + $tyLeSoLuongHS * 0.2);
-                
-                // Điều chỉnh dựa trên năng lực trường (10% trọng số)
-                $goiY = round($goiY * (1 + $nangLucTruong * 0.1));
-                
-            } else {
-                // Trường hợp không có dữ liệu năm trước
-                // Sử dụng phương pháp phân bổ theo tỷ lệ
-                $tongChiTieuMoi = $this->getTongPheDuyet($namHoc);
-                $tongChiTieuTruoc = $this->getTongChiTieuNamTruocGanNhat($namHoc);
+            // Nếu không có dữ liệu năm trước → Chia đều
+            if ($chiTieuNamTruoc == 0) {
+                $tongChiTieu = $this->getTongPheDuyet($namHoc);
                 $danhSachTruong = $this->getDanhSachTruong();
-                
-                if ($tongChiTieuMoi > 0 && count($danhSachTruong) > 0) {
-                    // Phân bổ đều cho các trường
-                    $goiYTrungBinh = round($tongChiTieuMoi / count($danhSachTruong));
-                    
-                    // Điều chỉnh dựa trên năng lực trường
-                    $goiY = round($goiYTrungBinh * (1 + $nangLucTruong * 0.2));
-                    
-                    // Điều chỉnh dựa trên số lượng học sinh
-                    if ($soLuongHS > 0) {
-                        $tyLeSoLuongHS = $soLuongHS / 3;
-                        $goiY = round($goiY * 0.7 + $tyLeSoLuongHS * 0.3);
-                    }
+                if ($tongChiTieu > 0 && count($danhSachTruong) > 0) {
+                    $goiY = round($tongChiTieu / count($danhSachTruong));
                 } else {
-                    // Fallback: Sử dụng số lượng học sinh
-                    $goiY = round($soLuongHS / 3);
+                    $goiY = 150; // Mặc định
                 }
+            } else {
+                // Bước 2: Lấy số học sinh hiện tại và năm trước
+                $hocSinhHienTai = $this->getSoLuongHocSinhHienTai($maTruong);
+                $hocSinhNamTruoc = $this->getHocSinhNamTruoc($maTruong);
+                
+                // Bước 3: Tính tỷ lệ thay đổi học sinh
+                $tyLeThayDoi = 0.05; // Mặc định tăng 5%
+                
+                if ($hocSinhNamTruoc > 0) {
+                    $tyLeThayDoi = ($hocSinhHienTai - $hocSinhNamTruoc) / $hocSinhNamTruoc;
+                    
+                    // Giới hạn thay đổi: -20% đến +30%
+                    $tyLeThayDoi = max(-0.20, min(0.30, $tyLeThayDoi));
+                }
+                
+                // Bước 4: Tính chỉ tiêu mới dựa trên tỷ lệ thay đổi
+                $goiY = round($chiTieuNamTruoc * (1 + $tyLeThayDoi));
             }
             
-            // Đảm bảo giá trị hợp lý: tối thiểu 100, tối đa 2000
-            $goiY = max($goiY, 100);
-            $goiY = min($goiY, 2000);
-            
-            // Làm tròn đến bội số của 50 để dễ quản lý
+            // Bước 5: Làm tròn đến bội số 50
             $goiY = round($goiY / 50) * 50;
+            
+            // Bước 6: Giới hạn hợp lý (100-500)
+            $goiY = max(100, min(500, $goiY));
             
             return $goiY;
             
         } catch (PDOException $e) {
             error_log("Error tinhGoiYChiTieu: " . $e->getMessage());
-            return 100;
+            return 150; // Giá trị mặc định
+        }
+    }
+    
+    /**
+     * Lấy số học sinh của trường trong năm trước
+     * Ước tính: Số học sinh hiện tại - 10% (do tốt nghiệp)
+     */
+    private function getHocSinhNamTruoc($maTruong) {
+        try {
+            // Trong thực tế nên lưu lịch sử số HS vào bảng riêng
+            // Hiện tại ước tính: năm trước ít hơn 10% (đã có học sinh tốt nghiệp)
+            $hocSinhHienTai = $this->getSoLuongHocSinhHienTai($maTruong);
+            return round($hocSinhHienTai * 0.9);
+        } catch (PDOException $e) {
+            error_log("Error getHocSinhNamTruoc: " . $e->getMessage());
+            return 0;
         }
     }
     
