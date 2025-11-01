@@ -2,6 +2,11 @@
 declare(strict_types=1);
 session_start();
 
+// Bật hiển thị lỗi để gỡ lỗi (bạn có thể xóa 3 dòng này khi deploy)
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+
 // Get and clear flash messages
 $flash_success = $_SESSION['flash_success'] ?? '';
 $flash_error = $_SESSION['flash_error'] ?? '';
@@ -14,8 +19,8 @@ const ROLE_VIEWS = [
     'bgh' => __DIR__ . '/../views/bgh/dashboard.php', 
     'admin' => __DIR__ . '/../views/admin/dashboard.php',
     'gvbm' => __DIR__ . '/../views/gvbm/dashboard.php',
-    'gvcn' => __DIR__ . '/../views/gvbm/dashboard.php',
-    'ttbm' => __DIR__ . '/../views/gvbm/dashboard.php',
+    'gvcn' => __DIR__ . '/../views/gvbm/dashboard.php', // GVCN dùng chung dashboard GVBM
+    'ttbm' => __DIR__ . '/../views/gvbm/dashboard.php', // TTBM dùng chung dashboard GVBM
     'hs' => __DIR__ . '/../views/hs/dashboard.php',
     'ph' => __DIR__ . '/../views/ph/dashboard.php'
 ];
@@ -23,17 +28,12 @@ const ROLE_VIEWS = [
 // Handle actions
 if (isset($_GET['action'])) {
     switch ($_GET['action']) {
-        // THAY THẾ BẰNG ĐOẠN NÀY
-    case 'logout':
-    // 1. Xóa tất cả các biến trong session
-    session_unset();
-
-    // 2. Hủy hoàn toàn session
-    session_destroy();
-
-    // 3. Chuyển hướng về trang chủ
-    header('Location: /public/index.php');
-    exit;
+        
+        case 'logout':
+            session_unset();
+            session_destroy();
+            header('Location: index.php'); // Chuyển hướng về trang chủ
+            exit;
             
         case 'switch':
             if (isset($_GET['role']) && 
@@ -42,40 +42,58 @@ if (isset($_GET['action'])) {
                 $_SESSION['auth']['role'] = $_GET['role'];
                 session_regenerate_id(true);
             }
-            header('Location: /public/index.php');
+            header('Location: index.php'); // Về trang chủ (tải lại dashboard)
             exit;
+
+        // ========================================================
+        // === 🚀 ĐÂY LÀ CODE MỚI ĐỂ XỬ LÝ USECASE 1 ===
+        // ========================================================
+        case 'xem_lop_cn':
+            // 1. Gọi file Controller
+            require_once __DIR__ . '/../controllers/gvbm/lop.controller.php';
+            // 2. Khởi tạo Controller
+            $controller = new LopController();
+            // 3. Gọi hàm (action) tương ứng
+            $controller->xemLopChuNhiem();
+            exit; // Dừng lại sau khi Controller đã xử lý xong
+        // ========================================================
+        case 'xem_chi_tiet_hs':
+            require_once __DIR__ . '/../controllers/gvbm/lop.controller.php';
+            $controller = new LopController();
+            $controller->xemChiTietHocSinh();
+            exit;
+            
     }
 }
 
-// Display flash messages if they exist
+// Display flash messages if they exist (Cải tiến giao diện)
 if ($flash_success || $flash_error || $flash_info): ?>
-    <div class="container mt-3">
+    <div style="position: fixed; top: 20px; right: 20px; z-index: 1050; min-width: 300px;">
         <?php if ($flash_success): ?>
-            <div class="alert alert-success alert-dismissible fade show">
-                <?php echo htmlspecialchars($flash_success); ?>
+            <div class="alert alert-success alert-dismissible fade show shadow-lg">
+                <strong>Thành công!</strong> <?php echo htmlspecialchars($flash_success); ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
         <?php if ($flash_error): ?>
-            <div class="alert alert-danger alert-dismissible fade show">
-                <?php echo htmlspecialchars($flash_error); ?>
+            <div class="alert alert-danger alert-dismissible fade show shadow-lg">
+                <strong>Lỗi!</strong> <?php echo htmlspecialchars($flash_error); ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
         <?php if ($flash_info): ?>
-            <div class="alert alert-info alert-dismissible fade show">
-                <?php echo htmlspecialchars($flash_info); ?>
+            <div class="alert alert-info alert-dismissible fade show shadow-lg">
+                <strong>Thông báo:</strong> <?php echo htmlspecialchars($flash_info); ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
     </div>
 <?php endif;
 
-// Check authentication & redirect
+// Check authentication & redirect (Logic tải Dashboard mặc định)
 if (isset($_SESSION['auth']) && isset($_SESSION['auth']['role'])) {
     $role = $_SESSION['auth']['role'];
     if (isset(ROLE_VIEWS[$role])) {
-        // Instead of redirecting, include the dashboard directly
         if (file_exists(ROLE_VIEWS[$role])) {
             require_once ROLE_VIEWS[$role];
             exit;
@@ -87,3 +105,4 @@ if (isset($_SESSION['auth']) && isset($_SESSION['auth']['role'])) {
 
 // Not logged in - show welcome page
 require_once __DIR__ . '/../views/guest/welcome.php';
+?>

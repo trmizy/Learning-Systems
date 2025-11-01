@@ -356,20 +356,42 @@ if ($currentRole === 'gvcn') {
         </div>
 
         <!-- Lớp giảng dạy -->
-        <div class="col-md-6 col-xl-3">
-            <div class="card feature-card h-100">
-                <div class="card-body text-center">
-                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-                        <i class="fa-solid fa-chalkboard-user"></i>
-                    </div>
-                    <h5 class="card-title fw-bold">Lớp giảng dạy</h5>
-                    <p class="text-muted small">Danh sách lớp và học sinh</p>
-                    <a href="/modules/teachers/classes.php" class="btn btn-success w-100 mt-3">
-                        <i class="fa-solid fa-list me-2"></i>Xem danh sách
-                    </a>
-                </div>
+        <?php if ($currentRole === 'gvcn' || $currentRole === 'ttbm'): // Giả sử TTBM cũng có thể là GVCN ?>
+    
+    <div class="col-md-6 col-xl-3">
+        <div class="card feature-card h-100">
+            <div class="card-body text-center">
+                <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                    <i class="fa-solid fa-house-user"></i> </div>
+                
+                <h5 class="card-title fw-bold">Lớp chủ nhiệm</h5>
+                <p class="text-muted small">Xem thông tin lớp bạn phụ trách</p>
+                
+                <a href="index.php?action=xem_lop_cn" class="btn btn-success w-100 mt-3">
+                    <i class="fa-solid fa-list me-2"></i>Xem thông tin lớp
+                </a>
             </div>
         </div>
+    </div>
+
+        <?php else: ?>
+
+            <div class="col-md-6 col-xl-3">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center">
+                        <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                            <i class="fa-solid fa-chalkboard-user"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Lớp giảng dạy</h5>
+                        <p class="text-muted small">Danh sách lớp và học sinh</p>
+                        <a href="index.php?action=lop_giang_day" class="btn btn-success w-100 mt-3">
+                            <i class="fa-solid fa-list me-2"></i>Xem danh sách
+                        </a>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+         <!-- Lớp chủ nhiệm -->
 
         <!-- Thời khóa biểu -->
         <div class="col-md-6 col-xl-3">
