@@ -1,6 +1,6 @@
 <?php
 // File: controllers/gvbm/LopController.php
-// (ĐÃ CẬP NHẬT - THÊM NÚT QUA LẠI TUẦN)
+// (ĐÃ CẬP NHẬT - LOGIC ACTIVE TAB CHO NÚT TUẦN HIỆN TẠI)
 
 require_once __DIR__ . '/../../models/gvbm/lop.model.php'; 
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
@@ -28,8 +28,8 @@ class LopController {
         $tuanHienTai = '';
         $selected_date = '';
         $daysOfWeek = []; 
-        $prevWeekDate = ''; // <-- Biến mới
-        $nextWeekDate = ''; // <-- Biến mới
+        $prevWeekDate = ''; 
+        $nextWeekDate = ''; 
 
         if (!$thongTinLop) {
             $tenLop = "Chưa được phân công";
@@ -52,6 +52,8 @@ class LopController {
             }
             
             // --- Tab 3: Thời khóa biểu ---
+            // Nếu người dùng chọn tuần (gửi lên ?week=...): lấy ngày đó
+            // Nếu không, lấy ngày hôm nay (dùng cho nút 'Tuần hiện tại')
             $selected_date = $_GET['week'] ?? date('Y-m-d');
             $dateObj = new DateTime($selected_date, new DateTimeZone('Asia/Ho_Chi_Minh'));
             
@@ -63,11 +65,9 @@ class LopController {
             $endDate = $endDateObj->format('Y-m-d');
             $tuanHienTai = $startDateObj->format('d/m') . ' - ' . $endDateObj->format('d/m/Y');
 
-            // === 🚀 CODE MỚI: TÍNH NGÀY CHO NÚT QUA LẠI TUẦN ===
-            // (Lấy ngày Thứ 2 của tuần trước và tuần sau)
+            // Tính ngày cho nút Tuần Trước / Tuần Sau
             $prevWeekDate = (clone $startDateObj)->modify('-7 days')->format('Y-m-d');
             $nextWeekDate = (clone $startDateObj)->modify('+7 days')->format('Y-m-d');
-            // === KẾT THÚC CODE MỚI ===
 
             // Tạo mảng 7 ngày của tuần
             $daysOfWeek = [];
@@ -93,14 +93,20 @@ class LopController {
             }
         }
 
+        // === 🚀 ĐÂY LÀ LOGIC CẬP NHẬT ===
         // Xác định tab nào đang active
-        $activeTab = 'danhsach'; 
-        if (isset($_GET['week'])) $activeTab = 'tkb';
-        if (isset($_GET['tab']) && $_GET['tab'] == 'diem') $activeTab = 'diem';
-        
+        $activeTab = 'danhsach'; // Mặc định
+        if (isset($_GET['week'])) {
+            $activeTab = 'tkb'; // Nếu có 'week' trên URL, set active là 'tkb'
+        } elseif (isset($_GET['tab'])) {
+             // Nếu có 'tab' trên URL, set active theo nó
+             if ($_GET['tab'] == 'diem') $activeTab = 'diem';
+             if ($_GET['tab'] == 'tkb') $activeTab = 'tkb'; // <-- THÊM DÒNG NÀY
+        }
+        // =================================
+
         $pageTitle = 'Thông tin lớp chủ nhiệm';
         require_once __DIR__ . '/../../views/layouts/header.php';
-        // Truyền $prevWeekDate và $nextWeekDate sang View
         require_once __DIR__ . '/../../views/gvbm/xem_lop_phu_trach.php';
         require_once __DIR__ . '/../../views/layouts/footer.php';
     }
@@ -109,6 +115,7 @@ class LopController {
      * Action 2: Hiển thị trang "Xem chi tiết 1 học sinh"
      */
     public function xemChiTietHocSinh() {
+        // (Hàm này giữ nguyên, không thay đổi)
         require_role(['gvcn', 'gvbm', 'ttbm']); 
         
         $maHS = $_GET['id'] ?? null;

@@ -1,6 +1,6 @@
 <?php
 // File: views/gvbm/xem_lop_phu_trach.php
-// (ĐÃ CẬP NHẬT - THÊM NÚT QUA LẠI TUẦN)
+// (ĐÃ CẬP NHẬT - THÊM NÚT XEM TUẦN HIỆN TẠI)
 ?>
 
 <div class="container mt-4">
@@ -151,10 +151,16 @@
                     
                     <div class="col-auto">
                         <button type="submit" class="btn btn-primary">
-                            <i class="fa-solid fa-search me-1"></i> Xem tuần
+                            <i class="fa-solid fa-search me-1"></i> Xem ngày đã chọn
                         </button>
                     </div>
-                </form>
+                    
+                    <div class="col-auto">
+                        <a href="index.php?action=xem_lop_cn&tab=tkb" class="btn btn-info">
+                            <i class="fa-solid fa-calendar-day me-1"></i> Tuần hiện tại
+                        </a>
+                    </div>
+                    </form>
                 <h4 class="mt-4">Thời khóa biểu Tuần (<?php echo $tuanHienTai; ?>)</h4>
 
                 <?php if (empty($tkbGrid)): ?>
