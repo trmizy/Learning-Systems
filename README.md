@@ -802,23 +802,6 @@ với thuật toán gợi ý thông minh và validation 3 lớp.
 - [x] Visual feedback real-time
 - [x] Lịch sử phân bổ
 
-### Version 1.1 (Kế hoạch) 🔜
-
-- [ ] **Email notification** - Gửi thông báo tự động cho hiệu trưởng
-- [ ] **Export Excel** - Xuất file phân bổ ra Excel
-- [ ] **PDF Report** - Tạo báo cáo PDF chuyên nghiệp
-- [ ] **Comparison View** - So sánh phân bổ giữa các năm
-- [ ] **Charts & Analytics** - Biểu đồ phân tích xu hướng
-- [ ] **Audit Log** - Lưu lại lịch sử thay đổi chi tiết
-
-### Version 1.2 (Tương lai) 📅
-
-- [ ] **Advanced Algorithm** - Tích hợp machine learning
-- [ ] **Multi-year Planning** - Lập kế hoạch 3-5 năm
-- [ ] **School Feedback** - Hiệu trưởng có thể góp ý
-- [ ] **Approval Workflow** - Quy trình phê duyệt đa cấp
-- [ ] **API Integration** - RESTful API cho mobile app
-- [ ] **Real-time Collaboration** - Nhiều NV Sở làm việc cùng lúc
 
 
 ---
