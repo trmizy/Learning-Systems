@@ -18,11 +18,31 @@ if (isset($user['roles']) && is_array($user['roles'])) {
 }
 
 // Số liệu demo (thay bằng truy vấn thật nếu cần)
+require_once __DIR__ . '/../../config/database.php';
+$db = Database::getInstance()->getConnection();
+//coi tổng số môn học "subjects"
+    try 
+    {
+        // Câu truy vấn: đếm số lượng môn học
+        $sql = "SELECT COUNT(*) AS tong_monhoc FROM monhoc";
+        $stmt = $db->query($sql);
+
+        // Lấy kết quả
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // Lấy giá trị số lượng (và đảm bảo là số)
+        $tongMonHoc = (int)($row['tong_monhoc'] ?? 0);
+
+        // In ra kết quả (nếu muốn định dạng)
+        } catch (PDOException $e) {
+        echo "Lỗi truy vấn: " . $e->getMessage();
+    }
+
 $stats = [
     'students' => 1287,
     'classes'  => 42,
     'teachers' => 87,
-    'subjects' => 18,
+    'subjects' => $tongMonHoc,
 ];
 ?>
 
