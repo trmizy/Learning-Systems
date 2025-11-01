@@ -93,23 +93,122 @@ Chức năng **Phân bổ chỉ tiêu tuyển sinh** là một hệ thống qu�
 <details open>
 <summary><b>Click to expand</b></summary>
 
-**Thuật toán Weighted Average:**
+Hệ thống sử dụng **2 phương pháp tính toán** song song để đảm bảo tính chính xác và linh hoạt:
 
+---
+
+#### 📊 **Phương pháp 1: Tính TỔNG chỉ tiêu hệ thống**
+*(Dùng để xác định tổng chỉ tiêu cho cả năm học)*
+
+**Công thức Weighted Average (60-30-10):**
+
+```javascript
+// Nếu có dữ liệu năm trước:
+tongChiTieu = (tongNamTruoc × 1.05) × 60%     // Năm trước + tăng trưởng 5%
+            + (tongHocSinh / 3) × 30%         // Dự kiến tuyển sinh
+            + (soTruong × 100) × 10%          // Quy mô hệ thống
+
+// Nếu không có dữ liệu năm trước:
+tongChiTieu = (tongHocSinh / 3) × 70%         // Ưu tiên số học sinh
+            + (soTruong × 100) × 30%          // Quy mô hệ thống
 ```
-Chỉ tiêu gợi ý = Σ (Yếu tố[i] × Trọng số[i])
-                 i=1..4
 
-Yếu tố 1: Chỉ tiêu năm trước      × 40%
-Yếu tố 2: Số học sinh hiện tại    × 30%
-Yếu tố 3: Tỷ lệ tốt nghiệp         × 20%
-Yếu tố 4: Cơ sở vật chất           × 10%
+**Xử lý sau tính toán:**
+- ✅ Làm tròn đến **bội số 500** (dễ quản lý cấp sở)
+- ✅ Giới hạn: `min = soTruong × 100`, `max = soTruong × 2000`
+- 📍 Ví dụ với 11 trường: min=1,100, max=22,000
+
+---
+
+#### 🏫 **Phương pháp 2: Tính chỉ tiêu TỪNG TRƯỜNG**
+*(Dùng cho gợi ý phân bổ chi tiết)*
+
+**Công thức Weighted Average (80-20-10):**
+
+```javascript
+// Bước 1: Tính tăng trưởng từ năm trước
+goiY = chiTieuNamTruoc × (1 + tyLeTangTruong)  // Mặc định 5%
+
+// Bước 2: Điều chỉnh theo số học sinh (20% trọng số)
+tyLeSoLuongHS = soLuongHocSinh / 3             // Dự kiến tuyển 1/3 HS hiện tại
+goiY = goiY × 80% + tyLeSoLuongHS × 20%
+
+// Bước 3: Điều chỉnh theo năng lực trường (10% trọng số)
+goiY = goiY × (1 + nangLucTruong × 10%)        // nangLucTruong: 0-1
+
+// Bước 4: Giới hạn hợp lý
+goiY = max(100, min(2000, goiY))               // Mỗi trường: 100-2000
+
+// Bước 5: Làm tròn để dễ quản lý
+goiY = round(goiY / 50) × 50                   // Bội số 50
 ```
 
-**Đặc điểm:**
-- 🎯 Làm tròn đến bội số 50
-- 📏 Giới hạn: min=100, max=2,000
-- ⚡ Tính toán tức thì
-- 🔘 Áp dụng từng trường hoặc tất cả
+**Trường hợp đặc biệt:** Nếu trường chưa có dữ liệu năm trước:
+```javascript
+goiYTrungBinh = tongChiTieuMoi / soTruong
+goiY = goiYTrungBinh × (1 + nangLucTruong × 20%)
+goiY = goiY × 70% + (soLuongHS / 3) × 30%
+```
+
+---
+
+#### 🎯 **Đặc điểm của thuật toán:**
+
+| Tiêu chí | Phương pháp 1 (Tổng) | Phương pháp 2 (Từng trường) |
+|----------|---------------------|---------------------------|
+| **Mục đích** | Xác định tổng chỉ tiêu năm học | Gợi ý phân bổ cho từng trường |
+| **Trọng số** | 60-30-10  | 80-20-10 |
+| **Làm tròn** | Bội số 500 | Bội số 50 |
+| **Giới hạn** | soTruong × 100 ↔ 2000 | 100 ↔ 2000 mỗi trường |
+| **Kết quả** | 1 số duy nhất (VD: 8,000) | 11 số riêng biệt (VD: 750, 720, ...) |
+
+---
+
+#### � **Ví dụ tính toán thực tế:**
+
+**Dữ liệu đầu vào:**
+- Tổng chỉ tiêu năm 2023-2024: 8,000
+- Tổng học sinh hiện tại: 9,500
+- Số trường: 11
+
+**Phương pháp 1 - Tính tổng:**
+```
+tongChiTieu = (8000 × 1.05) × 0.60 + (9500 / 3) × 0.30 + (11 × 100) × 0.10
+            = 8400 × 0.60 + 3166.67 × 0.30 + 1100 × 0.10
+            = 5040 + 950 + 110
+            = 6,100
+Sau làm tròn bội 500: 6,000
+```
+
+**Phương pháp 2 - Tính từng trường (VD: TR001):**
+```
+Dữ liệu TR001:
+- Chỉ tiêu năm trước: 750
+- Học sinh hiện tại: 850
+
+Bước 1: 750 × 1.05 = 787.5 → 788
+Bước 2: 788 × 0.8 + (850/3) × 0.2 = 630.4 + 56.67 = 687.07 → 687
+Bước 3: 687 × (1 + 0 × 0.1) = 687 (năng lực = 0)
+Bước 4: max(100, min(2000, 687)) = 687
+        → Bước 4.1: min(2000, 687) = 687  (chọn số nhỏ hơn → giới hạn trên)
+        → Bước 4.2: max(100, 687) = 687   (chọn số lớn hơn → giới hạn dưới)
+        → Đảm bảo: 100 ≤ kết quả ≤ 2000
+Bước 5: round(687 / 50) × 50 = 700
+        → 687 / 50 = 13.74
+        → round(13.74) = 14  (làm tròn lên vì 0.74 > 0.5)
+        → 14 × 50 = 700
+
+→ Gợi ý cho TR001: 700
+```
+
+---
+
+#### ⚡ **Cách sử dụng trong hệ thống:**
+
+1. **Tính tổng trước** → Nhập vào form "Tổng chỉ tiêu năm học"
+2. **Áp dụng gợi ý từng trường** → Điều chỉnh theo nhu cầu thực tế
+3. **Validation** → Đảm bảo tổng các trường = tổng chỉ tiêu
+4. **Lưu** → Ghi vào database với mã NhanVienSo
 
 </details>
 

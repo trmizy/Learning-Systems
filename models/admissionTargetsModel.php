@@ -509,7 +509,7 @@ class AdmissionTargetsModel {
                     ];
                 }
 
-                $maChiTieu = 'CT_' . $namHoc . '_' . $maTruong . '_' . time();
+                $maChiTieu = 'CT_' . $namHoc . '_' . $maTruong;
                 
                 // Kiểm tra maNhanVienSo có tồn tại không, nếu không thì set NULL
                 $maNVS = null;
