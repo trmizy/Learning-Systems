@@ -20,6 +20,7 @@ $MENU_ITEMS = [
                 ['icon' => 'people-roof', 'text' => 'Quản lý lớp', 'link' => '/modules/classes/list.php'],
                 ['icon' => 'person-chalkboard', 'text' => 'Giáo viên', 'link' => '/modules/teachers/list.php'],
                 ['icon' => 'book', 'text' => 'Môn học', 'link' => '/modules/subjects/list.php'],
+                ['icon' => 'layer-group', 'text' => 'Tổ hợp môn', 'link' => '/controllers/admin/taoCacToHopMon_controller.php'],
             ]
         ],
         [
