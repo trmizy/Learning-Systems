@@ -33,12 +33,12 @@ Chức năng **Phân bổ chỉ tiêu tuyển sinh** là một hệ thống qu�
 <td align="center" width="33%">
 <img src="https://img.icons8.com/fluency/96/lock.png" width="64" alt="Lock"/>
 <h4>🔒 Năm gốc cố định</h4>
-<p><small>2023-2024 với 8,000 chỉ tiêu<br/>Không thể chỉnh sửa</small></p>
+<p><small>2023-2024 với 2,000 chỉ tiêu<br/>Không thể chỉnh sửa</small></p>
 </td>
 <td align="center" width="33%">
 <img src="https://img.icons8.com/fluency/96/artificial-intelligence.png" width="64" alt="AI"/>
 <h4>🤖 Gợi ý thông minh</h4>
-<p><small>Thuật toán weighted average<br/>4 yếu tố với trọng số</small></p>
+<p><small>Thuật toán <br/>dựa trên tỷ lệ thay đổi học sinh</small></p>
 </td>
 <td align="center" width="33%">
 <img src="https://img.icons8.com/fluency/96/checkmark.png" width="64" alt="Check"/>
