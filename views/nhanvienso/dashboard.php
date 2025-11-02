@@ -476,8 +476,8 @@ $notifications = [
                     <h5 class="card-title fw-bold">Chỉ tiêu</h5>
                     <p class="text-muted small">Kế hoạch, chỉ tiêu tuyển sinh</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/sogd/targets/admission.php" class="btn btn-info btn-sm">
-                            <i class="fa-solid fa-target me-1"></i>Tuyển sinh
+                        <a href="/public/index.php?controller=targets&action=index" class="btn btn-info btn-sm">
+                            <i class="fa-solid fa-chart-bar me-1"></i>Phân bổ chỉ tiêu
                         </a>
                         <a href="/modules/sogd/targets/planning.php" class="btn btn-outline-info btn-sm">
                             <i class="fa-solid fa-clipboard-list me-1"></i>Kế hoạch
