@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 session_start();
 
 // Get and clear flash messages
