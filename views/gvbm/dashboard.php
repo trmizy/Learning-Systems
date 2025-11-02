@@ -1,4 +1,5 @@
 <?php
+ob_start(); // bắt đầu buffer output
 // filepath: d:\Hk1_2025\PTUD_Nhom4\Đồ Án Nhóm\Learning_System\views\gvbm\dashboard.php
 // Bảo vệ & kiểm tra quyền
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
@@ -60,6 +61,19 @@ if ($currentRole === 'gvcn') {
         ['student' => 'Trần Thị B', 'reason' => 'Việc gia đình', 'date' => '2024-03-17', 'status' => 'pending'],
         ['student' => 'Lê Văn C', 'reason' => 'Khám bệnh', 'date' => '2024-03-15', 'status' => 'pending'],
     ];
+}
+?>
+
+<!-- Xem phân công ra đề-->
+<?php
+if (session_status() === PHP_SESSION_NONE) session_start();
+$currentRole = $_SESSION['auth']['role'] ?? '';
+
+if ($currentRole === 'gvbm' && ($_GET['action'] ?? '') === 'view_assign') {
+    require_once __DIR__ . '/../../controllers/gvbm/ViewAssignController.php';
+    $controller = new ViewAssignController();
+    $controller->index();
+    exit;
 }
 ?>
 
@@ -247,6 +261,27 @@ if ($currentRole === 'gvcn') {
         font-weight: 600;
     }
 </style>
+
+<?php
+if (session_status() === PHP_SESSION_NONE) session_start();
+
+$currentRole = $_SESSION['auth']['role'] ?? '';
+
+if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'assign_exam') {
+    require_once __DIR__ . '/../../controllers/ttbm/AssignExamController.php';
+    $controller = new AssignExamController();
+    $controller->index();
+    exit; // Dừng toàn bộ dashboard, chỉ hiển thị trang phân công
+}
+
+if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') {
+    require_once __DIR__ . '/../../controllers/ttbm/AssignExamController.php';
+    $controller = new AssignExamController();
+    $controller->store();
+    exit;
+}
+?>
+
 
 <div class="teacher-dashboard">
     <!-- Welcome Banner -->
@@ -439,7 +474,7 @@ if ($currentRole === 'gvcn') {
                     </div>
                     <h5 class="card-title fw-bold">Phân công</h5>
                     <p class="text-muted small">Ra đề thi, giảng dạy</p>
-                    <a href="/modules/teachers/department/assignments.php" class="btn btn-info w-100 mt-3">
+                    <a href="index.php?action=assign_exam" class="btn btn-info w-100 mt-3">
                         <i class="fa-solid fa-user-gear me-2"></i>Quản lý
                     </a>
                 </div>
@@ -462,6 +497,24 @@ if ($currentRole === 'gvcn') {
         </div>
         <?php endif; ?>
     </div>
+    
+    <!--Xem phân công của tôi - CHỈ HIỂN THỊ CHO GVBM VÀ GVCN-->    
+    <?php if ($currentRole !== 'ttbm'): ?>
+    <div class="col-md-4">
+        <div class="card feature-card">
+            <div class="card-body text-center">
+                <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+                <h5 class="card-title fw-bold mt-2">Phân công của tôi</h5>
+                <p class="text-muted small">Xem danh sách đề thi được giao</p>
+                <a href="index.php?action=view_assign" class="btn btn-outline-warning w-100 mt-3">
+                    <i class="fa-solid fa-eye me-2"></i>Xem ngay
+                </a>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <div class="row g-4">
         <!-- Teaching Classes -->
@@ -640,7 +693,7 @@ if ($currentRole === 'gvcn') {
                         <i class="fa-solid fa-file-pen text-primary me-2"></i>Phân công ra đề
                     </h6>
                     <p class="text-muted small mb-3">Phân công giáo viên ra đề thi</p>
-                    <a href="/modules/teachers/department/exam-assignments.php" class="btn btn-outline-primary w-100">
+                    <a href="index.php?action=assign_exam" class="btn btn-outline-primary w-100">
                         <i class="fa-solid fa-tasks me-2"></i>Phân công
                     </a>
                 </div>
@@ -724,4 +777,8 @@ if ($currentRole === 'gvcn') {
 
 <?php
 require_once __DIR__ . '/../layouts/footer.php';
+?>
+
+<?php
+ob_end_flush(); // gửi toàn bộ output ra sau cùng
 ?>

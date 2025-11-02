@@ -586,7 +586,7 @@ $violations = [];
                         <i class="fa-solid fa-calendar-days text-primary me-2"></i>Thời khóa biểu con
                     </h6>
                     <p class="text-muted small mb-3">Xem lịch học trong tuần của con em</p>
-                    <a href="/modules/parents/schedule.php" class="btn btn-outline-primary w-100">
+                    <a href="?action=xem_tkb" class="btn btn-outline-primary w-100">
                         <i class="fa-solid fa-eye me-2"></i>Xem TKB
                     </a>
                 </div>

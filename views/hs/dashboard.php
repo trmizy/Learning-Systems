@@ -385,7 +385,7 @@ $notifications = [
                     </div>
                     <h5 class="card-title fw-bold">Thời khóa biểu</h5>
                     <p class="text-muted small">Lịch học trong tuần, phòng học</p>
-                    <a href="/modules/students/schedule.php" class="btn btn-success w-100 mt-3">
+                    <a href="index.php?action=xem_tkb" class="btn btn-success w-100 mt-3">
                         <i class="fa-solid fa-calendar me-2"></i>Xem TKB
                     </a>
                 </div>
@@ -454,7 +454,7 @@ $notifications = [
                         </div>
                     </div>
                     <?php endforeach; ?>
-                    <a href="/modules/students/schedule.php" class="btn btn-outline-primary w-100 mt-3">
+                    <a href="?action=xem_tkb" class="btn btn-outline-primary w-100 mt-3">
                         <i class="fa-solid fa-calendar-week me-2"></i>Xem lịch tuần
                     </a>
                 </div>

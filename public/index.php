@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 session_start();
 
 // Bật hiển thị lỗi để gỡ lỗi (bạn có thể xóa 3 dòng này khi deploy)
@@ -82,6 +83,30 @@ if (isset($_GET['action'])) {
             $controller->xemChiTietHocSinh();
             exit;
             
+        // Thời khóa biểu học sinh VÀ phụ huynh
+        case 'xem_tkb':
+            require_once __DIR__ . '/../controllers/ThoiKhoaBieuController.php';
+            $controller = new ThoiKhoaBieuController();
+            
+            // Kiểm tra role - SỬA LẠI ĐỂ DEBUG
+            if (!isset($_SESSION['auth']) || !isset($_SESSION['auth']['role'])) {
+                $_SESSION['flash_error'] = 'Bạn chưa đăng nhập!';
+                header('Location: /public/index.php');
+                exit;
+            }
+            
+            $role = $_SESSION['auth']['role'];
+            
+            if ($role === 'hs') {
+                $controller->indexHocSinh();
+            } elseif ($role === 'ph') {
+                $controller->indexPhuHuynh();
+            } else {
+                $_SESSION['flash_error'] = 'Bạn không có quyền xem thời khóa biểu!';
+                header('Location: /public/index.php');
+                exit;
+            }
+            exit;
     }
 }
 
