@@ -20,29 +20,39 @@ if (isset($user['roles']) && is_array($user['roles'])) {
 // Số liệu demo (thay bằng truy vấn thật nếu cần)
 require_once __DIR__ . '/../../config/database.php';
 $db = Database::getInstance()->getConnection();
-//coi tổng số môn học "subjects"
-    try 
-    {
-        // Câu truy vấn: đếm số lượng môn học
-        $sql = "SELECT COUNT(*) AS tong_monhoc FROM monhoc";
-        $stmt = $db->query($sql);
+// Câu truy vấn: đếm số lượng môn học, học sinh, lớp, giáo viên
+try {
+    // Môn học
+    $row = $db->query("SELECT COUNT(*) AS tong_monhoc FROM monhoc")->fetch(PDO::FETCH_ASSOC);
+    $tongMonHoc = (int)($row['tong_monhoc'] ?? 0);
 
-        // Lấy kết quả
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Học sinh
+    $row = $db->query("SELECT COUNT(*) AS tong_hocsinh FROM hocsinh")->fetch(PDO::FETCH_ASSOC);
+    $tongHocSinh = (int)($row['tong_hocsinh'] ?? 0);
 
-        // Lấy giá trị số lượng (và đảm bảo là số)
-        $tongMonHoc = (int)($row['tong_monhoc'] ?? 0);
+    // Lớp
+    $row = $db->query("SELECT COUNT(*) AS tong_lop FROM lophoc")->fetch(PDO::FETCH_ASSOC);
+    $tongLop = (int)($row['tong_lop'] ?? 0);
 
-        // In ra kết quả (nếu muốn định dạng)
-        } catch (PDOException $e) {
-        echo "Lỗi truy vấn: " . $e->getMessage();
+    // Giáo viên: ưu tiên bảng `giaovienbomon`, fallback sang distinct maGV trong `phanconggiangday`
+    $row = $db->query("SELECT COUNT(*) AS tong_giaovien FROM giaovienbomon")->fetch(PDO::FETCH_ASSOC);
+    if ($row && isset($row['tong_giaovien'])) {
+        $tongGiaoVien = (int)$row['tong_giaovien'];
+    } else {
+        $row = $db->query("SELECT COUNT(DISTINCT maGV) AS tong_giaovien FROM phanconggiangday")->fetch(PDO::FETCH_ASSOC);
+        $tongGiaoVien = (int)($row['tong_giaovien'] ?? 0);
     }
+} catch (PDOException $e) {
+    // Không dừng trang, chỉ log và dùng giá trị mặc định 0
+    error_log('Dashboard count query error: ' . $e->getMessage());
+    $tongMonHoc = $tongHocSinh = $tongLop = $tongGiaoVien = 0;
+}
 
 $stats = [
-    'students' => 1287,
-    'classes'  => 42,
-    'teachers' => 87,
-    'subjects' => $tongMonHoc,
+    'students' => $tongHocSinh ?? 0,
+    'classes'  => $tongLop ?? 0,
+    'teachers' => $tongGiaoVien ?? 0,
+    'subjects' => $tongMonHoc ?? 0,
 ];
 ?>
 
@@ -250,9 +260,9 @@ $stats = [
 
     <!-- Main Functions Grid -->
     <div class="row g-4 mb-4">
-        <!-- Student Management -->
+        <!-- Student Management (clickable card -> mở quanLyHocSinh view) -->
         <div class="col-md-6 col-xl-3">
-            <div class="card feature-card h-100">
+            <div class="card feature-card h-100 position-relative">
                 <div class="card-body text-center">
                     <div class="feature-icon mx-auto">
                         <i class="fa-solid fa-user-graduate"></i>
@@ -260,13 +270,11 @@ $stats = [
                     <h5 class="card-title fw-bold">Quản lý học sinh</h5>
                     <p class="text-muted small">Hồ sơ, tiếp nhận, cập nhật thông tin</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/students/create.php" class="btn btn-primary btn-sm">
-                            <i class="fa-solid fa-plus me-1"></i>Thêm mới
-                        </a>
-                        <a href="/modules/students/list.php" class="btn btn-outline-primary btn-sm">
-                            <i class="fa-solid fa-list me-1"></i>Danh sách
+                        <a href="/modules/quanLyHocSinh/quanLyHocSinhView.php" class="btn btn-primary btn-sm">
+                            <i class="fa-solid fa-arrow-right me-1"></i>Mở quản lý hồ sơ
                         </a>
                     </div>
+                    <a href="/modules/quanLyHocSinh/quanLyHocSinhView.php" class="stretched-link" aria-label="Mở Quản lý học sinh"></a>
                 </div>
             </div>
         </div>
