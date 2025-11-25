@@ -270,11 +270,11 @@ $stats = [
                     <h5 class="card-title fw-bold">Quản lý học sinh</h5>
                     <p class="text-muted small">Hồ sơ, tiếp nhận, cập nhật thông tin</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/quanLyHocSinh/quanLyHocSinhView.php" class="btn btn-primary btn-sm">
+                        <a href="/modules/quanLyHoSoHocSinh/quanLyHoSoHocSinhView.php" class="btn btn-primary btn-sm">
                             <i class="fa-solid fa-arrow-right me-1"></i>Mở quản lý hồ sơ
                         </a>
                     </div>
-                    <a href="/modules/quanLyHocSinh/quanLyHocSinhView.php" class="stretched-link" aria-label="Mở Quản lý học sinh"></a>
+                    <a href="/modules/quanLyHoSoHocSinh/quanLyHoSoHocSinhView.php" class="stretched-link" aria-label="Mở Quản lý học sinh"></a>
                 </div>
             </div>
         </div>

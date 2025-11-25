@@ -1,7 +1,7 @@
 <?php
-require_once __DIR__ . '/../../models/admin/QuanLyHocSinhModel.php';
+require_once __DIR__ . '/../../models/admin/QuanLyHoSoHocSinhModel.php';
 
-class QuanLyHocSinhController
+class QuanLyHoSoHocSinhController
 {
     protected $db;
     protected $model;
@@ -9,7 +9,7 @@ class QuanLyHocSinhController
     public function __construct(PDO $db)
     {
         $this->db = $db;
-        $this->model = new QuanLyHocSinhModel($db);
+        $this->model = new QuanLyHoSoHocSinhModel($db);
     }
 
     public function index()
@@ -39,7 +39,7 @@ class QuanLyHocSinhController
         $q_maLop = $q_maLop;
         $q_khoi = $q_khoi;
 
-        require __DIR__ . '/../../views/admin/quanLyHocSinh/quanLyHocSinhView.php';
+        require __DIR__ . '/../../views/admin/quanLyHoSoHocSinh/quanLyHoSoHocSinhView.php';
     }
 
     public function view()
@@ -51,7 +51,7 @@ class QuanLyHocSinhController
             exit;
         }
         $student = $this->model->find($maHS);
-        require __DIR__ . '/../../views/admin/quanLyHocSinh/view.php';
+        require __DIR__ . '/../../views/admin/quanLyHoSoHocSinh/view.php';
     }
 
     public function edit()
@@ -75,7 +75,7 @@ class QuanLyHocSinhController
 
             try {
                 $this->model->update($maHS, $data);
-                header('Location: /modules/quanLyHocSinh/view.php?maHS=' . urlencode($maHS) . '&updated=1');
+                header('Location: /modules/quanLyHoSoHocSinh/view.php?maHS=' . urlencode($maHS) . '&updated=1');
                 exit;
             } catch (Exception $e) {
                 $error = $e->getMessage();
@@ -83,6 +83,7 @@ class QuanLyHocSinhController
         }
 
         $student = $this->model->find($maHS);
-        require __DIR__ . '/../../views/admin/quanLyHocSinh/edit.php';
+        require __DIR__ . '/../../views/admin/quanLyHoSoHocSinh/edit.php';
     }
 }
+

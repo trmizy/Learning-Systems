@@ -20,7 +20,7 @@ $q_khoi = $q_khoi ?? trim($_GET['khoi'] ?? '');
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="mb-0">Quản lý hồ sơ học sinh</h3>
         <div>
-            <a href="/modules/quanLyHocSinh/create.php" class="btn btn-primary btn-sm">
+            <a href="/modules/quanLyHoSoHocSinh/create.php" class="btn btn-primary btn-sm">
                 <i class="fa-solid fa-plus me-1"></i> Thêm học sinh
             </a>
         </div>
@@ -85,8 +85,8 @@ $q_khoi = $q_khoi ?? trim($_GET['khoi'] ?? '');
                             <td><?php echo is_numeric($s['diemTrungBinhMon']) ? number_format($s['diemTrungBinhMon'],2) : '-'; ?></td>
                             <td style="max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?php echo htmlspecialchars($s['phuHuynh_info'] ?? '-'); ?></td>
                             <td>
-                                <a href="/modules/quanLyHocSinh/view.php?maHS=<?php echo urlencode($s['maHS']); ?>" class="btn btn-sm btn-outline-primary">Xem</a>
-                                <a href="/modules/quanLyHocSinh/edit.php?maHS=<?php echo urlencode($s['maHS']); ?>" class="btn btn-sm btn-outline-secondary">Sửa</a>
+                                <a href="/modules/quanLyHoSoHocSinh/view.php?maHS=<?php echo urlencode($s['maHS']); ?>" class="btn btn-sm btn-outline-primary">Xem</a>
+                                <a href="/modules/quanLyHoSoHocSinh/edit.php?maHS=<?php echo urlencode($s['maHS']); ?>" class="btn btn-sm btn-outline-secondary">Sửa</a>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -102,3 +102,4 @@ $q_khoi = $q_khoi ?? trim($_GET['khoi'] ?? '');
 <?php
 require_once __DIR__ . '/../../layouts/footer.php';
 ?>
+

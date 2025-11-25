@@ -64,8 +64,9 @@ require __DIR__ . '/../../layouts/header.php';
         <p>Chưa có bản ghi kỷ luật.</p>
     <?php endif; ?>
 
-    <a href="/modules/quanLyHocSinh/edit.php?maHS=<?php echo urlencode($student['maHS']); ?>" class="btn btn-primary">Chỉnh sửa</a>
-    <a href="/modules/quanLyHocSinh/quanLyHocSinhView.php" class="btn btn-secondary">Quay lại</a>
+    <a href="/modules/quanLyHoSoHocSinh/edit.php?maHS=<?php echo urlencode($student['maHS']); ?>" class="btn btn-primary">Chỉnh sửa</a>
+    <a href="/modules/quanLyHoSoHocSinh/quanLyHoSoHocSinhView.php" class="btn btn-secondary">Quay lại</a>
 </div>
 
 <?php require __DIR__ . '/../../layouts/footer.php';
+

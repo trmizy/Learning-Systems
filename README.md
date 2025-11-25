@@ -4,17 +4,17 @@
 
 ### Quản lý học sinh
 - **Model:**
-  - `models/admin/QuanLyHocSinhModel.php`
+  - `models/admin/QuanLyHoSoHocSinhModel.php`
 - **Controller:**
-  - `controllers/admin/QuanLyHocSinhController.php`
+  - `controllers/admin/QuanLyHoSoHocSinhController.php`
 - **Views:**
-  - `views/admin/quanLyHocSinh/quanLyHocSinhView.php` (trang tìm kiếm & danh sách)
-  - `views/admin/quanLyHocSinh/view.php` (trang chi tiết hồ sơ học sinh)
-  - `views/admin/quanLyHocSinh/edit.php` (trang chỉnh sửa hồ sơ học sinh)
+  - `views/admin/quanLyHoSoHocSinh/quanLyHoSoHocSinhView.php` (trang tìm kiếm & danh sách)
+  - `views/admin/quanLyHoSoHocSinh/view.php` (trang chi tiết hồ sơ học sinh)
+  - `views/admin/quanLyHoSoHocSinh/edit.php` (trang chỉnh sửa hồ sơ học sinh)
 - **Entrypoint modules:**
-  - `modules/quanLyHocSinh/quanLyHocSinhView.php` (trang chính quản lý học sinh)
-  - `modules/quanLyHocSinh/view.php` (xem chi tiết)
-  - `modules/quanLyHocSinh/edit.php` (chỉnh sửa)
+  - `modules/quanLyHoSoHocSinh/quanLyHoSoHocSinhView.php` (trang chính quản lý học sinh)
+  - `modules/quanLyHoSoHocSinh/view.php` (xem chi tiết)
+  - `modules/quanLyHoSoHocSinh/edit.php` (chỉnh sửa)
 
 ### Tạo tổ hợp môn
 - **Model:**

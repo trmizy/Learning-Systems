@@ -14,7 +14,7 @@ if (!empty($error)) {
 ?>
 <div class="container mt-4">
     <h2>Chỉnh sửa hồ sơ: <?php echo htmlspecialchars($student['hoTen']); ?></h2>
-    <form method="post" action="/modules/quanLyHocSinh/edit.php">
+    <form method="post" action="/modules/quanLyHoSoHocSinh/edit.php">
         <input type="hidden" name="maHS" value="<?php echo htmlspecialchars($student['maHS']); ?>">
         <div class="form-group">
             <label>Họ và tên</label>
@@ -51,8 +51,9 @@ if (!empty($error)) {
         </div>
 
         <button class="btn btn-primary">Lưu</button>
-        <a href="/modules/quanLyHocSinh/view.php?maHS=<?php echo urlencode($student['maHS']); ?>" class="btn btn-secondary">Hủy</a>
+        <a href="/modules/quanLyHoSoHocSinh/view.php?maHS=<?php echo urlencode($student['maHS']); ?>" class="btn btn-secondary">Hủy</a>
     </form>
 </div>
 
 <?php require __DIR__ . '/../../layouts/footer.php';
+

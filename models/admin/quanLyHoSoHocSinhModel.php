@@ -1,5 +1,5 @@
 <?php
-class QuanLyHocSinhModel
+class QuanLyHoSoHocSinhModel
 {
     protected $db;
     public function __construct(PDO $db)
@@ -121,3 +121,4 @@ class QuanLyHocSinhModel
         }
     }
 }
+
