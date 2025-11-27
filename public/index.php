@@ -19,26 +19,6 @@ const ROLE_VIEWS = [
     'hs' => __DIR__ . '/../views/hs/dashboard.php',
     'ph' => __DIR__ . '/../views/ph/dashboard.php'
 ];
-
-// Handle controller routing
-if (isset($_GET['controller'])) {
-    $controller = $_GET['controller'];
-    
-    // Route to specific controllers
-    switch ($controller) {
-        case 'chitieu':
-            // Legacy route name 'chitieu' -> use new targets controller
-            require_once __DIR__ . '/../controllers/nhanvienso/targetsController.php';
-            exit;
-        
-        case 'targets':
-            require_once __DIR__ . '/../controllers/nhanvienso/targetsController.php';
-            exit;
-            
-        // Add more controllers here as needed
-    }
-}
-
 // Handle actions
 if (isset($_GET['action'])) {
     switch ($_GET['action']) {
