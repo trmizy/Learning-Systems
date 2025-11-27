@@ -447,6 +447,21 @@ $violations = [];
                 </div>
             </div>
         </div>
+        <!-- Đăng ký nguyện vọng -->
+        <div class="col-md-6 col-xl-3">
+            <div class="card feature-card h-100">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Đăng ký nguyện vọng</h5>
+                    <p class="text-muted small">Đăng ký nguyện vọng vào trường THPT</p>
+                    <a href="/controllers/ph/wishRegistrationController.php" class="btn btn-primary w-100 mt-3">
+                        <i class="fa-solid fa-pen-to-square me-2"></i>Đăng ký ngay
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="row g-4">
