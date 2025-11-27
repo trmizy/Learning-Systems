@@ -225,7 +225,7 @@ class SchoolAccountModel {
             $stmt = $this->conn->prepare($sqlInsertNVGV);
             $stmt->execute([
                 'maNVGiaoVu' => $maNVGiaoVu,
-                'hoTen' => $truongInfo['tenTruong'],
+                'hoTen' => $truongInfo['hoTenNV'],
                 'email' => $email,
                 'soDienThoai' => $soDienThoai,
                 'maTruong' => $maTruong,
