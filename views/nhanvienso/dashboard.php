@@ -437,7 +437,7 @@ $notifications = [
                         <a href="/modules/sogd/schools/list.php" class="btn btn-success btn-sm">
                             <i class="fa-solid fa-building me-1"></i>Danh sách
                         </a>
-                        <a href="/modules/sogd/schools/accounts.php" class="btn btn-outline-success btn-sm">
+                        <a href="/controllers/nhanvienso/schoolAccountController.php" class="btn btn-outline-success btn-sm">
                             <i class="fa-solid fa-user-plus me-1"></i>Tài khoản
                         </a>
                     </div>
