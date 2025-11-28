@@ -3,99 +3,137 @@ $success = $_SESSION['flash_success'] ?? '';
 $error   = $_SESSION['flash_error'] ?? '';
 unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 ?>
-<div class="container mt-4">
-  <a href="index.php" class="btn btn-secondary mb-3"><i class="fa-solid fa-arrow-left"></i> Quay lại Dashboard</a>
 
-  <h3 class="mb-3">Phân công giáo viên ra đề thi</h3>
+<div class="container py-4">
 
-  <?php if ($success): ?><div class="alert alert-success"><?= htmlspecialchars($success) ?></div><?php endif; ?>
-  <?php if ($error): ?><div class="alert alert-danger"><?= htmlspecialchars($error) ?></div><?php endif; ?>
+    <a href="index.php" class="btn btn-outline-secondary mb-3">
+        <i class="fa-solid fa-arrow-left me-1"></i> Quay lại Dashboard
+    </a>
 
-  <form action="index.php?action=store_assign_exam" method="POST" class="row g-3 mb-4">
+    <h2 class="mb-4 fw-bold">Phân công giáo viên ra đề thi</h2>
 
-      <div class="col-md-2">
-          <label class="form-label">Chọn khối</label>
-          <select name="khoi" class="form-select" required>
-              <option value="">-- Chọn khối --</option>
-              <?php foreach ($khoi as $k): ?>
-                  <option value="<?= htmlspecialchars($k) ?>">Khối <?= htmlspecialchars($k) ?></option>
-              <?php endforeach; ?>
-          </select>
-      </div>
+    <?php if ($success): ?>
+        <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
+    <?php endif; ?>
 
-      <div class="col-md-4">
-          <label class="form-label">Giáo viên bộ môn</label>
-          <select name="listGV[]" multiple class="form-select" size="5" required>
-              <?php foreach ($listGV as $gv): ?>
-                  <option value="<?= $gv['maGV'] ?>">
-                      <?= $gv['hoTen'] ?> (<?= $gv['monHocPhuTrach'] ?>)
-                  </option>
-              <?php endforeach; ?>
-          </select>
-          <small class="text-muted">Giữ Ctrl để chọn nhiều giáo viên</small>
-      </div>
+    <?php if ($error): ?>
+        <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+    <?php endif; ?>
 
-      <div class="col-md-2">
-        <label class="form-label">Học kỳ</label>
-        <select name="hocKy" class="form-select" required>
-            <option value="">-- Chọn học kỳ --</option>
-            <option value="I">Học kỳ I</option>
-            <option value="II">Học kỳ II</option>
-        </select>
+
+    <!-- FORM PHÂN CÔNG -->
+    <form action="index.php?action=store_assign_exam" method="POST" class="row g-3 mb-4">
+
+        <!-- KHỐI -->
+        <div class="col-md-3">
+            <label class="form-label fw-semibold">Khối</label>
+            <select name="khoi" class="form-select" required>
+                <option value="">-- Chọn khối --</option>
+                <?php foreach ($khoi as $k): ?>
+                    <option value="<?= htmlspecialchars($k) ?>">Khối <?= htmlspecialchars($k) ?></option>
+                <?php endforeach; ?>
+            </select>
         </div>
 
+        <!-- GIÁO VIÊN BỘ MÔN -->
+        <div class="col-md-5">
+            <label class="form-label fw-semibold">Giáo viên bộ môn</label>
+            <select name="listGV[]" multiple class="form-select" size="5" required>
+                <?php foreach ($listGV as $gv): ?>
+                    <option value="<?= $gv['maGV'] ?>">
+                        <?= htmlspecialchars($gv['hoTen']) ?> (<?= htmlspecialchars($gv['monHocPhuTrach']) ?>)
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <small class="text-muted">Giữ Ctrl để chọn nhiều giáo viên</small>
+        </div>
+
+        <!-- HỌC KỲ -->
         <div class="col-md-2">
-        <label class="form-label">Kỳ thi</label>
-        <select name="kyThi" class="form-select" required>
-            <option value="">-- Chọn kỳ thi --</option>
-            <option value="Giữa kỳ">Giữa kỳ</option>
-            <option value="Cuối kỳ">Cuối kỳ</option>
-        </select>
+            <label class="form-label fw-semibold">Học kỳ</label>
+            <select name="hocKy" class="form-select" required>
+                <option value="">-- Chọn học kỳ --</option>
+                <option value="HK1">Học kỳ I</option>
+                <option value="HK2">Học kỳ II</option>
+            </select>
         </div>
 
-      <div class="col-md-2">
-          <label class="form-label">Số lượng đề</label>
-          <input type="number" name="soLuongDe" class="form-control" min="1" required>
-      </div>
+        <!-- KỲ THI -->
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">Kỳ thi</label>
+            <select name="kyThi" class="form-select" required>
+                <option value="">-- Chọn kỳ thi --</option>
+                <option value="Giữa kỳ">Giữa kỳ</option>
+                <option value="Cuối kỳ">Cuối kỳ</option>
+            </select>
+        </div>
 
-      <div class="col-md-4">
-          <label class="form-label">Thời hạn nộp</label>
-          <input type="datetime-local" name="thoiHan" class="form-control" required>
-      </div>
+        <!-- SỐ LƯỢNG ĐỀ -->
+        <div class="col-md-3">
+            <label class="form-label fw-semibold">Số lượng đề</label>
+            <input type="number" name="soLuongDe" class="form-control" min="1" required>
+        </div>
 
-      <div class="col-md-8">
-          <label class="form-label">Ghi chú</label>
-          <textarea name="ghiChu" rows="2" class="form-control"></textarea>
-      </div>
+        <!-- THỜI HẠN NỘP -->
+        <div class="col-md-4">
+            <label class="form-label fw-semibold">Thời hạn nộp</label>
+            <input type="datetime-local" name="thoiHan" class="form-control" required>
+        </div>
 
-      <div class="col-md-12 text-end">
-          <button class="btn btn-primary"><i class="fa-solid fa-save me-2"></i> Xác nhận phân công</button>
-      </div>
-  </form>
+        <!-- GHI CHÚ -->
+        <div class="col-md-5">
+            <label class="form-label fw-semibold">Ghi chú</label>
+            <textarea name="ghiChu" class="form-control" rows="2"></textarea>
+        </div>
 
-  <h5>Danh sách phân công hiện có</h5>
-  <table class="table table-bordered table-striped table-sm">
-      <thead class="table-light">
-          <tr>
-              <th>Học kỳ</th>
-              <th>Kỳ thi</th>
-              <th>Số lượng đề</th>
-              <th>Thời hạn</th>
-              <th>Ghi chú</th>
-              <th>Giáo viên phụ trách</th>
-          </tr>
-      </thead>
-      <tbody>
-          <?php foreach ($phanCong as $row): ?>
-              <tr>
-                  <td><?= htmlspecialchars($row['hocKy']) ?></td>
-                  <td><?= htmlspecialchars($row['kyThi']) ?></td>
-                  <td><?= htmlspecialchars($row['soLuongDe']) ?></td>
-                  <td><?= htmlspecialchars($row['thoiHan']) ?></td>
-                  <td><?= htmlspecialchars($row['ghiChu']) ?></td>
-                  <td><?= htmlspecialchars($row['giaoVien']) ?></td>
-              </tr>
-          <?php endforeach; ?>
-      </tbody>
-  </table>
+        <!-- BUTTON -->
+        <div class="col-12 text-end">
+            <button class="btn btn-primary px-4">
+                <i class="fa-solid fa-save me-2"></i> Xác nhận phân công
+            </button>
+        </div>
+    </form>
+
+
+    <!-- DANH SÁCH PHÂN CÔNG -->
+    <h4 class="fw-bold mt-4">Danh sách phân công hiện có</h4>
+
+    <div class="table-responsive mt-3">
+        <table class="table table-bordered table-striped align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Khối</th>
+                    <th>Học kỳ</th>
+                    <th>Kỳ thi</th>
+                    <th>Số lượng đề</th>
+                    <th>Thời hạn</th>
+                    <th>Ghi chú</th>
+                    <th>Giáo viên phụ trách</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <?php if (empty($phanCong)): ?>
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-3">
+                            Chưa có phân công nào.
+                        </td>
+                    </tr>
+                <?php else: ?>
+                    <?php foreach ($phanCong as $row): ?>
+                        <tr>
+                            <td>Khối <?= htmlspecialchars($row['khoi']) ?></td>
+                            <td><?= htmlspecialchars($row['hocKy']) ?></td>
+                            <td><?= htmlspecialchars($row['kyThi']) ?></td>
+                            <td><?= htmlspecialchars($row['soLuongDe']) ?></td>
+                            <td><?= htmlspecialchars($row['thoiHan']) ?></td>
+                            <td><?= htmlspecialchars($row['ghiChu']) ?></td>
+                            <td><?= htmlspecialchars($row['giaoVien']) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+
 </div>
