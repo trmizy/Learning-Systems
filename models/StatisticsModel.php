@@ -2,257 +2,210 @@
 require_once __DIR__ . '/../config/database.php';
 
 class StatisticsModel {
-    private $db;
+    /** @var PDO */
     private $conn;
 
     public function __construct() {
-        $this->db = Database::getInstance();
-        $this->conn = $this->db->getConnection();
+        $this->conn = Database::getInstance()->getConnection();
     }
 
-    /**
-     * Lấy danh sách năm học có dữ liệu
-     * @return array
-     */
-    public function getDanhSachNamHoc() {
+    // Helper chung cho SELECT nhiều dòng
+    private function fetchAll(string $sql, array $params = []): array {
         try {
-            $sql = "SELECT DISTINCT namHoc 
-                    FROM viewThongKeDiemHanhKiem 
-                    ORDER BY namHoc DESC";
             $stmt = $this->conn->prepare($sql);
-            $stmt->execute();
+            $stmt->execute($params);
             return $stmt->fetchAll();
         } catch (PDOException $e) {
-            error_log("Error in getDanhSachNamHoc: " . $e->getMessage());
+            error_log(__METHOD__ . ': ' . $e->getMessage());
             return [];
         }
     }
 
-    /**
-     * Lấy danh sách học kỳ
-     * @return array
-     */
-    public function getDanhSachHocKy() {
+    // Helper cho SELECT 1 dòng
+    private function fetchOne(string $sql, array $params = []) {
+        try {
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetch();
+        } catch (PDOException $e) {
+            error_log(__METHOD__ . ': ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getDanhSachNamHoc(): array {
+        $sql = "SELECT DISTINCT namHoc 
+                FROM viewThongKeDiemHanhKiem 
+                ORDER BY namHoc DESC";
+        return $this->fetchAll($sql);
+    }
+
+    public function getDanhSachHocKy(): array {
         return [
             ['hocKy' => 'HK1', 'tenHocKy' => 'Học kỳ 1'],
             ['hocKy' => 'HK2', 'tenHocKy' => 'Học kỳ 2']
         ];
     }
 
-    /**
-     * Lấy danh sách khối
-     * @return array
-     */
-    public function getDanhSachKhoi() {
-        try {
-            $sql = "SELECT DISTINCT khoi 
-                    FROM viewThongKeDiemHanhKiem 
-                    ORDER BY khoi";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute();
-            return $stmt->fetchAll();
-        } catch (PDOException $e) {
-            error_log("Error in getDanhSachKhoi: " . $e->getMessage());
-            return [];
-        }
+    public function getDanhSachKhoi(): array {
+        $sql = "SELECT DISTINCT khoi 
+                FROM viewThongKeDiemHanhKiem 
+                ORDER BY khoi";
+        return $this->fetchAll($sql);
     }
 
-    /**
-     * Lấy danh sách lớp theo khối
-     * @param string|null $khoi
-     * @return array
-     */
-    public function getDanhSachLop($khoi = null) {
-        try {
-            $sql = "SELECT DISTINCT maLop, tenLop, khoi 
-                    FROM viewThongKeDiemHanhKiem";
-            
-            if ($khoi) {
-                $sql .= " WHERE khoi = :khoi";
-            }
-            
-            $sql .= " ORDER BY maLop";
-            
-            $stmt = $this->conn->prepare($sql);
-            
-            if ($khoi) {
-                $stmt->bindParam(':khoi', $khoi);
-            }
-            
-            $stmt->execute();
-            return $stmt->fetchAll();
-        } catch (PDOException $e) {
-            error_log("Error in getDanhSachLop: " . $e->getMessage());
-            return [];
+    public function getDanhSachLop(?string $khoi = null): array {
+        $sql = "SELECT DISTINCT maLop, tenLop, khoi 
+                FROM viewThongKeDiemHanhKiem";
+        $params = [];
+
+        if ($khoi) {
+            $sql .= " WHERE khoi = :khoi";
+            $params[':khoi'] = $khoi;
         }
+
+        $sql .= " ORDER BY maLop";
+
+        return $this->fetchAll($sql, $params);
     }
 
-    /**
-     * Lấy năm học và học kỳ gần nhất
-     * @return array
-     */
-    public function getNamHocHocKyGanNhat() {
-        try {
-            $sql = "SELECT namHoc, hocKy 
-                    FROM viewThongKeDiemHanhKiem 
-                    ORDER BY namHoc DESC, hocKy DESC 
-                    LIMIT 1";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute();
-            $result = $stmt->fetch();
-            
-            return $result ?: ['namHoc' => date('Y') . '-' . (date('Y') + 1), 'hocKy' => 'HK1'];
-        } catch (PDOException $e) {
-            error_log("Error in getNamHocHocKyGanNhat: " . $e->getMessage());
-            return ['namHoc' => date('Y') . '-' . (date('Y') + 1), 'hocKy' => 'HK1'];
-        }
-    }
+    public function getNamHocHocKyGanNhat(): array {
+        $sql = "SELECT namHoc, hocKy 
+                FROM viewThongKeDiemHanhKiem 
+                ORDER BY namHoc DESC, hocKy DESC 
+                LIMIT 1";
 
-    /**
-     * Thống kê điểm số và hạnh kiểm
-     * @param array $filters ['namHoc', 'hocKy', 'khoi', 'maLop']
-     * @return array
-     */
-    public function thongKeDiemHanhKiem($filters) {
-        try {
-            // Validate bắt buộc
-            if (empty($filters['namHoc']) || empty($filters['hocKy'])) {
-                throw new Exception("Năm học và học kỳ là bắt buộc");
-            }
+        $result = $this->fetchOne($sql);
 
-            // Query cơ bản
-            $sql = "SELECT 
-                        maHS,
-                        hoTen,
-                        maLop,
-                        tenLop,
-                        khoi,
-                        diemTrungBinhChung,
-                        loaiHanhKiem,
-                        xepLoaiHocLuc
-                    FROM viewThongKeDiemHanhKiem
-                    WHERE namHoc = :namHoc AND hocKy = :hocKy";
-
-            // Thêm filter tùy chọn
-            if (!empty($filters['khoi'])) {
-                $sql .= " AND khoi = :khoi";
-            }
-            
-            if (!empty($filters['maLop'])) {
-                $sql .= " AND maLop = :maLop";
-            }
-
-            $sql .= " ORDER BY khoi, maLop, hoTen";
-
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':namHoc', $filters['namHoc']);
-            $stmt->bindParam(':hocKy', $filters['hocKy']);
-            
-            if (!empty($filters['khoi'])) {
-                $stmt->bindParam(':khoi', $filters['khoi']);
-            }
-            
-            if (!empty($filters['maLop'])) {
-                $stmt->bindParam(':maLop', $filters['maLop']);
-            }
-
-            $stmt->execute();
-            $data = $stmt->fetchAll();
-
-            if (empty($data)) {
-                return [
-                    'success' => false,
-                    'message' => 'Không tìm thấy dữ liệu',
-                    'data' => null
-                ];
-            }
-
-            // Tính toán thống kê
-            $thongKe = $this->tinhToanThongKe($data);
-
+        if (!$result) {
             return [
-                'success' => true,
-                'message' => 'Lấy dữ liệu thành công',
-                'data' => [
-                    'danhSach' => $data,
-                    'thongKe' => $thongKe,
-                    'filters' => $filters
-                ]
+                'namHoc' => date('Y') . '-' . (date('Y') + 1),
+                'hocKy'  => 'HK1'
             ];
+        }
 
-        } catch (Exception $e) {
+        return $result;
+    }
+
+    /**
+     * @param array $filters ['namHoc','hocKy','khoi','maLop']
+     */
+    public function thongKeDiemHanhKiem(array $filters): array {
+        if (empty($filters['namHoc']) || empty($filters['hocKy'])) {
+            return [
+                'success' => false,
+                'message' => 'Năm học và học kỳ là bắt buộc',
+                'data'    => null
+            ];
+        }
+
+        $sql = "SELECT 
+                    maHS,
+                    hoTen,
+                    maLop,
+                    tenLop,
+                    khoi,
+                    diemTrungBinhChung,
+                    loaiHanhKiem,
+                    xepLoaiHocLuc
+                FROM viewThongKeDiemHanhKiem
+                WHERE namHoc = :namHoc AND hocKy = :hocKy";
+
+        $params = [
+            ':namHoc' => $filters['namHoc'],
+            ':hocKy'  => $filters['hocKy']
+        ];
+
+        if (!empty($filters['khoi'])) {
+            $sql .= " AND khoi = :khoi";
+            $params[':khoi'] = $filters['khoi'];
+        }
+
+        if (!empty($filters['maLop'])) {
+            $sql .= " AND maLop = :maLop";
+            $params[':maLop'] = $filters['maLop'];
+        }
+
+        $sql .= " ORDER BY khoi, maLop, hoTen";
+
+        try {
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute($params);
+            $data = $stmt->fetchAll();
+        } catch (PDOException $e) {
             error_log("Error in thongKeDiemHanhKiem: " . $e->getMessage());
             return [
                 'success' => false,
-                'message' => $e->getMessage(),
-                'data' => null
+                'message' => 'Lỗi truy vấn dữ liệu',
+                'data'    => null
             ];
         }
+
+        if (empty($data)) {
+            return [
+                'success' => false,
+                'message' => 'Không tìm thấy dữ liệu',
+                'data'    => null
+            ];
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Lấy dữ liệu thành công',
+            'data'    => [
+                'danhSach' => $data,
+                'thongKe'  => $this->tinhToanThongKe($data),
+                'filters'  => $filters
+            ]
+        ];
     }
 
-    /**
-     * Tính toán thống kê từ dữ liệu
-     * @param array $data
-     * @return array
-     */
-    private function tinhToanThongKe($data) {
-        $tongSoHS = count($data);
-        
-        // Thống kê học lực
-        $hocLuc = [
-            'Gioi' => 0,
-            'Kha' => 0,
-            'Trung Binh' => 0,
-            'Yeu' => 0
-        ];
-        
-        // Thống kê hạnh kiểm
-        $hanhKiem = [
-            'Tot' => 0,
-            'Kha' => 0,
-            'Trung Binh' => 0,
-            'Yeu' => 0
-        ];
-        
+    private function tinhToanThongKe(array $data): array {
+        $tongSoHS   = count($data);
         $tongDiemTB = 0;
-        
+
+        $hocLuc = [
+            'Gioi'       => 0,
+            'Kha'        => 0,
+            'Trung Binh' => 0,
+            'Yeu'        => 0
+        ];
+
+        $hanhKiem = [
+            'Tot'        => 0,
+            'Kha'        => 0,
+            'Trung Binh' => 0,
+            'Yeu'        => 0
+        ];
+
         foreach ($data as $hs) {
-            // Đếm học lực
-            if (isset($hs['xepLoaiHocLuc']) && isset($hocLuc[$hs['xepLoaiHocLuc']])) {
+            if (!empty($hs['xepLoaiHocLuc']) && isset($hocLuc[$hs['xepLoaiHocLuc']])) {
                 $hocLuc[$hs['xepLoaiHocLuc']]++;
             }
-            
-            // Đếm hạnh kiểm
-            if (isset($hs['loaiHanhKiem']) && isset($hanhKiem[$hs['loaiHanhKiem']])) {
+
+            if (!empty($hs['loaiHanhKiem']) && isset($hanhKiem[$hs['loaiHanhKiem']])) {
                 $hanhKiem[$hs['loaiHanhKiem']]++;
             }
-            
-            // Tổng điểm TB
+
             $tongDiemTB += $hs['diemTrungBinhChung'] ?? 0;
         }
-        
-        // Tính tỉ lệ %
-        $tiLeHocLuc = [];
-        foreach ($hocLuc as $loai => $soLuong) {
-            $tiLeHocLuc[$loai] = [
-                'soLuong' => $soLuong,
-                'tiLe' => $tongSoHS > 0 ? round(($soLuong / $tongSoHS) * 100, 2) : 0
-            ];
-        }
-        
-        $tiLeHanhKiem = [];
-        foreach ($hanhKiem as $loai => $soLuong) {
-            $tiLeHanhKiem[$loai] = [
-                'soLuong' => $soLuong,
-                'tiLe' => $tongSoHS > 0 ? round(($soLuong / $tongSoHS) * 100, 2) : 0
-            ];
-        }
-        
+
+        $buildTiLe = function (array $src) use ($tongSoHS): array {
+            $res = [];
+            foreach ($src as $loai => $soLuong) {
+                $res[$loai] = [
+                    'soLuong' => $soLuong,
+                    'tiLe'    => $tongSoHS > 0 ? round($soLuong / $tongSoHS * 100, 2) : 0
+                ];
+            }
+            return $res;
+        };
+
         return [
-            'tongSoHocSinh' => $tongSoHS,
+            'tongSoHocSinh'      => $tongSoHS,
             'diemTrungBinhChung' => $tongSoHS > 0 ? round($tongDiemTB / $tongSoHS, 2) : 0,
-            'hocLuc' => $tiLeHocLuc,
-            'hanhKiem' => $tiLeHanhKiem
+            'hocLuc'             => $buildTiLe($hocLuc),
+            'hanhKiem'           => $buildTiLe($hanhKiem)
         ];
     }
 }
