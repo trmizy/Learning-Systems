@@ -11,46 +11,131 @@ require_once __DIR__ . '/../layouts/header.php';
 // Lấy user hiện tại
 $user = current_user() ?: [];
 $fullName = isset($user['full_name']) ? $user['full_name'] : 'Giáo viên';
-$teacherId = isset($user['teacher_id']) ? $user['teacher_id'] : 'GV0000';
+$teacherId = 'GV0000';
 $currentRole = isset($user['role']) ? $user['role'] : 'gvbm';
 
 // Thông tin giáo viên
+// Lấy maGV và môn phụ trách thực tế từ cơ sở dữ liệu (nếu tồn tại)
+require_once __DIR__ . '/../../config/database.php';
+$db = Database::getInstance();
+$conn = $db->getConnection();
+
 $teacherInfo = [
-    'subject' => 'Toán học',
-    'department' => 'Tổ Toán - Tin',
+    'subject' => 'Chưa cập nhật',
+    'department' => 'Tổ bộ môn',
     'homeroom_class' => $currentRole === 'gvcn' ? '12A1' : null,
 ];
 
-// Số liệu demo
+if (!empty($user['username'])) {
+    try {
+        $stmt = $conn->prepare("SELECT gv.maGV, gv.hoTen, gv.monHocPhuTrach FROM taikhoan tk INNER JOIN giaovienbomon gv ON tk.maTaiKhoan = gv.maTaiKhoan WHERE tk.tenDangNhap = :username LIMIT 1");
+        $stmt->execute(['username' => $user['username']]);
+        $gvRow = $stmt->fetch();
+        if ($gvRow) {
+            $teacherId = $gvRow['maGV'] ?? $teacherId;
+            if (!empty($gvRow['hoTen'])) {
+                $fullName = $gvRow['hoTen'];
+            }
+            $teacherInfo['subject'] = $gvRow['monHocPhuTrach'] ?? $teacherInfo['subject'];
+        }
+    } catch (Exception $e) {
+        // Nếu lỗi DB, giữ giá trị mặc định
+    }
+}
+
+// Lấy dữ liệu thực từ DB cho dashboard
+require_once __DIR__ . '/../../models/enterPointsModel.php';
+
+$enterModel = new EnterPointsModel();
+$currentInfo = $enterModel->getNamHocHocKyHienTai();
+$namHoc = $currentInfo['namHoc'];
+$hocKy = $currentInfo['hocKy'];
+
+$teachingClasses = [];
 $stats = [
-    'total_classes' => 4,
-    'total_students' => 120,
-    'pending_scores' => 15,
-    'pending_requests' => $currentRole === 'gvcn' ? 3 : 0,
-    'unread_notifications' => 5,
+    'total_classes' => 0,
+    'total_students' => 0,
+    'pending_scores' => 0,
+    'pending_requests' => $currentRole === 'gvcn' ? 0 : 0,
+    'unread_notifications' => 0,
 ];
 
-// Lớp giảng dạy
-$teachingClasses = [
-    ['class' => '12A1', 'students' => 35, 'avg_score' => 8.2, 'period' => 'Tiết 1-2'],
-    ['class' => '12A2', 'students' => 32, 'avg_score' => 7.8, 'period' => 'Tiết 3-4'],
-    ['class' => '11B1', 'students' => 30, 'avg_score' => 7.5, 'period' => 'Tiết 5-6'],
-    ['class' => '11B2', 'students' => 23, 'avg_score' => 8.0, 'period' => 'Tiết 7-8'],
-];
+if (!empty($teacherId)) {
+    // Danh sách lớp và môn GV được phân công (theo model)
+    $teachingClasses = $enterModel->getDanhSachLopPhanCong($teacherId, $namHoc, $hocKy);
+    $stats['total_classes'] = count($teachingClasses);
 
-// Lịch dạy hôm nay
-$todaySchedule = [
-    ['period' => 1, 'class' => '12A1', 'room' => 'A201', 'time' => '07:00 - 07:45'],
-    ['period' => 2, 'class' => '12A1', 'room' => 'A201', 'time' => '07:50 - 08:35'],
-    ['period' => 5, 'class' => '11B1', 'room' => 'B105', 'time' => '10:05 - 10:50'],
-];
+    // Tổng học sinh duy nhất trong các lớp đó
+    $maLopList = array_values(array_unique(array_filter(array_map(function($c){ return $c['maLop'] ?? null; }, $teachingClasses))));
+    if (!empty($maLopList)) {
+        $placeholders = implode(',', array_map(function($i){ return ':l'.$i; }, array_keys($maLopList)));
+        $params = [];
+        foreach ($maLopList as $i => $ml) { $params[':l'.$i] = $ml; }
+        $sqlTot = "SELECT COUNT(DISTINCT hs.maHS) as cnt FROM hocsinh hs WHERE hs.maLop IN ($placeholders) AND hs.trangThai = 'DANGHOC'";
+        $stmtTot = $conn->prepare($sqlTot);
+        $stmtTot->execute($params);
+        $rt = $stmtTot->fetch();
+        $stats['total_students'] = intval($rt['cnt'] ?? 0);
+    }
 
-// Thông báo
-$notifications = [
-    ['title' => 'Họp tổ bộ môn tuần 12', 'type' => 'Tổ trưởng', 'date' => '2024-03-15', 'unread' => true],
-    ['title' => 'Nộp điểm học kỳ II trước ngày 20/03', 'type' => 'BGH', 'date' => '2024-03-14', 'unread' => true],
-    ['title' => 'Thông báo lịch thi giữa kỳ', 'type' => 'Phòng KHTC', 'date' => '2024-03-10', 'unread' => false],
-];
+    // Số HS chưa nhập điểm: tổng unique maHS thiếu điểm cho (lớp,môn) do GV phụ trách
+    $pendingStudents = [];
+    foreach ($teachingClasses as $cls) {
+        $maLop = $cls['maLop'] ?? null;
+        $maMonHoc = $cls['maMonHoc'] ?? null;
+        if (!$maLop || !$maMonHoc) continue;
+
+        $sql = "SELECT hs.maHS FROM hocsinh hs LEFT JOIN bangdiem bd ON hs.maHS = bd.maHS AND bd.maGV = :maGV AND bd.maMonHoc = :maMonHoc AND bd.namHoc = :namHoc AND bd.hocKy = :hocKy WHERE hs.maLop = :maLop AND hs.trangThai = 'DANGHOC' AND (bd.maBangDiem IS NULL OR (bd.diemThuongXuyen IS NULL AND bd.diemGiuaKy IS NULL AND bd.diemCuoiKy IS NULL))";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
+            'maGV' => $teacherId,
+            'maMonHoc' => $maMonHoc,
+            'namHoc' => $namHoc,
+            'hocKy' => $hocKy,
+            'maLop' => $maLop
+        ]);
+        $rows = $stmt->fetchAll();
+        foreach ($rows as $r) {
+            if (!empty($r['maHS'])) $pendingStudents[$r['maHS']] = true;
+        }
+    }
+    $stats['pending_scores'] = count($pendingStudents);
+
+    // Thông báo: lấy 5 thông báo gần nhất liên quan (hoặc chung)
+    $notifications = [];
+    try {
+        $check = $conn->query("SHOW TABLES LIKE 'thongbao'")->fetch();
+        if ($check) {
+            $sqlNotif = "SELECT t.tieude as title, t.noidung as content, t.loai as type, t.ngayTao as date, t.display_for as target FROM thongbao t
+                         WHERE (t.display_for IS NULL OR t.display_for = '' OR t.display_for LIKE :roleLike OR t.display_for LIKE :maGVLike)
+                         ORDER BY t.ngayTao DESC LIMIT 5";
+            $stmt = $conn->prepare($sqlNotif);
+            $roleLike = '%'. $currentRole .'%';
+            $maGVLike = $teacherId ? '%'. $teacherId .'%' : '%%';
+            $stmt->execute(['roleLike' => $roleLike, 'maGVLike' => $maGVLike]);
+            $rows = $stmt->fetchAll();
+            foreach ($rows as $r) {
+                $notifications[] = [
+                    'title' => $r['title'],
+                    'type' => $r['type'] ?? 'Thông báo',
+                    'date' => $r['date'],
+                    'unread' => true
+                ];
+            }
+            $stats['unread_notifications'] = count($notifications);
+        }
+    } catch (Exception $e) {
+        $notifications = [];
+        $stats['unread_notifications'] = 0;
+    }
+} else {
+    // Nếu không có maGV, giữ giá trị rỗng
+    $teachingClasses = [];
+    $notifications = [];
+}
+
+// Lịch dạy hôm nay (nếu có bảng thời khóa biểu, có thể thêm sau) -> giữ rỗng hiện tại
+$todaySchedule = [];
 
 // Đơn xin nghỉ (chỉ cho GVCN)
 $leaveRequests = [];
