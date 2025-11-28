@@ -1,17 +1,25 @@
 <?php
 /**
  * Controller: Xem điểm (Học sinh)
- * Path: controllers/hs/diem_controller.php
+ * Path: controllers/hs/XemDiemController.php
+ * Xử lý logic nghiệp vụ và gọi View
  */
 
 require_once __DIR__ . '/../../models/DiemModel.php';
-require_once __DIR__ . '/../../middlewares/AuthGuard.php';
 
-// Xác thực bắt buộc
-require_role(['hs']);
+// Start session nếu chưa có
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Kiểm tra đăng nhập và quyền
+if (!isset($_SESSION['auth']) || $_SESSION['auth']['role'] !== 'hs') {
+    header('Location: /public/index.php');
+    exit;
+}
 
 // Lấy thông tin user hiện tại
-$user = current_user();
+$user = $_SESSION['auth'];
 
 // Khởi tạo model
 $diemModel = new DiemModel();
@@ -52,13 +60,5 @@ $danhSachDiem = $diemModel->getDiemHocSinhDayDu($maHS, $namHoc, $hocKy);
 // Tính điểm trung bình chung
 $diemTBC = $diemModel->getDiemTrungBinhChung($maHS, $namHoc, $hocKy);
 
-// Return data cho view
-return [
-    'thongTinHS' => $thongTinHS,
-    'danhSachDiem' => $danhSachDiem,
-    'danhSachNamHoc' => $danhSachNamHoc,
-    'namHoc' => $namHoc,
-    'hocKy' => $hocKy,
-    'diemTBC' => $diemTBC,
-    'validHocKy' => $validHocKy
-];
+// Gọi View để hiển thị
+require_once __DIR__ . '/../../views/hs/xem_diem.php';

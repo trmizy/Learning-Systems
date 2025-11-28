@@ -1,17 +1,25 @@
 <?php
 /**
  * Controller: Xem điểm con (Phụ huynh)
- * Path: controllers/ph/diem_controller.php
+ * Path: controllers/ph/XemDiemController.php
+ * Xử lý logic nghiệp vụ và gọi View
  */
 
 require_once __DIR__ . '/../../models/DiemModel.php';
-require_once __DIR__ . '/../../middlewares/AuthGuard.php';
 
-// Xác thực bắt buộc
-require_role(['ph']);
+// Start session nếu chưa có
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Kiểm tra đăng nhập và quyền
+if (!isset($_SESSION['auth']) || $_SESSION['auth']['role'] !== 'ph') {
+    header('Location: /public/index.php');
+    exit;
+}
 
 // Lấy thông tin user hiện tại
-$user = current_user();
+$user = $_SESSION['auth'];
 
 // Khởi tạo model
 $diemModel = new DiemModel();
@@ -75,15 +83,5 @@ if ($maHS) {
     $diemTBC = $diemModel->getDiemTrungBinhChung($maHS, $namHoc, $hocKy);
 }
 
-// Return data cho view
-return [
-    'danhSachCon' => $danhSachCon,
-    'maHS' => $maHS,
-    'thongTinHS' => $thongTinHS,
-    'danhSachDiem' => $danhSachDiem,
-    'danhSachNamHoc' => $danhSachNamHoc,
-    'namHoc' => $namHoc,
-    'hocKy' => $hocKy,
-    'diemTBC' => $diemTBC,
-    'validHocKy' => $validHocKy
-];
+// Gọi View để hiển thị
+require_once __DIR__ . '/../../views/ph/xem_diem.php';

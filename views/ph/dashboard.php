@@ -4,22 +4,69 @@
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
 require_role(['ph']);
 
+// Lấy thông tin phụ huynh và con từ database
+require_once __DIR__ . '/../../models/DiemModel.php';
+$diemModel = new DiemModel();
+
+// Lấy thông tin user từ session
+$user = $_SESSION['auth'] ?? [];
+$maPH = null;
+if ($user && isset($user['username'])) {
+    $maPH = $diemModel->getMaPhuHuynhByUsername($user['username']);
+}
+
+// Lấy thông tin phụ huynh
+$thongTinPH = null;
+if ($maPH) {
+    $thongTinPH = $diemModel->getThongTinPhuHuynhByMaPH($maPH);
+}
+
+// Gán giá trị cho hiển thị
+$fullName = $thongTinPH ? $thongTinPH['hoTen'] : 'Phụ huynh';
+$parentId = $thongTinPH ? $thongTinPH['maPH'] : 'PH0000';
+
+// Lấy danh sách con
+$danhSachCon = [];
+if ($maPH) {
+    $danhSachConStmt = $diemModel->getDanhSachConCuaPhuHuynh($maPH);
+    while ($con = $danhSachConStmt->fetch()) {
+        $danhSachCon[] = $con;
+    }
+}
+
+// Thông tin con đầu tiên (để hiển thị)
+$childInfo = null;
+if (!empty($danhSachCon)) {
+    $con = $danhSachCon[0];
+    // Lấy thông tin chi tiết học sinh
+    $thongTinHS = $diemModel->getThongTinHocSinh($con['maHS']);
+    if ($thongTinHS) {
+        $childInfo = [
+            'name' => $thongTinHS['hoTen'],
+            'student_id' => $thongTinHS['maHS'],
+            'class' => str_replace('Lop ', '', $thongTinHS['tenLop'] ?? ''),
+            'homeroom_teacher' => $thongTinHS['tenGVCN'] ?? 'Chưa có',
+            'teacher_phone' => $thongTinHS['sdtGVCN'] ?? 'Chưa có',
+            'teacher_email' => $thongTinHS['emailGVCN'] ?? 'Chưa có'
+        ];
+    }
+}
+
+// Nếu không có con thì dùng giá trị mặc định
+if (!$childInfo) {
+    $childInfo = [
+        'name' => 'Chưa có thông tin',
+        'student_id' => '',
+        'class' => '',
+        'homeroom_teacher' => '',
+        'teacher_phone' => '',
+        'teacher_email' => ''
+    ];
+}
+
 // Tiêu đề trang và header chung
 $pageTitle = 'Trang phụ huynh - THPT';
 require_once __DIR__ . '/../layouts/header.php';
-
-// Lấy user hiện tại
-$user = current_user() ?: [];
-$fullName = isset($user['full_name']) ? $user['full_name'] : 'Phụ huynh';
-$parentId = isset($user['parent_id']) ? $user['parent_id'] : 'PH0000';
-
-// Thông tin con (demo - thay bằng query thật)
-$childInfo = [
-    'name' => 'Nguyễn Văn A',
-    'student_id' => 'HS2024001',
-    'class' => '12A1',
-    'homeroom_teacher' => 'Trần Thị B'
-];
 
 // Số liệu demo
 $stats = [
@@ -310,9 +357,9 @@ $violations = [];
                     Giáo viên chủ nhiệm: <strong><?php echo htmlspecialchars($childInfo['homeroom_teacher']); ?></strong>
                 </h5>
                 <p class="mb-0 text-muted">
-                    <i class="fa-solid fa-phone me-2"></i>(028) 3456-7890
+                    <i class="fa-solid fa-phone me-2"></i><?php echo htmlspecialchars($childInfo['teacher_phone']); ?>
                     <span class="mx-2">|</span>
-                    <i class="fa-solid fa-envelope me-2"></i>gvcn.12a1@thpt.edu.vn
+                    <i class="fa-solid fa-envelope me-2"></i><?php echo htmlspecialchars($childInfo['teacher_email']); ?>
                 </p>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
@@ -383,9 +430,9 @@ $violations = [];
                     <div class="feature-icon mx-auto">
                         <i class="fa-solid fa-chart-bar"></i>
                     </div>
-                    <h5 class="card-title fw-bold">Kết quả học tập</h5>
+                    <h5 class="card-title fw-bold">Bảng điểm con</h5>
                     <p class="text-muted small">Điểm số, xếp loại học lực chi tiết</p>
-                    <a href="/public/ph/grades.php" class="btn btn-primary w-100 mt-3">
+                    <a href="/public/index.php?page=ph-xem-diem" class="btn btn-primary w-100 mt-3">
                         <i class="fa-solid fa-eye me-2"></i>Xem chi tiết
                     </a>
                 </div>

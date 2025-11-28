@@ -1,22 +1,14 @@
 <?php
 /**
  * View: Xem điểm con (Phụ huynh)
- * Path: views/ph/grades.php
+ * Path: views/ph/xem_diem.php
+ * Chỉ chứa HTML và hiển thị dữ liệu từ Controller
  */
 
-// Load controller
-$data = require_once __DIR__ . '/../../controllers/ph/diem_controller.php';
-
-// Extract data
-$danhSachCon = $data['danhSachCon'];
-$maHS = $data['maHS'];
-$thongTinHS = $data['thongTinHS'];
-$danhSachDiem = $data['danhSachDiem'];
-$danhSachNamHoc = $data['danhSachNamHoc'];
-$namHoc = $data['namHoc'];
-$hocKy = $data['hocKy'];
-$diemTBC = $data['diemTBC'];
-$validHocKy = $data['validHocKy'];
+// Kiểm tra dữ liệu từ Controller
+if (!isset($danhSachCon)) {
+    die('Lỗi: View được gọi trực tiếp mà không qua Controller');
+}
 
 // Header
 $pageTitle = 'Xem điểm con - THPT';
@@ -197,7 +189,8 @@ require_once __DIR__ . '/../layouts/header.php';
 
     <!-- Bộ lọc -->
     <div class="filter-card">
-        <form method="GET" action="" class="row g-3 align-items-end">
+        <form method="GET" action="/public/index.php" class="row g-3 align-items-end">
+            <input type="hidden" name="page" value="ph-xem-diem">
             <!-- Chọn con -->
             <div class="col-md-3">
                 <label class="form-label fw-bold">
@@ -344,7 +337,7 @@ require_once __DIR__ . '/../layouts/header.php';
                     <td><?php echo $stt++; ?></td>
                     <td class="subject-name">
                         <i class="fa-solid fa-book-open me-2"></i>
-                        <?php echo htmlspecialchars($diem['tenMon']); ?>
+                        <?php echo htmlspecialchars($diem['tenMonHoc']); ?>
                     </td>
                     <td class="score-cell">
                         <?php echo $diem['diemThuongXuyen'] !== null 

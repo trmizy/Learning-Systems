@@ -1,20 +1,14 @@
 <?php
 /**
  * View: Xem điểm (Học sinh)
- * Path: views/hs/grades.php
+ * Path: views/hs/xem_diem.php
+ * Chỉ chứa HTML và hiển thị dữ liệu từ Controller
  */
 
-// Load controller
-$data = require_once __DIR__ . '/../../controllers/hs/diem_controller.php';
-
-// Extract data
-$thongTinHS = $data['thongTinHS'];
-$danhSachDiem = $data['danhSachDiem'];
-$danhSachNamHoc = $data['danhSachNamHoc'];
-$namHoc = $data['namHoc'];
-$hocKy = $data['hocKy'];
-$diemTBC = $data['diemTBC'];
-$validHocKy = $data['validHocKy'];
+// Kiểm tra dữ liệu từ Controller
+if (!isset($thongTinHS) || !isset($danhSachDiem)) {
+    die('Lỗi: View được gọi trực tiếp mà không qua Controller');
+}
 
 // Header
 $pageTitle = 'Bảng điểm - THPT';
@@ -179,7 +173,7 @@ require_once __DIR__ . '/../layouts/header.php';
             <i class="fa-solid fa-id-card me-2"></i><?php echo htmlspecialchars($thongTinHS['maHS']); ?>
             <?php if (!empty($thongTinHS['tenLop'])): ?>
             <span class="mx-3">|</span>
-            <i class="fa-solid fa-users me-2"></i>Lớp: <?php echo htmlspecialchars($thongTinHS['tenLop']); ?>
+            <i class="fa-solid fa-users me-2"></i>Lớp: <?php echo htmlspecialchars(str_replace('Lop ', '', $thongTinHS['tenLop'])); ?>
             <?php endif; ?>
         </p>
         <?php endif; ?>
@@ -195,7 +189,8 @@ require_once __DIR__ . '/../layouts/header.php';
 
     <!-- Bộ lọc -->
     <div class="filter-card">
-        <form method="GET" action="" class="row g-3 align-items-end">
+        <form method="GET" action="/public/index.php" class="row g-3 align-items-end">
+            <input type="hidden" name="page" value="hs-xem-diem">
             <div class="col-md-4">
                 <label class="form-label fw-bold">
                     <i class="fa-solid fa-calendar me-2"></i>Năm học
@@ -296,7 +291,7 @@ require_once __DIR__ . '/../layouts/header.php';
                     <td><?php echo $stt++; ?></td>
                     <td class="subject-name">
                         <i class="fa-solid fa-book-open me-2"></i>
-                        <?php echo htmlspecialchars($diem['tenMon']); ?>
+                        <?php echo htmlspecialchars($diem['tenMonHoc']); ?>
                     </td>
                     <td class="score-cell">
                         <?php echo $diem['diemThuongXuyen'] !== null 
