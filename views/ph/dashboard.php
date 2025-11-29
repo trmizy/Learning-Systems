@@ -11,26 +11,130 @@ require_once __DIR__ . '/../layouts/header.php';
 // Lấy user hiện tại
 $user = current_user() ?: [];
 $fullName = isset($user['full_name']) ? $user['full_name'] : 'Phụ huynh';
-$parentId = isset($user['parent_id']) ? $user['parent_id'] : 'PH0000';
+// Prefer session-provided parent_id; nếu không có thì sẽ thử lookup theo maTaiKhoan
+$parentId = isset($user['parent_id']) ? $user['parent_id'] : null;
+// Kết nối DB và kiểm tra phụ huynh đã liên kết với học sinh hay chưa
+require_once __DIR__ . '/../../config/database.php';
+try {
+    $db   = Database::getInstance();
+    $conn = $db->getConnection();
 
-// Thông tin con (demo - thay bằng query thật)
+    // Nếu session không cung cấp maPH, thử lookup theo maTaiKhoan
+    if (empty($parentId) && !empty($user['maTaiKhoan'])) {
+        $stmt0 = $conn->prepare("SELECT maPH FROM PhuHuynh WHERE maTaiKhoan = ? LIMIT 1");
+        $stmt0->execute([$user['maTaiKhoan']]);
+        $r0 = $stmt0->fetch();
+        if ($r0 && !empty($r0['maPH'])) {
+            $parentId = $r0['maPH'];
+        }
+    }
+
+    // Nếu vẫn chưa có maPH, thử lookup theo email đăng nhập
+    if (empty($parentId) && !empty($user['email'])) {
+        $stmtEmail = $conn->prepare("SELECT maPH FROM PhuHuynh WHERE email = ? LIMIT 1");
+        $stmtEmail->execute([$user['email']]);
+        $rEmail = $stmtEmail->fetch();
+        if ($rEmail && !empty($rEmail['maPH'])) {
+            $parentId = $rEmail['maPH'];
+        }
+    }
+
+    if (!empty($parentId)) {
+        // Kiểm tra xem maPH này có trong bảng phuhuynh_hocsinh không
+        $stmt = $conn->prepare("SELECT 1 FROM phuhuynh_hocsinh WHERE maPH = :maPH LIMIT 1");
+        $stmt->execute(['maPH' => $parentId]);
+        $hasStudent = (bool)$stmt->fetchColumn();
+    }
+} catch (PDOException $e) {
+    error_log('Error checking phuhuynh_hocsinh in parent dashboard: ' . $e->getMessage());
+    // Nếu lỗi DB thì tạm coi như chưa có HS để tránh chặn nhầm
+    $hasStudent = false;
+}
+
+
+// Thông tin con: truy vấn từ DB nếu phụ huynh đã liên kết
 $childInfo = [
-    'name' => 'Nguyễn Văn A',
-    'student_id' => 'HS2024001',
-    'class' => '12A1',
-    'homeroom_teacher' => 'Trần Thị B'
+    'name' => 'Chưa có',
+    'student_id' => '',
+    'class' => '',
+    'homeroom_teacher' => ''
 ];
 
-// Số liệu demo
+if (!empty($parentId)) {
+    try {
+        $stmtChild = $conn->prepare("SELECT hs.hoTen AS name, hs.maHS AS maHS, hs.maLop AS maLop FROM phuhuynh_hocsinh phh JOIN hocsinh hs ON phh.maHS = hs.maHS WHERE phh.maPH = ? LIMIT 1");
+        $stmtChild->execute([$parentId]);
+        $rChild = $stmtChild->fetch();
+        if ($rChild) {
+            $childInfo['name'] = $rChild['name'] ?? $childInfo['name'];
+            $childInfo['student_id'] = $rChild['maHS'] ?? $childInfo['student_id'];
+            $childInfo['class'] = $rChild['maLop'] ?? $childInfo['class'];
+        }
+    } catch (PDOException $e) {
+        error_log('Error fetching child info in dashboard: ' . $e->getMessage());
+    }
+}
+
+// Số liệu lấy từ DB (nếu có maHS)
 $stats = [
-    'attendance_rate' => 96.5,
-    'gpa_semester' => 8.7,
-    'conduct_rating' => 'Tốt',
-    'pending_requests' => 1,
-    'unread_notifications' => 3,
+    'attendance_rate' => null,
+    'gpa_semester' => null,
+    'conduct_rating' => null,
+    'pending_requests' => 0,
+    'unread_notifications' => 0,
     'violations' => 0,
-    'rewards' => 2,
+    'rewards' => 0,
 ];
+
+if (!empty($childInfo['student_id'])) {
+    $maHS = $childInfo['student_id'];
+    try {
+        // Truy vấn viewThongKeDiemHanhKiem để lấy điểm TB chung và hạnh kiểm
+        $stmtStats = $conn->prepare("SELECT diemTrungBinhChung, loaiHanhKiem, soBuoiNghiCoPhep, soBuoiNghiKhongCoPhep, soLanViPham FROM viewThongKeDiemHanhKiem WHERE maHS = ? LIMIT 1");
+        $stmtStats->execute([$maHS]);
+        $rStats = $stmtStats->fetch();
+        if ($rStats) {
+            $stats['gpa_semester'] = $rStats['diemTrungBinhChung'] !== null ? floatval($rStats['diemTrungBinhChung']) : null;
+            $stats['conduct_rating'] = $rStats['loaiHanhKiem'] ?? null;
+            $stats['violations'] = isset($rStats['soLanViPham']) ? intval($rStats['soLanViPham']) : 0;
+
+            // Tính tỷ lệ chuyên cần dựa trên số buổi nghỉ (nếu có). Sử dụng tổng ngày học mặc định 180 nếu không biết.
+            $totalDays = 180; // thay đổi theo quy mô năm học nếu cần
+            $absences = (intval($rStats['soBuoiNghiCoPhep'] ?? 0) + intval($rStats['soBuoiNghiKhongCoPhep'] ?? 0));
+            $attendanceRate = $totalDays > 0 ? max(0, min(100, round((($totalDays - $absences) / $totalDays) * 100, 1))) : null;
+            $stats['attendance_rate'] = $attendanceRate;
+        }
+
+        // Tìm bảng khen thưởng (nếu có) bằng thông tin_schema; dùng tên bảng chứa 'khen' hoặc 'thuong' nếu có.
+        $stmtTable = $conn->prepare("SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() AND (table_name LIKE '%khen%' OR table_name LIKE '%thuong%' OR table_name LIKE '%reward%') LIMIT 1");
+        $stmtTable->execute();
+        $rTable = $stmtTable->fetchColumn();
+        if ($rTable) {
+            // thử đếm theo cột maHS hoặc maThiSinh
+            $count = 0;
+            // nếu cột maHS tồn tại
+            $colExists = $conn->prepare("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = 'maHS'");
+            $colExists->execute([$rTable]);
+            if ($colExists->fetchColumn() > 0) {
+                $stmtCount = $conn->prepare("SELECT COUNT(*) FROM `" . $rTable . "` WHERE maHS = ?");
+                $stmtCount->execute([$maHS]);
+                $count = intval($stmtCount->fetchColumn() ?? 0);
+            } else {
+                // thử theo maThiSinh
+                $colExists2 = $conn->prepare("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = 'maThiSinh'");
+                $colExists2->execute([$rTable]);
+                if ($colExists2->fetchColumn() > 0) {
+                    $stmtCount2 = $conn->prepare("SELECT COUNT(*) FROM `" . $rTable . "` WHERE maThiSinh = ?");
+                    $stmtCount2->execute([$maHS]);
+                    $count = intval($stmtCount2->fetchColumn() ?? 0);
+                }
+            }
+            $stats['rewards'] = $count;
+        }
+    } catch (PDOException $e) {
+        error_log('Error fetching student stats in dashboard: ' . $e->getMessage());
+    }
+}
 
 // Dữ liệu mẫu - Kết quả học tập gần đây
 $recentGrades = [
@@ -277,6 +381,29 @@ $violations = [];
 </style>
 
 <div class="parent-dashboard">
+    <?php
+    // Hiển thị thông báo từ session (nếu có)
+    $messages = $_SESSION['messages'] ?? [];
+    unset($_SESSION['messages']);
+    if (!empty($messages)): ?>
+        <div class="container my-3">
+            <?php foreach ($messages as $msg):
+                $type = $msg['type'] ?? 'info';
+                $cls = match($type) {
+                    'success' => 'alert-success',
+                    'danger' => 'alert-danger',
+                    'warning' => 'alert-warning',
+                    'info' => 'alert-info',
+                    default => 'alert-info'
+                };
+            ?>
+                <div class="alert <?php echo $cls; ?> alert-dismissible fade show" role="alert" style="color:#a94442;">
+                    <?php echo htmlspecialchars($msg['text']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
     <!-- Welcome Banner -->
     <div class="welcome-banner">
         <div class="row align-items-center">
@@ -456,9 +583,12 @@ $violations = [];
                     </div>
                     <h5 class="card-title fw-bold">Đăng ký nguyện vọng</h5>
                     <p class="text-muted small">Đăng ký nguyện vọng vào trường THPT</p>
-                    <a href="/controllers/ph/wishRegistrationController.php" class="btn btn-primary w-100 mt-3">
-                        <i class="fa-solid fa-pen-to-square me-2"></i>Đăng ký ngay
-                    </a>
+
+                        <!-- Luôn hiển thị nút; controller sẽ kiểm tra và redirect với thông báo nếu phụ huynh đã liên kết -->
+                        <a href="/controllers/ph/wishRegistrationController.php" class="btn btn-primary w-100 mt-3">
+                            <i class="fa-solid fa-pen-to-square me-2"></i>Đăng ký ngay
+                        </a>
+
                 </div>
             </div>
         </div>

@@ -57,12 +57,32 @@ require_role(['ph']);
             </div>
         <?php endif; ?>
 
-        <?php foreach ($messages as $message): 
-            $icon = $message['type'] === 'success' ? 'check-circle' : ($message['type'] === 'danger' ? 'exclamation-circle' : 'info-circle'); ?>
-            <div class="alert alert-<?= $message['type'] ?>">
-                <i class="fas fa-<?= $icon ?>"></i> <?= htmlspecialchars($message['text']) ?>
+        <?php if (!empty($messages)): ?>
+            <div class="container my-2">
+            <?php foreach ($messages as $message):
+                $text = $message['text'] ?? '';
+                $type = $message['type'] ?? 'info';
+
+                if (mb_stripos($text, 'trùng trường') !== false || mb_stripos($text, 'trùng') !== false) {
+                    $text = 'Lỗi: Bạn đã chọn cùng một trường ở nhiều nguyện vọng. Vui lòng chọn các trường khác nhau cho mỗi nguyện vọng.';
+                    $type = 'danger';
+                } elseif (mb_stripos($text, 'Thứ tự ưu tiên bị trùng') !== false || mb_stripos($text, 'ưu tiên') !== false) {
+                    $text = 'Lỗi: Thứ tự ưu tiên bị trùng. Vui lòng đặt các thứ tự ưu tiên khác nhau (1, 2, 3).';
+                    $type = 'danger';
+                }
+
+                $icon = $type === 'success' ? 'check-circle' : ($type === 'danger' ? 'exclamation-circle' : 'info-circle'); ?>
+                <div class="alert alert-<?= htmlspecialchars($type) ?> alert-dismissible fade show" role="alert">
+                    <i class="fas fa-<?= $icon ?> me-2"></i>
+                    <?= htmlspecialchars($text) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            <?php endforeach; ?>
             </div>
-        <?php endforeach; ?>
+        <?php endif; ?>
+
+        <!-- Inline form alerts (client-side) -->
+        <div id="formAlerts" class="container my-2"></div>
 
         <!-- Registration Form -->
         <form id="wishRegistrationForm" method="POST" action="../../controllers/ph/wishRegistrationController.php">
@@ -160,7 +180,7 @@ require_role(['ph']);
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('btnAddWish')?.addEventListener('click', () => {
             if (wishCount >= MAX_WISHES) {
-                alert('Bạn chỉ có thể đăng ký tối đa ' + MAX_WISHES + ' nguyện vọng!');
+                showInlineAlert('Bạn chỉ có thể đăng ký tối đa ' + MAX_WISHES + ' nguyện vọng!', 'danger');
                 return;
             }
             addWishItem();
@@ -248,7 +268,7 @@ require_role(['ph']);
             if (value) {
                 if (selectedSchools.includes(value)) {
                     e.preventDefault();
-                    alert('Không thể chọn trùng trường! Vui lòng chọn các trường khác nhau.');
+                    showInlineAlert('Không thể chọn trùng trường! Vui lòng chọn các trường khác nhau.', 'danger');
                     return false;
                 }
                 selectedSchools.push(value);
@@ -261,7 +281,7 @@ require_role(['ph']);
             if (value) {
                 if (selectedPriorities.includes(value)) {
                     e.preventDefault();
-                    alert('Thứ tự ưu tiên không được trùng! Vui lòng chọn thứ tự khác nhau.');
+                    showInlineAlert('Thứ tự ưu tiên không được trùng! Vui lòng chọn thứ tự khác nhau.', 'danger');
                     return false;
                 }
                 selectedPriorities.push(value);
@@ -274,6 +294,26 @@ require_role(['ph']);
             return false;
         }
         return true;
+    }
+    
+    function showInlineAlert(message, type = 'danger') {
+        const container = document.getElementById('formAlerts');
+        if (!container) return;
+        // Clear existing alerts
+        container.innerHTML = '';
+        const wrapper = document.createElement('div');
+        wrapper.className = `alert alert-${type} alert-dismissible fade show`;
+        wrapper.setAttribute('role', 'alert');
+        wrapper.innerHTML = `<i class="fas fa-exclamation-circle me-2"></i>${message}`;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-close';
+        btn.setAttribute('data-bs-dismiss', 'alert');
+        btn.setAttribute('aria-label', 'Close');
+        wrapper.appendChild(btn);
+        container.appendChild(wrapper);
+        // Scroll to alert
+        wrapper.scrollIntoView({behavior: 'smooth', block: 'center'});
     }
     </script>
 </body>

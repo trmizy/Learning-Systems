@@ -16,6 +16,41 @@ if (!isset($_SESSION['messages'])) {
 $wishModel = new WishRegistrationModel();
 $currentUser = current_user();
 
+// --- Pre-check: nếu phụ huynh đã liên kết với học sinh thì khi truy cập trang đăng ký sẽ hiện thông báo và redirect về dashboard
+try {
+    $parentId = $currentUser['parent_id'] ?? null;
+    $db = Database::getInstance();
+    $conn = $db->getConnection();
+
+    // Nếu lookup theo email đăng nhập
+    if (empty($parentId) && !empty($currentUser['email'])) {
+        $stmtEmail = $conn->prepare("SELECT maPH FROM PhuHuynh WHERE email = ? LIMIT 1");
+        $stmtEmail->execute([$currentUser['email']]);
+        $rEmail = $stmtEmail->fetch();
+        if ($rEmail && !empty($rEmail['maPH'])) {
+            $parentId = $rEmail['maPH'];
+        }
+    }
+
+    if (!empty($parentId)) {
+        $stmt = $conn->prepare("SELECT 1 FROM phuhuynh_hocsinh WHERE maPH = :maPH LIMIT 1");
+        $stmt->execute(['maPH' => $parentId]);
+        $hasStudent = (bool)$stmt->fetchColumn();
+        if ($hasStudent) {
+            // Đặt thông báo theo yêu cầu
+            $_SESSION['messages'][] = [
+                'type' => 'info',
+                'text' => 'Con em đang học thpt. Phụ huynh không cần đăng ký nguyện vọng nữa.'
+            ];
+            header('Location: /views/ph/dashboard.php');
+            exit;
+        }
+    }
+} catch (PDOException $e) {
+    error_log('wishRegistrationController pre-check error: ' . $e->getMessage());
+    // Nếu lỗi DB thì tiếp tục như bình thường (không chặn)
+}
+
 // Xử lý POST request - Đăng ký nguyện vọng
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     
