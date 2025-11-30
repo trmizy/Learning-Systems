@@ -9,142 +9,160 @@ $pageTitle = 'Trang giáo viên - THPT';
 require_once __DIR__ . '/../layouts/header.php';
 
 // Lấy user hiện tại
-$user = current_user() ?: [];
-$fullName = isset($user['full_name']) ? $user['full_name'] : 'Giáo viên';
-$teacherId = 'GV0000';
-$currentRole = isset($user['role']) ? $user['role'] : 'gvbm';
+$user        = current_user() ?: [];
+$fullName    = $user['full_name'] ?? 'Giáo viên';
+$currentRole = $user['role']      ?? 'gvbm';
+$username    = $user['username']  ?? null;   // trong debug bạn có key này
 
-// Thông tin giáo viên
-// Lấy maGV và môn phụ trách thực tế từ cơ sở dữ liệu (nếu tồn tại)
+// Kết nối DB
 require_once __DIR__ . '/../../config/database.php';
-$db = Database::getInstance();
+$db   = Database::getInstance();
 $conn = $db->getConnection();
 
+// ===== 1. LẤY THÔNG TIN GIÁO VIÊN TỪ USERNAME =====
+$teacherId = null;
 $teacherInfo = [
-    'subject' => 'Chưa cập nhật',
-    'department' => 'Tổ bộ môn',
+    'subject'        => 'Chưa cập nhật',
+    'department'     => 'Tổ bộ môn',
     'homeroom_class' => $currentRole === 'gvcn' ? '12A1' : null,
 ];
 
-if (!empty($user['username'])) {
+if (!empty($username)) {
     try {
-        $stmt = $conn->prepare("SELECT gv.maGV, gv.hoTen, gv.monHocPhuTrach FROM taikhoan tk INNER JOIN giaovienbomon gv ON tk.maTaiKhoan = gv.maTaiKhoan WHERE tk.tenDangNhap = :username LIMIT 1");
-        $stmt->execute(['username' => $user['username']]);
-        $gvRow = $stmt->fetch();
+        $stmt = $conn->prepare("
+            SELECT gv.maGV, gv.hoTen, gv.monHocPhuTrach
+            FROM taikhoan tk
+            INNER JOIN giaovienbomon gv ON tk.maTaiKhoan = gv.maTaiKhoan
+            WHERE tk.tenDangNhap = :username
+            LIMIT 1
+        ");
+        $stmt->execute(['username' => $username]);
+        $gvRow = $stmt->fetch(PDO::FETCH_ASSOC);
+
         if ($gvRow) {
-            $teacherId = $gvRow['maGV'] ?? $teacherId;
+            $teacherId = $gvRow['maGV'];
             if (!empty($gvRow['hoTen'])) {
                 $fullName = $gvRow['hoTen'];
             }
-            $teacherInfo['subject'] = $gvRow['monHocPhuTrach'] ?? $teacherInfo['subject'];
+            if (!empty($gvRow['monHocPhuTrach'])) {
+                $teacherInfo['subject'] = $gvRow['monHocPhuTrach'];
+            }
         }
     } catch (Exception $e) {
-        // Nếu lỗi DB, giữ giá trị mặc định
+        // tạm bỏ qua, phía dưới sẽ debug nếu cần
     }
 }
 
-// Lấy dữ liệu thực từ DB cho dashboard
-require_once __DIR__ . '/../../models/enterPointsModel.php';
+// ===== DEBUG NHỎ: nếu không lấy được maGV thì in ra cho chắc =====
+if (empty($teacherId)) {
+    echo '<pre>';
+    echo "DEBUG: Không tìm được giáo viên từ username\n";
+    echo "username (session): " . htmlspecialchars((string)$username) . "\n\n";
 
-$enterModel = new EnterPointsModel();
-$currentInfo = $enterModel->getNamHocHocKyHienTai();
-$namHoc = $currentInfo['namHoc'];
-$hocKy = $currentInfo['hocKy'];
+    echo "Thử query tay trong phpMyAdmin (nên ra 1 dòng):\n";
+    echo "SELECT gv.maGV, gv.hoTen, gv.monHocPhuTrach\n";
+    echo "FROM taikhoan tk\n";
+    echo "JOIN giaovienbomon gv ON tk.maTaiKhoan = gv.maTaiKhoan\n";
+    echo "WHERE tk.tenDangNhap = '" . addslashes($username) . "';\n";
+    echo "</pre>";
+}
 
+// ===== 2. FIX CỨNG NĂM HỌC / HỌC KỲ THEO FILE SQL =====
+$namHoc = '2024-2025';
+$hocKy  = 'HK1';
+
+// ===== 3. KHỞI TẠO THỐNG KÊ =====
 $teachingClasses = [];
 $stats = [
-    'total_classes' => 0,
-    'total_students' => 0,
-    'pending_scores' => 0,
-    'pending_requests' => $currentRole === 'gvcn' ? 0 : 0,
+    'total_classes'        => 0,
+    'total_students'       => 0,
+    'pending_scores'       => 0,
+    'pending_requests'     => 0,
     'unread_notifications' => 0,
 ];
 
+// Chỉ tính thống kê khi đã có maGV
 if (!empty($teacherId)) {
-    // Danh sách lớp và môn GV được phân công (theo model)
-    $teachingClasses = $enterModel->getDanhSachLopPhanCong($teacherId, $namHoc, $hocKy);
-    $stats['total_classes'] = count($teachingClasses);
+    // 3.1 Tổng số lớp giảng dạy
+    $sqlClasses = "
+        SELECT COUNT(DISTINCT pc.maLop) AS total_classes
+        FROM phanconggiangday pc
+        WHERE pc.maGV   = :maGV
+          AND pc.namHoc = :namHoc
+          AND pc.hocKy  = :hocKy
+    ";
+    $stmt = $conn->prepare($sqlClasses);
+    $stmt->execute([
+        'maGV'   => $teacherId,
+        'namHoc' => $namHoc,
+        'hocKy'  => $hocKy,
+    ]);
+    $stats['total_classes'] = (int) ($stmt->fetchColumn() ?? 0);
 
-    // Tổng học sinh duy nhất trong các lớp đó
-    $maLopList = array_values(array_unique(array_filter(array_map(function($c){ return $c['maLop'] ?? null; }, $teachingClasses))));
-    if (!empty($maLopList)) {
-        $placeholders = implode(',', array_map(function($i){ return ':l'.$i; }, array_keys($maLopList)));
-        $params = [];
-        foreach ($maLopList as $i => $ml) { $params[':l'.$i] = $ml; }
-        $sqlTot = "SELECT COUNT(DISTINCT hs.maHS) as cnt FROM hocsinh hs WHERE hs.maLop IN ($placeholders) AND hs.trangThai = 'DANGHOC'";
-        $stmtTot = $conn->prepare($sqlTot);
-        $stmtTot->execute($params);
-        $rt = $stmtTot->fetch();
-        $stats['total_students'] = intval($rt['cnt'] ?? 0);
-    }
+    // 3.2 Tổng số học sinh duy nhất trong các lớp dạy
+    $sqlStudents = "
+        SELECT COUNT(DISTINCT hs.maHS) AS total_students
+        FROM hocsinh hs
+        INNER JOIN phanconggiangday pc ON hs.maLop = pc.maLop
+        WHERE pc.maGV   = :maGV
+          AND pc.namHoc = :namHoc
+          AND pc.hocKy  = :hocKy
+          AND hs.trangThai = 'DANGHOC'
+    ";
+    $stmt = $conn->prepare($sqlStudents);
+    $stmt->execute([
+        'maGV'   => $teacherId,
+        'namHoc' => $namHoc,
+        'hocKy'  => $hocKy,
+    ]);
+    $stats['total_students'] = (int) ($stmt->fetchColumn() ?? 0);
 
-    // Số HS chưa nhập điểm: tổng unique maHS thiếu điểm cho (lớp,môn) do GV phụ trách
-    $pendingStudents = [];
-    foreach ($teachingClasses as $cls) {
-        $maLop = $cls['maLop'] ?? null;
-        $maMonHoc = $cls['maMonHoc'] ?? null;
-        if (!$maLop || !$maMonHoc) continue;
+    // 3.3 Số học sinh chưa có / chưa nhập đủ điểm ở môn mình dạy
+    $sqlPending = "
+        SELECT COUNT(DISTINCT hs.maHS) AS pending_students
+        FROM phanconggiangday pc
+        INNER JOIN hocsinh hs ON hs.maLop = pc.maLop
+        LEFT JOIN bangdiem bd
+            ON bd.maHS     = hs.maHS
+           AND bd.maGV     = pc.maGV
+           AND bd.maMonHoc = pc.maMonHoc
+           AND bd.namHoc   = pc.namHoc
+           AND bd.hocKy    = pc.hocKy
+        WHERE pc.maGV   = :maGV
+          AND pc.namHoc = :namHoc
+          AND pc.hocKy  = :hocKy
+          AND hs.trangThai = 'DANGHOC'
+          AND (
+                bd.maBangDiem IS NULL
+                OR bd.diemThuongXuyen IS NULL
+                OR bd.diemGiuaKy IS NULL
+                OR bd.diemCuoiKy IS NULL
+          )
+    ";
+    $stmt = $conn->prepare($sqlPending);
+    $stmt->execute([
+        'maGV'   => $teacherId,
+        'namHoc' => $namHoc,
+        'hocKy'  => $hocKy,
+    ]);
+    $stats['pending_scores'] = (int) ($stmt->fetchColumn() ?? 0);
 
-        $sql = "SELECT hs.maHS FROM hocsinh hs LEFT JOIN bangdiem bd ON hs.maHS = bd.maHS AND bd.maGV = :maGV AND bd.maMonHoc = :maMonHoc AND bd.namHoc = :namHoc AND bd.hocKy = :hocKy WHERE hs.maLop = :maLop AND hs.trangThai = 'DANGHOC' AND (bd.maBangDiem IS NULL OR (bd.diemThuongXuyen IS NULL AND bd.diemGiuaKy IS NULL AND bd.diemCuoiKy IS NULL))";
-        $stmt = $conn->prepare($sql);
-        $stmt->execute([
-            'maGV' => $teacherId,
-            'maMonHoc' => $maMonHoc,
-            'namHoc' => $namHoc,
-            'hocKy' => $hocKy,
-            'maLop' => $maLop
-        ]);
-        $rows = $stmt->fetchAll();
-        foreach ($rows as $r) {
-            if (!empty($r['maHS'])) $pendingStudents[$r['maHS']] = true;
-        }
-    }
-    $stats['pending_scores'] = count($pendingStudents);
-
-    // Thông báo: lấy 5 thông báo gần nhất liên quan (hoặc chung)
+    // 3.4 Thông báo – CSDL mẫu chưa có bảng thongbao → tạm để 0
     $notifications = [];
-    try {
-        $check = $conn->query("SHOW TABLES LIKE 'thongbao'")->fetch();
-        if ($check) {
-            $sqlNotif = "SELECT t.tieude as title, t.noidung as content, t.loai as type, t.ngayTao as date, t.display_for as target FROM thongbao t
-                         WHERE (t.display_for IS NULL OR t.display_for = '' OR t.display_for LIKE :roleLike OR t.display_for LIKE :maGVLike)
-                         ORDER BY t.ngayTao DESC LIMIT 5";
-            $stmt = $conn->prepare($sqlNotif);
-            $roleLike = '%'. $currentRole .'%';
-            $maGVLike = $teacherId ? '%'. $teacherId .'%' : '%%';
-            $stmt->execute(['roleLike' => $roleLike, 'maGVLike' => $maGVLike]);
-            $rows = $stmt->fetchAll();
-            foreach ($rows as $r) {
-                $notifications[] = [
-                    'title' => $r['title'],
-                    'type' => $r['type'] ?? 'Thông báo',
-                    'date' => $r['date'],
-                    'unread' => true
-                ];
-            }
-            $stats['unread_notifications'] = count($notifications);
-        }
-    } catch (Exception $e) {
-        $notifications = [];
-        $stats['unread_notifications'] = 0;
-    }
 } else {
-    // Nếu không có maGV, giữ giá trị rỗng
-    $teachingClasses = [];
     $notifications = [];
 }
 
-// Lịch dạy hôm nay (nếu có bảng thời khóa biểu, có thể thêm sau) -> giữ rỗng hiện tại
+// Lịch dạy & đơn xin nghỉ mock
 $todaySchedule = [];
-
-// Đơn xin nghỉ (chỉ cho GVCN)
 $leaveRequests = [];
 if ($currentRole === 'gvcn') {
     $leaveRequests = [
-        ['student' => 'Nguyễn Văn A', 'reason' => 'Ốm đau', 'date' => '2024-03-16', 'status' => 'pending'],
-        ['student' => 'Trần Thị B', 'reason' => 'Việc gia đình', 'date' => '2024-03-17', 'status' => 'pending'],
-        ['student' => 'Lê Văn C', 'reason' => 'Khám bệnh', 'date' => '2024-03-15', 'status' => 'pending'],
+        ['student' => 'Nguyễn Văn A', 'reason' => 'Ốm đau',       'date' => '2024-03-16', 'status' => 'pending'],
+        ['student' => 'Trần Thị B',   'reason' => 'Việc gia đình', 'date' => '2024-03-17', 'status' => 'pending'],
+        ['student' => 'Lê Văn C',     'reason' => 'Khám bệnh',     'date' => '2024-03-15', 'status' => 'pending'],
     ];
+    $stats['pending_requests'] = count($leaveRequests);
 }
 ?>
 
