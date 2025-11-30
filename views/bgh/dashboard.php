@@ -7,6 +7,16 @@ require_role(['bgh']);
 // Tiêu đề trang và header chung
 $pageTitle = 'Ban Giám Hiệu - THPT';
 require_once __DIR__ . '/../layouts/header.php';
+// Bảo vệ & kiểm tra quyền
+require_once __DIR__ . '/../../middlewares/AuthGuard.php';
+require_role(['bgh']);
+
+// Kết nối DB
+require_once __DIR__ . '/../../config/database.php';
+
+// Tiêu đề trang và header chung
+$pageTitle = 'Ban Giám Hiệu - THPT';
+require_once __DIR__ . '/../layouts/header.php';
 
 // Lấy user hiện tại
 $user = current_user() ?: [];
@@ -15,15 +25,16 @@ $position = isset($user['position']) ? $user['position'] : 'Hiệu trưởng';
 
 // Số liệu thống kê (mặc định, sẽ cố gắng lấy từ DB khi có kết nối)
 $stats = [
-    'total_students' => 2487,
-    'total_teachers' => 152,
-    'total_classes' => 45,
-    'pending_approvals' => 18,
-    'score_edit_requests' => 5,
-    'conduct_approvals' => 8,
-    'exam_approvals' => 3,
-    'teaching_assignments' => 2,
+    'total_students'      => 0,
+    'total_teachers'      => 0,
+    'total_classes'       => 0,
+    'pending_approvals'   => 0,
+    'score_edit_requests' => 0,
+    'conduct_approvals'   => 0,
+    'exam_approvals'      => 0,
+    'teaching_assignments'=> 0,
 ];
+
 
 // Cố gắng lấy số liệu thực từ database, nếu có lỗi sẽ giữ lại mặc định
 try {
