@@ -14,15 +14,75 @@ $fullName = isset($user['full_name']) ? $user['full_name'] : 'Nhân viên Sở';
 $position = isset($user['position']) ? $user['position'] : 'Chuyên viên';
 $department = isset($user['department']) ? $user['department'] : 'Phòng Giáo dục THPT';
 
-// Số liệu thống kê toàn hệ thống
+// Lấy user hiện tại
+$user = current_user() ?: [];
+$fullName   = isset($user['full_name']) ? $user['full_name'] : 'Nhân viên Sở';
+$position   = isset($user['position']) ? $user['position'] : 'Chuyên viên';
+$department = isset($user['department']) ? $user['department'] : 'Phòng Giáo dục THPT';
+
+// Kết nối DB
+require_once __DIR__ . '/../../config/database.php';
+
+// Số liệu thống kê toàn hệ thống (default = 0, sẽ override bằng dữ liệu thật)
 $systemStats = [
-    'total_schools' => 28,
-    'total_students' => 45632,
-    'total_teachers' => 2847,
-    'admission_target' => 12000,
-    'admission_registered' => 15840,
-    'admission_rate' => 95.2,
+    'total_schools'         => 0,
+    'total_students'        => 0,
+    'total_teachers'        => 0,
+    'admission_target'      => 0,
+    'admission_registered'  => 0,
+    'admission_rate'        => 0, // %
 ];
+
+try {
+    if (class_exists('Database')) {
+        $conn = Database::getInstance()->getConnection();
+
+        // 1. Tổng số trường THPT
+        $stmt = $conn->query("SELECT COUNT(*) FROM truong");
+        if ($stmt) {
+            $systemStats['total_schools'] = (int) $stmt->fetchColumn();
+        }
+
+        // 2. Tổng số học sinh
+        $stmt = $conn->query("SELECT COUNT(*) FROM hocsinh");
+        if ($stmt) {
+            $systemStats['total_students'] = (int) $stmt->fetchColumn();
+        }
+
+        // 3. Tổng số giáo viên (theo bảng giaovienbomon)
+        $stmt = $conn->query("SELECT COUNT(*) FROM giaovienbomon");
+        if ($stmt) {
+            $systemStats['total_teachers'] = (int) $stmt->fetchColumn();
+        }
+
+        // 4. Chỉ tiêu tuyển sinh (tổng tongChiTieu trong bảng chitieutuyensinh)
+        $stmt = $conn->query("SELECT COALESCE(SUM(tongChiTieu), 0) FROM chitieutuyensinh");
+        if ($stmt) {
+            $systemStats['admission_target'] = (int) $stmt->fetchColumn();
+        }
+
+        // 5. Số lượng hồ sơ đăng ký (số thí sinh trong bảng thisinh)
+        $stmt = $conn->query("SELECT COUNT(*) FROM thisinh");
+        if ($stmt) {
+            $systemStats['admission_registered'] = (int) $stmt->fetchColumn();
+        }
+
+        // 6. Tỷ lệ đỗ = (số trúng tuyển / chỉ tiêu) * 100
+        // Hiện chưa có cột trúng tuyển nên tạm dùng số thisinh / chỉ tiêu (hoặc để 0 nếu muốn)
+        if ($systemStats['admission_target'] > 0) {
+            $systemStats['admission_rate'] = round(
+                ($systemStats['admission_registered'] / $systemStats['admission_target']) * 100,
+                1
+            );
+        } else {
+            $systemStats['admission_rate'] = 0;
+        }
+    }
+} catch (Exception $e) {
+    // Nếu lỗi DB, giữ nguyên các giá trị default
+    // error_log("SoGD Dashboard error: " . $e->getMessage());
+}
+
 
 // Thống kê theo trường
 $schoolStats = [
