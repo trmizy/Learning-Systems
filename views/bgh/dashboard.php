@@ -26,12 +26,39 @@ $stats = [
 ];
 
 // Yêu cầu chờ duyệt
+// Các yêu cầu chờ duyệt tĩnh (mẫu)
 $pendingApprovals = [
     ['type' => 'score_edit', 'title' => 'Đơn xin sửa điểm - Lớp 12A1', 'submitter' => 'GV. Nguyễn Văn A', 'date' => '2024-03-15', 'priority' => 'high'],
     ['type' => 'conduct', 'title' => 'Xếp loại hạnh kiểm học kỳ II - Lớp 11B2', 'submitter' => 'GV. Trần Thị B', 'date' => '2024-03-15', 'priority' => 'high'],
     ['type' => 'exam', 'title' => 'Đề thi giữa kỳ môn Toán khối 10', 'submitter' => 'Tổ Toán', 'date' => '2024-03-14', 'priority' => 'medium'],
     ['type' => 'assignment', 'title' => 'Phân công giảng dạy học kỳ II', 'submitter' => 'Phòng KHTC', 'date' => '2024-03-13', 'priority' => 'medium'],
 ];
+
+// Thêm các yêu cầu từ "Chọn Tổ Hợp Môn" do admin tạo (trạng thái PENDING)
+require_once __DIR__ . '/../../models/bgh/chonToHopMonModel.php';
+try {
+    $chonModel = new chonToHopMonModel();
+    $pendingToHop = $chonModel->getDanhSachToHopMon('PENDING');
+    foreach ($pendingToHop as $t) {
+        $pendingApprovals[] = [
+            'type' => 'tohopmon',
+            'title' => 'Yêu cầu duyệt tổ hợp: ' . ($t['tenToHop'] ?? $t['maToHop']),
+            'submitter' => $t['nguoiTao'] ?? ($t['nguoiDuyet'] ?? 'Phòng Giáo Vụ'),
+            'date' => $t['ngayTao'] ?? date('Y-m-d'),
+            'priority' => 'high',
+            'maToHop' => $t['maToHop'] ?? null
+        ];
+    }
+} catch (Exception $e) {
+    // Nếu có lỗi kết nối DB, giữ nguyên các mục tĩnh
+}
+
+// Sắp xếp danh sách yêu cầu chờ duyệt theo ngày giảm dần (mới nhất lên đầu)
+usort($pendingApprovals, function($a, $b) {
+    $dateA = strtotime($a['date'] ?? '1970-01-01');
+    $dateB = strtotime($b['date'] ?? '1970-01-01');
+    return $dateB - $dateA; // Giảm dần: ngày mới nhất trước
+});
 
 // Thống kê theo khối
 $gradeStats = [
@@ -560,22 +587,29 @@ $notifications = [
                                         'score_edit' => 'Sửa điểm',
                                         'conduct' => 'Hạnh kiểm',
                                         'exam' => 'Đề thi',
-                                        'assignment' => 'Phân công'
+                                        'assignment' => 'Phân công',
+                                        'tohopmon' => 'Tổ hợp môn'
                                     ];
                                     echo $typeNames[$approval['type']];
                                 ?>
                             </span>
                         </div>
                         <div class="d-flex gap-2 mt-2">
-                            <button class="btn btn-sm btn-success flex-1">
-                                <i class="fa-solid fa-check me-1"></i>Duyệt
-                            </button>
-                            <button class="btn btn-sm btn-danger flex-1">
-                                <i class="fa-solid fa-times me-1"></i>Từ chối
-                            </button>
-                            <button class="btn btn-sm btn-outline-secondary">
-                                <i class="fa-solid fa-eye"></i>
-                            </button>
+                            <?php if (isset($approval['type']) && $approval['type'] === 'tohopmon' && !empty($approval['maToHop'])): ?>
+                                <a href="/modules/chonToHopMon/quanLyChonDetail.php?maToHop=<?php echo urlencode($approval['maToHop']); ?>" class="btn btn-sm btn-primary flex-1">
+                                    <i class="fa-solid fa-eye me-1"></i>Chi Tiết
+                                </a>
+                            <?php else: ?>
+                                <button class="btn btn-sm btn-success flex-1">
+                                    <i class="fa-solid fa-check me-1"></i>Duyệt
+                                </button>
+                                <button class="btn btn-sm btn-danger flex-1">
+                                    <i class="fa-solid fa-times me-1"></i>Từ chối
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <?php endforeach; ?>
@@ -746,6 +780,18 @@ $notifications = [
                     </h6>
                     <a href="/modules/bgh/documents/index.php" class="btn btn-outline-danger w-100">
                         <i class="fa-solid fa-folder-open me-2"></i>Xem văn bản
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold mb-3">
+                        <i class="fa-solid fa-layer-group text-primary me-2"></i>Chọn Tổ Hợp Môn
+                    </h6>
+                    <a href="/modules/chonToHopMon/quanLyChonList.php" class="btn btn-outline-primary w-100">
+                        <i class="fa-solid fa-list me-2"></i>Quản lý Tổ Hợp Môn
                     </a>
                 </div>
             </div>

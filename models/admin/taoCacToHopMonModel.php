@@ -38,10 +38,6 @@ class TaoCacToHopMonModel {
         if (!isset($data['soLuongLop']) || $data['soLuongLop'] <= 0) {
             $errors[] = "Số lượng lớp phải lớn hơn 0";
         }
-        if (empty($data['trangThai'])) {
-            $errors[] = "Trạng thái không được để trống";
-        }
-
         // Kiểm tra các môn học có tồn tại trong hệ thống không
         if (!empty($data['danhSachMon'])) {
             $monHocIds = explode(',', $data['danhSachMon']);
@@ -71,15 +67,16 @@ class TaoCacToHopMonModel {
             $this->db->beginTransaction();
 
             // Insert vào bảng tohopmon
+            // Khi admin tạo, trạng thái mặc định là 'PENDING' (chờ duyệt) - BGH sẽ duyệt sau
             $sql = "INSERT INTO tohopmon (maToHop, tenToHop, danhSachMon, soLuongLop, trangThai) 
                     VALUES (?, ?, ?, ?, ?)";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
                 $data['maToHop'],
-                $data['tenToHop'], 
+                $data['tenToHop'],
                 $data['danhSachMon'],
                 $data['soLuongLop'],
-                $data['trangThai']
+                'PENDING'
             ]);
 
             // Insert các bản ghi liên kết vào tohopmon_monhoc
