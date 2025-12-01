@@ -42,17 +42,17 @@ class chonToHopMonModel {
      */
     public function getDanhSachHocSinhDangKy($maToHop) {
         $sql = "SELECT 
-                    phd.id,
+                    phd.maDKToHop,
                     phd.maHS,
                     hs.hoTen AS tenHocSinh,
                     hs.gioiTinh,
                     lo.maLop AS lop,
-                    phd.ngayTao
+                    phd.ngayDK
                 FROM phieudangkytohopmon phd
                 JOIN hocsinh hs ON hs.maHS = phd.maHS
                 LEFT JOIN lophoc lo ON lo.maLop = hs.maLop
                 WHERE phd.maToHop = ?
-                ORDER BY phd.ngayTao DESC";
+                ORDER BY phd.ngayDK DESC";
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$maToHop]);

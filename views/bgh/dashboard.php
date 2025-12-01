@@ -2,6 +2,7 @@
 // filepath: d:\Hk1_2025\PTUD_Nhom4\Đồ Án Nhóm\Learning_System\views\bgh\dashboard.php
 // Bảo vệ & kiểm tra quyền
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
+require_once __DIR__ . '/../../config/database.php';
 require_role(['bgh']);
 
 // Tiêu đề trang và header chung
@@ -13,27 +14,57 @@ $user = current_user() ?: [];
 $fullName = isset($user['full_name']) ? $user['full_name'] : 'Ban Giám Hiệu';
 $position = isset($user['position']) ? $user['position'] : 'Hiệu trưởng';
 
-// Số liệu thống kê
+// Số liệu thống kê từ database
+$db = Database::getInstance()->getConnection();
 $stats = [
-    'total_students' => 2487,
-    'total_teachers' => 152,
-    'total_classes' => 45,
-    'pending_approvals' => 18,
-    'score_edit_requests' => 5,
-    'conduct_approvals' => 8,
-    'exam_approvals' => 3,
-    'teaching_assignments' => 2,
+    'total_students' => 0,
+    'total_teachers' => 0,
+    'total_classes' => 0,
+    'pending_approvals' => 0,
+    'score_edit_requests' => 0,
+    'conduct_approvals' => 0,
+    'exam_approvals' => 0,
+    'teaching_assignments' => 0,
 ];
+
+try {
+    // Tổng học sinh
+    $stmtStudents = $db->prepare("SELECT COUNT(*) as total FROM hocsinh");
+    $stmtStudents->execute();
+    $stats['total_students'] = $stmtStudents->fetchColumn();
+
+    // Tổng giáo viên
+    $stmtTeachers = $db->prepare("SELECT COUNT(*) as total FROM giaovienbomon");
+    $stmtTeachers->execute();
+    $stats['total_teachers'] = $stmtTeachers->fetchColumn();
+
+    // Tổng lớp học
+    $stmtClasses = $db->prepare("SELECT COUNT(*) as total FROM lophoc");
+    $stmtClasses->execute();
+    $stats['total_classes'] = $stmtClasses->fetchColumn();
+
+    // Tổng yêu cầu chờ duyệt (các bảng cần duyệt)
+    // Giả định có các bảng: phieussuadiem, hanhkiem, dethi, phanconggiangday với cột trangThai
+    $stmtApprovals = $db->prepare("
+        SELECT COUNT(*) as total FROM tohopmon WHERE trangThai = 'PENDING'
+    ");
+    $stmtApprovals->execute();
+    $stats['pending_approvals'] = $stmtApprovals->fetchColumn();
+
+    // Nếu có bảng phieussuadiem, conduct, exam, assignment - cập nhật tương ứng
+    // Tạm thời gán 0 hoặc truy vấn từ các bảng nếu chúng tồn tại
+    $stats['score_edit_requests'] = 0;
+    $stats['conduct_approvals'] = 0;
+    $stats['exam_approvals'] = 0;
+    $stats['teaching_assignments'] = 0;
+
+} catch (Exception $e) {
+    // Nếu có lỗi, giữ nguyên giá trị mặc định
+}
 
 // Yêu cầu chờ duyệt
-// Các yêu cầu chờ duyệt tĩnh (mẫu)
-$pendingApprovals = [
-    ['type' => 'score_edit', 'title' => 'Đơn xin sửa điểm - Lớp 12A1', 'submitter' => 'GV. Nguyễn Văn A', 'date' => '2024-03-15', 'priority' => 'high'],
-    ['type' => 'conduct', 'title' => 'Xếp loại hạnh kiểm học kỳ II - Lớp 11B2', 'submitter' => 'GV. Trần Thị B', 'date' => '2024-03-15', 'priority' => 'high'],
-    ['type' => 'exam', 'title' => 'Đề thi giữa kỳ môn Toán khối 10', 'submitter' => 'Tổ Toán', 'date' => '2024-03-14', 'priority' => 'medium'],
-    ['type' => 'assignment', 'title' => 'Phân công giảng dạy học kỳ II', 'submitter' => 'Phòng KHTC', 'date' => '2024-03-13', 'priority' => 'medium'],
-];
-
+// Khởi tạo mảng chứa các mục chờ duyệt
+$pendingApprovals = [];
 // Thêm các yêu cầu từ "Chọn Tổ Hợp Môn" do admin tạo (trạng thái PENDING)
 require_once __DIR__ . '/../../models/bgh/chonToHopMonModel.php';
 try {
@@ -613,7 +644,7 @@ $notifications = [
                         </div>
                     </div>
                     <?php endforeach; ?>
-                    <a href="/modules/bgh/approvals/all.php" class="btn btn-outline-primary w-100 mt-3">
+                    <a href="/modules/bgh/approvals/allPending.php" class="btn btn-outline-primary w-100 mt-3">
                         <i class="fa-solid fa-list me-2"></i>Xem tất cả
                     </a>
                 </div>
