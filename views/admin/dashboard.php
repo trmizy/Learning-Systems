@@ -286,14 +286,14 @@ $stats = [
                     <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
                         <i class="fa-solid fa-users"></i>
                     </div>
-                    <h5 class="card-title fw-bold">Tài khoản</h5>
-                    <p class="text-muted small">Tạo tài khoản học sinh và phụ huynh</p>
+                    <h5 class="card-title fw-bold">Quản Lý Tài Khoản</h5>
+                    <p class="text-muted small">Tạo, chỉnh sửa, phân quyền tài khoản</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/accounts/create.php" class="btn btn-success btn-sm">
-                            <i class="fa-solid fa-user-plus me-1"></i>Tạo tài khoản
+                        <a href="/modules/admin/quanLyTaiKhoan.php?action=list" class="btn btn-success btn-sm">
+                            <i class="fa-solid fa-list me-1"></i>Danh sách tài khoản
                         </a>
-                        <a href="/modules/accounts/import.php" class="btn btn-outline-success btn-sm">
-                            <i class="fa-solid fa-file-import me-1"></i>Import Excel
+                        <a href="/modules/admin/quanLyTaiKhoan.php?action=create" class="btn btn-outline-success btn-sm">
+                            <i class="fa-solid fa-user-plus me-1"></i>Tạo mới
                         </a>
                     </div>
                 </div>

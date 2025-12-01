@@ -23,27 +23,29 @@ class Auth {
     public function login($username, $password) {
         try {
             // 1) Lấy tài khoản (KHÔNG group join vai trò để tránh nhân bản dòng)
-            $stmt = $this->db->prepare("
-                SELECT t.*
-                FROM TaiKhoan t
-                WHERE (t.tenDangNhap = ? OR t.email = ?) AND t.trangThai = 'ACTIVE'
-                LIMIT 1
-            ");
+                // Use lowercase table names to match schema and fetch the active account
+                $stmt = $this->db->prepare(
+                    "SELECT t.*
+                    FROM taikhoan t
+                    WHERE (t.tenDangNhap = ? OR t.email = ?) AND UPPER(TRIM(COALESCE(t.trangThai,''))) = 'ACTIVE'
+                    LIMIT 1"
+                );
             $stmt->execute([$username, $username]);
             $user = $stmt->fetch();
 
-            // Kiểm tra tồn tại + mật khẩu (tùy hệ thống: plain/MD5/BCrypt...)
-            if (!$user || $password !== $user['matKhau']) {
-                return false;
-            }
+                // Kiểm tra tồn tại + mật khẩu (hệ thống dùng password_hash)
+                if (!$user || !password_verify($password, $user['matKhau'])) {
+                    return false;
+                }
 
             // 2) Lấy TẤT CẢ vai trò của tài khoản -> mảng thô từ DB (vd: ['admin','gvbm', ...])
-            $roleStmt = $this->db->prepare("
-                SELECT maVaiTro
-                FROM TaiKhoan_VaiTro
-                WHERE maTaiKhoan = ?
-                ORDER BY maVaiTro
-            ");
+                // Read roles from the taikhoan_vaitro table
+                $roleStmt = $this->db->prepare(
+                    "SELECT maVaiTro
+                    FROM taikhoan_vaitro
+                    WHERE maTaiKhoan = ?
+                    ORDER BY maVaiTro"
+                );
             $roleStmt->execute([$user['maTaiKhoan']]);
             $dbRoles = $roleStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
 
