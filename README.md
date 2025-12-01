@@ -323,4 +323,4 @@ GROUP BY
 
 ## 8. Liên Hệ & Hỗ Trợ
 
-Nếu gặp lỗi hoặc cần tính năng mới, vui lòng cập nhật README.md hoặc liên hệ quản trị viên hệ thống.
+Nếu gặp lỗi hoặc cần tính năng mới, vui lòng cập nhật README.md hoặc liên hệ thống.
