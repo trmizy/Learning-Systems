@@ -455,7 +455,7 @@ $notifications = [
                     <h5 class="card-title fw-bold">Báo cáo</h5>
                     <p class="text-muted small">Thống kê, xuất báo cáo</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/sogd/reports/dashboard.php" class="btn btn-danger btn-sm">
+                        <a href="index.php?action=xem_bao_cao" class="btn btn-danger btn-sm">
                             <i class="fa-solid fa-chart-line me-1"></i>Dashboard
                         </a>
                         <a href="/modules/sogd/reports/export.php" class="btn btn-outline-danger btn-sm">

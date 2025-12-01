@@ -1,6 +1,6 @@
 <?php
 // File: views/gvbm/xem_lop_phu_trach.php
-// (ĐÃ CẬP NHẬT - THÊM NÚT XEM TUẦN HIỆN TẠI)
+// (PHIÊN BẢN HOÀN CHỈNH: TKB ĐẦY ĐỦ CHỨC NĂNG + BẢNG ĐIỂM RÚT GỌN + SORT)
 ?>
 
 <div class="container mt-4">
@@ -11,6 +11,7 @@
             <?php echo $error_message; ?>
         </div>
     <?php else: ?>
+        
         <h2>Thông tin Lớp: <?php echo htmlspecialchars($tenLop); ?></h2>
         <p>Giáo viên chủ nhiệm: <?php echo htmlspecialchars($tenGiaoVien); ?></p>
         
@@ -69,51 +70,46 @@
             </div>
 
             <div class="tab-pane fade <?php echo ($activeTab === 'diem') ? 'show active' : ''; ?>" id="diem" role="tabpanel" tabindex="0">
+                
                 <div class="d-flex justify-content-between align-items-center mt-3">
-                    <h4 class="mb-0">Bảng điểm Lớp (Học kỳ 1, 2024-2025)</h4>
+                    <h4 class="mb-0">Bảng điểm Tổng kết Lớp</h4>
                     <div>
                         <button id="btn-sort-asc" class="btn btn-sm btn-outline-primary me-2">
-                            <i class="fa-solid fa-arrow-up-a-z"></i> Sắp xếp ĐTB Tăng dần
+                            <i class="fa-solid fa-arrow-up-a-z"></i> ĐTB Tăng dần
                         </button>
                         <button id="btn-sort-desc" class="btn btn-sm btn-outline-primary">
-                            <i class="fa-solid fa-arrow-down-z-a"></i> Sắp xếp ĐTB Giảm dần
+                            <i class="fa-solid fa-arrow-down-z-a"></i> ĐTB Giảm dần
                         </button>
                     </div>
                 </div>
-                <?php if (empty($danhSachMonHoc)): ?>
-                    <div class="alert alert-info mt-3" role="alert">Chưa có dữ liệu điểm cho lớp này.</div>
+
+                <?php if (empty($danhSachHocSinh)): ?>
+                    <div class="alert alert-info mt-3" role="alert">Chưa có dữ liệu học sinh.</div>
                 <?php else: ?>
                     <div class="table-responsive mt-3">
                         <table class="table table-striped table-hover table-bordered text-center">
                             <thead class="table-primary">
                                 <tr>
-                                    <th style="min-width: 150px; text-align: left;">Họ và Tên</th>
-                                    <?php foreach ($danhSachMonHoc as $monHoc): ?>
-                                        <th><?php echo htmlspecialchars($monHoc['tenMon']); ?></th>
-                                    <?php endforeach; ?>
-                                    <th>ĐTB</th>
+                                    <th style="width: 150px;">Mã HS</th>
+                                    <th style="text-align: left;">Họ và Tên</th>
+                                    <th style="width: 150px;">Điểm Trung Bình</th>
                                 </tr>
                             </thead>
                             <tbody id="grade-table-body">
-                                <?php foreach ($danhSachHocSinh as $hocSinh): ?>
+                                <?php 
+                                $stt = 1;
+                                foreach ($danhSachHocSinh as $hocSinh): 
+                                    // Lấy điểm TB từ dữ liệu (đã được JOIN từ bảng HocLuc hoặc tính toán ở Model)
+                                    // Lưu ý: Cần đảm bảo Model đã lấy cột 'diemTrungBinh' hoặc tính toán nó
+                                    $dtb = isset($hocSinh['diemTrungBinh']) ? $hocSinh['diemTrungBinh'] : null;
+                                ?>
                                     <tr>
+                                        
+                                        <td><?php echo htmlspecialchars($hocSinh['hocSinhId']); ?></td>
                                         <td style="text-align: left;"><?php echo htmlspecialchars($hocSinh['hoTen']); ?></td>
-                                        <?php 
-                                        $tongDiem = 0; $soMonCoDiem = 0;
-                                        foreach ($danhSachMonHoc as $monHoc):
-                                            $diem = $bangDiemLookup[$hocSinh['hocSinhId']][$monHoc['maMonHoc']] ?? null;
-                                            if ($diem && isset($diem['diemCuoiKy'])) {
-                                                $diemCuoiKy = (float) $diem['diemCuoiKy'];
-                                                $tongDiem += $diemCuoiKy;
-                                                $soMonCoDiem++;
-                                                echo '<td>' . htmlspecialchars($diemCuoiKy) . '</td>';
-                                            } else {
-                                                echo '<td class="text-muted">-</td>';
-                                            }
-                                        endforeach; 
-                                        ?>
-                                        <td class="fw-bold">
-                                            <?php echo ($soMonCoDiem > 0) ? number_format($tongDiem / $soMonCoDiem, 1) : '-'; ?>
+                                        
+                                        <td class="fw-bold <?php echo ($dtb !== null && $dtb < 5.0) ? 'text-danger' : 'text-success'; ?>">
+                                            <?php echo ($dtb !== null && $dtb !== '') ? htmlspecialchars($dtb) : '-'; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -151,16 +147,17 @@
                     
                     <div class="col-auto">
                         <button type="submit" class="btn btn-primary">
-                            <i class="fa-solid fa-search me-1"></i> Xem ngày đã chọn
+                            <i class="fa-solid fa-search me-1"></i> Xem
                         </button>
                     </div>
                     
-                    <div class="col-auto">
-                        <a href="index.php?action=xem_lop_cn&tab=tkb" class="btn btn-info">
+                    <div class="col-auto ms-auto">
+                        <a href="index.php?action=xem_lop_cn&tab=tkb" class="btn btn-info text-white">
                             <i class="fa-solid fa-calendar-day me-1"></i> Tuần hiện tại
                         </a>
                     </div>
-                    </form>
+                </form>
+
                 <h4 class="mt-4">Thời khóa biểu Tuần (<?php echo $tuanHienTai; ?>)</h4>
 
                 <?php if (empty($tkbGrid)): ?>
@@ -182,7 +179,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php for ($tiet = 1; $tiet <= 10; $tiet++): ?>
+                                <?php for ($tiet = 1; $tiet <= 5; $tiet++): ?>
                                     <tr>
                                         <td class="fw-bold">Tiết <?php echo $tiet; ?></td>
                                         <?php for ($ngay = 1; $ngay <= 7; $ngay++): 
@@ -190,10 +187,10 @@
                                         ?>
                                             <td style="height: 60px;">
                                                 <?php if ($tietHoc): ?>
-                                                    <div class="fw-bold"><?php echo htmlspecialchars($tietHoc['tenMon']); ?></div>
-                                                    <small class="text-muted"><?php echo htmlspecialchars($tietHoc['tenPhong']); ?></small>
+                                                    <div class="fw-bold text-primary"><?php echo htmlspecialchars($tietHoc['tenMon']); ?></div>
+                                                    <small class="text-muted">Phòng <?php echo htmlspecialchars($tietHoc['tenPhong']); ?></small>
                                                 <?php else: ?>
-                                                    -
+                                                    <span class="text-muted">-</span>
                                                 <?php endif; ?>
                                             </td>
                                         <?php endfor; ?>
@@ -215,9 +212,7 @@
         const btnDesc = document.getElementById('btn-sort-desc');
         const tableBody = document.getElementById('grade-table-body');
 
-        if (!tableBody || !btnAsc || !btnDesc) {
-            return;
-        }
+        if (!tableBody || !btnAsc || !btnDesc) return;
 
         btnAsc.addEventListener('click', function() { sortGradeTable('asc'); });
         btnDesc.addEventListener('click', function() { sortGradeTable('desc'); });
@@ -225,14 +220,19 @@
         function sortGradeTable(direction) {
             const rows = Array.from(tableBody.querySelectorAll('tr'));
             rows.sort(function(rowA, rowB) {
-                const cellA = rowA.querySelector('td:last-child');
+                const cellA = rowA.querySelector('td:last-child'); // Cột ĐTB là cột cuối cùng
                 const cellB = rowB.querySelector('td:last-child');
-                let valA = cellA ? parseFloat(cellA.textContent.trim()) : -1;
-                let valB = cellB ? parseFloat(cellB.textContent.trim()) : -1;
-                if (isNaN(valA)) valA = -1;
+                
+                let valA = parseFloat(cellA ? cellA.textContent.trim() : -1);
+                let valB = parseFloat(cellB ? cellB.textContent.trim() : -1);
+                
+                if (isNaN(valA)) valA = -1; // Xử lý trường hợp '-'
                 if (isNaN(valB)) valB = -1;
+
                 return (direction === 'asc') ? valA - valB : valB - valA;
             });
+            
+            // Gắn lại các hàng đã sắp xếp vào body
             rows.forEach(row => tableBody.appendChild(row));
         }
     });

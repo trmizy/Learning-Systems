@@ -354,6 +354,21 @@ if ($currentRole === 'gvcn') {
                 </div>
             </div>
         </div>
+        
+        <div class="col-md-6 col-xl-3">
+            <div class="card feature-card h-100">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Yêu cầu sửa điểm</h5>
+                    <p class="text-muted small"> Yêu cầu sửa điểm kiểm tra</p>
+                    <a href="index.php?action=yeu_cau_sua_diem" class="btn btn-primary w-100 mt-3">
+                        <i class="fa-solid fa-keyboard me-2"></i>Yêu cầu sửa điểm
+                    </a>
+                </div>
+            </div>
+        </div>
 
         <!-- Lớp giảng dạy -->
         <?php if ($currentRole === 'gvcn' || $currentRole === 'ttbm'): // Giả sử TTBM cũng có thể là GVCN ?>
@@ -596,7 +611,7 @@ if ($currentRole === 'gvcn') {
                         <i class="fa-solid fa-clipboard-check text-success me-2"></i>Hạnh kiểm & Học lực
                     </h6>
                     <p class="text-muted small mb-3">Xếp loại học sinh lớp chủ nhiệm</p>
-                    <a href="/modules/teachers/homeroom/conduct.php" class="btn btn-outline-success w-100">
+                    <a href="index.php?action=xep_loai" class="btn btn-outline-success w-100">
                         <i class="fa-solid fa-star me-2"></i>Xếp loại
                     </a>
                 </div>
