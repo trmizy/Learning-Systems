@@ -5,8 +5,8 @@
 Hệ thống này hỗ trợ các chức năng:
 1. **Quản lý hồ sơ học sinh** — Admin (Phòng Giáo Vụ) tìm kiếm, xem, chỉnh sửa thông tin học sinh
 2. **Tạo tổ hợp môn** — Admin (Phòng Giáo Vụ) tạo các tổ hợp môn (mặc định trạng thái = PENDING)
-3. **Duyệt tổ hợp môn** — Ban Giám Hiệu (BGH) xem danh sách, chi tiết, phê duyệt hoặc từ chối tổ hợp môn
-4. **Dashboard hiển thị yêu cầu chờ duyệt** — BGH xem các yêu cầu cần xử lý, sắp xếp theo mới nhất
+3. **Chọn (Duyệt) tổ hợp môn** — Ban Giám Hiệu (BGH) xem danh sách, chi tiết, phê duyệt hoặc từ chối tổ hợp môn
+4. **Quản lý tài khoản và phân quyền** — BGH xem các yêu cầu cần xử lý, sắp xếp theo mới nhất
 
 ---
 
