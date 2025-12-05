@@ -390,6 +390,7 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
             </div>
         </div>
         
+        <!-- Yêu cầu sửa điểm -->
         <div class="col-md-6 col-xl-3">
             <div class="card feature-card h-100">
                 <div class="card-body text-center">
@@ -404,65 +405,40 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
                 </div>
             </div>
         </div>
-    </div>
-
-        <?php else: ?>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card feature-card h-100">
-                    <div class="card-body text-center">
-                        <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-                            <i class="fa-solid fa-chalkboard-user"></i>
-                        </div>
-                        <h5 class="card-title fw-bold">Lớp giảng dạy</h5>
-                        <p class="text-muted small">Danh sách lớp và học sinh</p>
-                        <a href="index.php?action=lop_giang_day" class="btn btn-success w-100 mt-3">
-                            <i class="fa-solid fa-list me-2"></i>Xem danh sách
-                        </a>
-                    </div>
-                </div>
-            </div>
-        <?php endif; ?>
-         <!-- Lớp chủ nhiệm -->
 
         <!-- Lớp giảng dạy -->
-        <?php if ($currentRole === 'gvcn' || $currentRole === 'ttbm'): // Giả sử TTBM cũng có thể là GVCN ?>
-    
-    <div class="col-md-6 col-xl-3">
-        <div class="card feature-card h-100">
-            <div class="card-body text-center">
-                <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-                    <i class="fa-solid fa-house-user"></i> </div>
-                
-                <h5 class="card-title fw-bold">Lớp chủ nhiệm</h5>
-                <p class="text-muted small">Xem thông tin lớp bạn phụ trách</p>
-                
-                <a href="index.php?action=xem_lop_cn" class="btn btn-success w-100 mt-3">
-                    <i class="fa-solid fa-list me-2"></i>Xem thông tin lớp
-                </a>
-            </div>
-        </div>
-    </div>
-
-        <?php else: ?>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card feature-card h-100">
-                    <div class="card-body text-center">
-                        <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-                            <i class="fa-solid fa-chalkboard-user"></i>
-                        </div>
-                        <h5 class="card-title fw-bold">Lớp giảng dạy</h5>
-                        <p class="text-muted small">Danh sách lớp và học sinh</p>
-                        <a href="index.php?action=lop_giang_day" class="btn btn-success w-100 mt-3">
-                            <i class="fa-solid fa-list me-2"></i>Xem danh sách
-                        </a>
+        <div class="col-md-6 col-xl-3">
+            <div class="card feature-card h-100">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                        <i class="fa-solid fa-chalkboard-user"></i>
                     </div>
+                    <h5 class="card-title fw-bold">Lớp giảng dạy</h5>
+                    <p class="text-muted small">Danh sách lớp và học sinh</p>
+                    <a href="index.php?action=lop_giang_day" class="btn btn-success w-100 mt-3">
+                        <i class="fa-solid fa-list me-2"></i>Xem danh sách
+                    </a>
                 </div>
             </div>
-        <?php endif; ?>
-         <!-- Lớp chủ nhiệm -->
+        </div>
 
+        <!-- Lớp chủ nhiệm hoặc Thời khóa biểu -->
+        <?php if ($currentRole === 'gvcn' || $currentRole === 'ttbm'): ?>
+        <div class="col-md-6 col-xl-3">
+            <div class="card feature-card h-100">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                        <i class="fa-solid fa-house-user"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Lớp chủ nhiệm</h5>
+                    <p class="text-muted small">Xem thông tin lớp bạn phụ trách</p>
+                    <a href="index.php?action=xem_lop_cn" class="btn btn-success w-100 mt-3">
+                        <i class="fa-solid fa-list me-2"></i>Xem thông tin lớp
+                    </a>
+                </div>
+            </div>
+        </div>
+        <?php else: ?>
         <!-- Thời khóa biểu -->
         <div class="col-md-6 col-xl-3">
             <div class="card feature-card h-100">
@@ -478,8 +454,31 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
                 </div>
             </div>
         </div>
+        <?php endif; ?>
+    </div>
 
-        <!-- GVCN/TTBM Features -->
+    <!--Xem phân công của tôi - CHỈ HIỂN THỊ CHO GVBM VÀ GVCN-->    
+    <?php if ($currentRole !== 'ttbm'): ?>
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <h5 class="card-title fw-bold mt-2">Phân công của tôi</h5>
+                    <p class="text-muted small">Xem danh sách đề thi được giao</p>
+                    <a href="index.php?action=view_assign" class="btn btn-outline-warning w-100 mt-3">
+                        <i class="fa-solid fa-eye me-2"></i>Xem ngay
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- GVCN/TTBM Features Section -->
+    <div class="row g-4 mb-4">
         <?php if ($currentRole === 'gvcn'): ?>
         <div class="col-md-6 col-xl-3">
             <div class="card feature-card h-100">
@@ -532,24 +531,6 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
         </div>
         <?php endif; ?>
     </div>
-    
-    <!--Xem phân công của tôi - CHỈ HIỂN THỊ CHO GVBM VÀ GVCN-->    
-    <?php if ($currentRole !== 'ttbm'): ?>
-    <div class="col-md-4">
-        <div class="card feature-card">
-            <div class="card-body text-center">
-                <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);">
-                    <i class="fa-solid fa-list-check"></i>
-                </div>
-                <h5 class="card-title fw-bold mt-2">Phân công của tôi</h5>
-                <p class="text-muted small">Xem danh sách đề thi được giao</p>
-                <a href="index.php?action=view_assign" class="btn btn-outline-warning w-100 mt-3">
-                    <i class="fa-solid fa-eye me-2"></i>Xem ngay
-                </a>
-            </div>
-        </div>
-    </div>
-    <?php endif; ?>
 
     <div class="row g-4">
         <!-- Teaching Classes -->
@@ -812,8 +793,5 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
 
 <?php
 require_once __DIR__ . '/../layouts/footer.php';
-?>
-
-<?php
-ob_end_flush(); // gửi toàn bộ output ra sau cùng
+ob_end_flush();
 ?>
