@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../../config/database.php';
 
 class ThoiKhoaBieuModel {
     private $db;
@@ -41,7 +41,7 @@ class ThoiKhoaBieuModel {
     }
 
     /**
-     * Lấy thời khóa biểu theo MÃ LỚP - ĐÚNG SCHEMA
+     * Lấy thời khóa biểu theo MÃ LỚP - KHỚP SCHEMA MỚI
      */
     public function getThoiKhoaBieuTheoLop($maLop, $startDate, $endDate) {
         try {
@@ -52,7 +52,7 @@ class ThoiKhoaBieuModel {
                         ph.tenPhong,
                         DAYOFWEEK(tkb.ngayHoc) AS thuTrongTuan
                     FROM thoikhoabieu AS tkb
-                    JOIN monhoc AS mh ON tkb.maMonHoc = mh.maMonHoc
+                    INNER JOIN monhoc AS mh ON tkb.maMonHoc = mh.maMonHoc
                     LEFT JOIN phonghoc AS ph ON tkb.maPhong = ph.maPhong
                     WHERE tkb.maLop = ?
                       AND tkb.ngayHoc BETWEEN ? AND ?
@@ -60,7 +60,15 @@ class ThoiKhoaBieuModel {
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$maLop, $startDate, $endDate]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // DEBUG LOG
+            error_log("=== getThoiKhoaBieuTheoLop ===");
+            error_log("maLop: $maLop | startDate: $startDate | endDate: $endDate");
+            error_log("Rows: " . count($result));
+            
+            return $result;
             
         } catch (PDOException $e) {
             error_log("Error getThoiKhoaBieuTheoLop: " . $e->getMessage());
@@ -69,7 +77,7 @@ class ThoiKhoaBieuModel {
     }
 
     /**
-     * Lấy thông tin lớp - ĐÚNG SCHEMA
+     * Lấy thông tin lớp của học sinh
      */
     public function getThongTinLopHocSinh($maHocSinh) {
         try {
@@ -101,33 +109,16 @@ class ThoiKhoaBieuModel {
     public function getMaHocSinhByUsername($username) {
         try {
             $stmt = $this->db->prepare("
-                SELECT maTaiKhoan 
-                FROM taikhoan 
-                WHERE tenDangNhap = ? AND trangThai = 'ACTIVE'
+                SELECT hs.maHS
+                FROM taikhoan tk
+                INNER JOIN hocsinh hs ON tk.maTaiKhoan = hs.maTaiKhoan
+                WHERE tk.tenDangNhap = ? AND tk.trangThai = 'ACTIVE'
                 LIMIT 1
             ");
             $stmt->execute([$username]);
-            $taiKhoan = $stmt->fetch();
+            $result = $stmt->fetch();
             
-            if (!$taiKhoan) {
-                error_log("getMaHocSinhByUsername: Không tìm thấy TaiKhoan cho username: " . $username);
-                return null;
-            }
-            
-            $stmt2 = $this->db->prepare("
-                SELECT maHS 
-                FROM hocsinh 
-                WHERE maTaiKhoan = ?
-                LIMIT 1
-            ");
-            $stmt2->execute([$taiKhoan['maTaiKhoan']]);
-            $hs = $stmt2->fetch();
-            
-            if (!$hs) {
-                error_log("getMaHocSinhByUsername: Không tìm thấy HocSinh cho maTaiKhoan: " . $taiKhoan['maTaiKhoan']);
-            }
-            
-            return $hs ? $hs['maHS'] : null;
+            return $result ? $result['maHS'] : null;
             
         } catch (PDOException $e) {
             error_log("Error getMaHocSinhByUsername: " . $e->getMessage());
@@ -136,11 +127,10 @@ class ThoiKhoaBieuModel {
     }
 
     /**
-     * Lấy danh sách con của phụ huynh - SỬA QUAN HỆ NHIỀU-NHIỀU
+     * Lấy danh sách con của phụ huynh - SỬA THEO BẢNG phuhuynh_hocsinh
      */
     public function getDanhSachConCuaPhuHuynh($maPhuHuynh) {
         try {
-            // SỬA: Dùng bảng phuhuynh_hocsinh để JOIN
             $sql = "SELECT 
                         hs.maHS as maHocSinh,
                         hs.hoTen,
@@ -162,35 +152,21 @@ class ThoiKhoaBieuModel {
     }
 
     /**
-     * Lấy mã phụ huynh từ username - SỬA TABLE NAME
+     * Lấy mã phụ huynh từ username
      */
     public function getMaPhuHuynhByUsername($username) {
         try {
             $stmt = $this->db->prepare("
-                SELECT maTaiKhoan 
-                FROM taikhoan 
-                WHERE tenDangNhap = ? AND trangThai = 'ACTIVE'
+                SELECT ph.maPH
+                FROM taikhoan tk
+                INNER JOIN phuhuynh ph ON tk.maTaiKhoan = ph.maTaiKhoan
+                WHERE tk.tenDangNhap = ? AND tk.trangThai = 'ACTIVE'
                 LIMIT 1
             ");
             $stmt->execute([$username]);
-            $taiKhoan = $stmt->fetch();
+            $result = $stmt->fetch();
             
-            if (!$taiKhoan) {
-                return null;
-            }
-            
-            // SỬA: Bảng phuhuynh KHÔNG CÓ maTaiKhoan
-            // Phải tìm qua bảng trung gian hoặc email
-            $stmt2 = $this->db->prepare("
-                SELECT maPH
-                FROM phuhuynh 
-                WHERE email = (SELECT email FROM taikhoan WHERE maTaiKhoan = ?)
-                LIMIT 1
-            ");
-            $stmt2->execute([$taiKhoan['maTaiKhoan']]);
-            $ph = $stmt2->fetch();
-            
-            return $ph ? $ph['maPH'] : null;
+            return $result ? $result['maPH'] : null;
             
         } catch (PDOException $e) {
             error_log("Error getMaPhuHuynhByUsername: " . $e->getMessage());

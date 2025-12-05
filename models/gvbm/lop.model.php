@@ -83,17 +83,24 @@ class LopModel {
     }
 
     /**
-     * Lấy TẤT CẢ điểm của TẤT CẢ học sinh trong lớp (dạng dữ liệu thô)
+     * Lấy TẤT CẢ điểm của TẤT CẢ học sinh trong lớp - SỬA ĐỂ TRÁNH TRÙNG LẶP
      * @param string $maLop Mã của lớp học
      * @return array Danh sách điểm
      */
     public function getBangDiemTho($maLop) {
         try {
-            // Lấy TẤT CẢ điểm của học sinh thuộc lớp này
+            // Lấy bản ghi MỚI NHẤT cho mỗi học sinh + môn học (dựa vào maBangDiem)
             $sql = "SELECT bd.maHS, bd.maMonHoc, bd.diemThuongXuyen, bd.diemGiuaKy, bd.diemCuoiKy
                     FROM BangDiem bd
-                    JOIN HocSinh hs ON bd.maHS = hs.maHS
-                    WHERE hs.maLop = :maLop";
+                    INNER JOIN (
+                        SELECT maHS, maMonHoc, MAX(maBangDiem) as maxId
+                        FROM BangDiem
+                        WHERE maHS IN (SELECT maHS FROM HocSinh WHERE maLop = :maLop)
+                        GROUP BY maHS, maMonHoc
+                    ) latest ON bd.maHS = latest.maHS 
+                        AND bd.maMonHoc = latest.maMonHoc 
+                        AND bd.maBangDiem = latest.maxId
+                    ORDER BY bd.maHS, bd.maMonHoc";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':maLop' => $maLop]);
@@ -105,25 +112,21 @@ class LopModel {
         }
     }
     /**
-     * Lấy TKB của một lớp trong một khoảng thời gian (một tuần)
-     * @param string $maLop Mã của lớp học
-     * @param string $startDate Ngày bắt đầu (YYYY-MM-DD)
-     * @param string $endDate Ngày kết thúc (YYYY-MM-DD)
-     * @return array Danh sách các tiết học
+     * Lấy TKB của một lớp - SỬA ĐỂ KHỚP SCHEMA MỚI
      */
     public function getThoiKhoaBieuByWeek($maLop, $startDate, $endDate) {
         try {
-            // JOIN 4 bảng: TKB, MonHoc, PhongHoc, HocSinh
             $sql = "SELECT 
                         tkb.tiet,
                         tkb.ngayHoc,
                         mh.tenMon,
                         ph.tenPhong
-                    FROM ThoiKhoaBieu AS tkb
-                    JOIN MonHoc AS mh ON tkb.maMonHoc = mh.maMonHoc
-                    LEFT JOIN PhongHoc AS ph ON tkb.maPhong = ph.maPhong
+                    FROM thoikhoabieu AS tkb
+                    INNER JOIN monhoc AS mh ON tkb.maMonHoc = mh.maMonHoc
+                    LEFT JOIN phonghoc AS ph ON tkb.maPhong = ph.maPhong
                     WHERE tkb.maLop = :maLop
-                      AND tkb.ngayHoc BETWEEN :startDate AND :endDate";
+                      AND tkb.ngayHoc BETWEEN :startDate AND :endDate
+                    ORDER BY tkb.ngayHoc, tkb.tiet";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
@@ -131,10 +134,18 @@ class LopModel {
                 ':startDate' => $startDate,
                 ':endDate' => $endDate
             ]);
-            return $stmt->fetchAll();
+            
+            $result = $stmt->fetchAll();
+            
+            // DEBUG LOG
+            error_log("=== getThoiKhoaBieuByWeek (GVBM) ===");
+            error_log("maLop: $maLop | startDate: $startDate | endDate: $endDate");
+            error_log("Rows returned: " . count($result));
+            
+            return $result;
 
         } catch (PDOException $e) {
-            error_log("Lỗi Model::getThoiKhoaBieuByWeek: " . $e->getMessage());
+            error_log("Lỗi getThoiKhoaBieuByWeek: " . $e->getMessage());
             return [];
         }
     }

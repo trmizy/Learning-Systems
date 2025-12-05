@@ -85,7 +85,7 @@ if (isset($_GET['action'])) {
             
         // Thời khóa biểu học sinh VÀ phụ huynh
         case 'xem_tkb':
-            require_once __DIR__ . '/../controllers/ThoiKhoaBieuController.php';
+            require_once __DIR__ . '/../controllers/hs/ThoiKhoaBieuController.php';
             $controller = new ThoiKhoaBieuController();
             
             // Kiểm tra role - SỬA LẠI ĐỂ DEBUG

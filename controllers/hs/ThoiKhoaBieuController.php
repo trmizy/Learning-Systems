@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/../middlewares/AuthGuard.php';
-require_once __DIR__ . '/../models/ThoiKhoaBieuModel.php';
+require_once __DIR__ . '/../../middlewares/AuthGuard.php';
+require_once __DIR__ . '/../../models/hs/ThoiKhoaBieuModel.php';
 
 class ThoiKhoaBieuController {
     private $model;
@@ -25,6 +25,13 @@ class ThoiKhoaBieuController {
 
         // Lấy mã học sinh
         $maHocSinh = $this->model->getMaHocSinhByUsername($user['username']);
+        
+        // === DEBUG LOG ===
+        error_log("=== DEBUG indexHocSinh ===");
+        error_log("Username: " . $user['username']);
+        error_log("maHocSinh: " . ($maHocSinh ?: 'NULL'));
+        // === END DEBUG ===
+        
         if (!$maHocSinh) {
             $_SESSION['flash_error'] = 'Không tìm thấy thông tin học sinh.';
             header('Location: /public/index.php');
@@ -90,6 +97,20 @@ class ThoiKhoaBieuController {
         // BƯỚC 1: Lấy mã lớp từ mã học sinh
         $maLop = $this->model->getMaLopByMaHocSinh($maHocSinh);
         
+        // === DEBUG LOG CHI TIẾT ===
+        error_log("=== DEBUG hienThiThoiKhoaBieu ===");
+        error_log("maHocSinh: $maHocSinh");
+        error_log("maLop: " . ($maLop ?: 'NULL'));
+        error_log("monday: $monday");
+        error_log("sunday: $sunday");
+        
+        // Kiểm tra xem học sinh thuộc lớp nào
+        if ($maLop) {
+            error_log("Query SQL sẽ chạy:");
+            error_log("SELECT ... FROM thoikhoabieu WHERE maLop = '$maLop' AND ngayHoc BETWEEN '$monday' AND '$sunday'");
+        }
+        // === END DEBUG ===
+        
         if (!$maLop) {
             $_SESSION['flash_error'] = 'Không tìm thấy thông tin lớp học.';
             header('Location: /public/index.php');
@@ -98,6 +119,27 @@ class ThoiKhoaBieuController {
 
         // BƯỚC 2: Lấy TKB THEO LỚP
         $thoiKhoaBieu = $this->model->getThoiKhoaBieuTheoLop($maLop, $monday, $sunday);
+        
+        // === DEBUG RESULT ===
+        error_log("Số bản ghi TKB trả về: " . count($thoiKhoaBieu));
+        if (count($thoiKhoaBieu) > 0) {
+            error_log("Bản ghi đầu tiên: " . print_r($thoiKhoaBieu[0], true));
+        } else {
+            error_log("KHÔNG CÓ DỮ LIỆU TKB!");
+            
+            // Kiểm tra ngược lại: Có dữ liệu trong DB không?
+            try {
+                $db = Database::getInstance()->getConnection();
+                $checkStmt = $db->prepare("SELECT COUNT(*) as total FROM thoikhoabieu WHERE maLop = ?");
+                $checkStmt->execute([$maLop]);
+                $totalRows = $checkStmt->fetch()['total'];
+                error_log("Tổng số bản ghi TKB trong DB cho lớp $maLop: $totalRows");
+            } catch (Exception $e) {
+                error_log("Lỗi kiểm tra DB: " . $e->getMessage());
+            }
+        }
+        // === END DEBUG ===
+        
         $thongTinLop = $this->model->getThongTinLopHocSinh($maHocSinh);
 
         // Tạo grid TKB - GIỐNG GVCN
@@ -108,8 +150,8 @@ class ThoiKhoaBieuController {
         // Biến cho view
         $selected_date = $selectedDate;
 
-        // Render view
-        require_once __DIR__ . '/../views/shared/thoi_khoa_bieu_hs.php';
+        // Render view - FIX: Sửa đường dẫn
+        require_once __DIR__ . '/../../views/shared/thoi_khoa_bieu_hs.php';
     }
 
     /**

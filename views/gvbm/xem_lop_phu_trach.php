@@ -215,25 +215,51 @@
         const btnDesc = document.getElementById('btn-sort-desc');
         const tableBody = document.getElementById('grade-table-body');
 
+        // DEBUG: Kiểm tra xem có tìm thấy elements không
+        console.log('btnAsc:', btnAsc);
+        console.log('btnDesc:', btnDesc);
+        console.log('tableBody:', tableBody);
+
         if (!tableBody || !btnAsc || !btnDesc) {
+            console.error('Không tìm thấy elements cần thiết!');
             return;
         }
 
-        btnAsc.addEventListener('click', function() { sortGradeTable('asc'); });
-        btnDesc.addEventListener('click', function() { sortGradeTable('desc'); });
+        btnAsc.addEventListener('click', function(e) {
+            e.preventDefault();
+            sortGradeTable('asc');
+        });
+        
+        btnDesc.addEventListener('click', function(e) {
+            e.preventDefault();
+            sortGradeTable('desc');
+        });
 
         function sortGradeTable(direction) {
             const rows = Array.from(tableBody.querySelectorAll('tr'));
+            
             rows.sort(function(rowA, rowB) {
+                // Lấy cột cuối cùng (ĐTB)
                 const cellA = rowA.querySelector('td:last-child');
                 const cellB = rowB.querySelector('td:last-child');
-                let valA = cellA ? parseFloat(cellA.textContent.trim()) : -1;
-                let valB = cellB ? parseFloat(cellB.textContent.trim()) : -1;
+                
+                if (!cellA || !cellB) return 0;
+                
+                // Parse giá trị điểm
+                let valA = parseFloat(cellA.textContent.trim().replace(',', '.'));
+                let valB = parseFloat(cellB.textContent.trim().replace(',', '.'));
+                
+                // Xử lý trường hợp không có điểm (-)
                 if (isNaN(valA)) valA = -1;
                 if (isNaN(valB)) valB = -1;
+                
                 return (direction === 'asc') ? valA - valB : valB - valA;
             });
+            
+            // Xóa toàn bộ rows cũ và thêm lại theo thứ tự mới
             rows.forEach(row => tableBody.appendChild(row));
+            
+            console.log('Đã sắp xếp ' + rows.length + ' hàng theo ' + direction);
         }
     });
 </script>

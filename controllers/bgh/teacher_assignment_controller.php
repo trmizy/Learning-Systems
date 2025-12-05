@@ -257,4 +257,51 @@ class TeacherAssignmentController
         extract($data);
         require_once __DIR__ . '/../../views/' . $viewName . '.php';
     }
+
+    /**
+     * Phân công giáo viên cho lớp
+     */
+    public function assignTeachers()
+    {
+        $maLop = $_GET['maLop'] ?? '';
+        
+        if (empty($maLop)) {
+            $this->message = 'Không tìm thấy lớp học';
+            $this->messageType = 'danger';
+            $this->loadView('manage', ['message' => $this->message, 'messageType' => $this->messageType]);
+            return;
+        }
+
+        $thongTinLop = $this->phanCong->getThongTinLop($maLop);
+        
+        if (!$thongTinLop) {
+            $this->message = 'Không tìm thấy thông tin lớp';
+            $this->messageType = 'danger';
+            $this->loadView('manage', ['message' => $this->message, 'messageType' => $this->messageType]);
+            return;
+        }
+
+        $namHoc = $thongTinLop['namHoc'];
+        $hocKy = $_GET['hocKy'] ?? 'HK1';
+
+        $danhSachMonHocStmt = $this->phanCong->getDanhSachMonHoc($thongTinLop['khoi'], $namHoc, $hocKy);
+        $danhSachMonHoc = $danhSachMonHocStmt->fetchAll(PDO::FETCH_ASSOC); // Chuyển thành array
+
+        $phanCongStmt = $this->phanCong->getPhanCongGiangDayTheoLop($maLop, $namHoc, $hocKy);
+        $phanCongArray = [];
+        while ($pc = $phanCongStmt->fetch()) {
+            $phanCongArray[$pc['maMonHoc']] = $pc;
+        }
+
+        $this->loadView('assign_teachers', [
+            'maLop' => $maLop,
+            'thongTinLop' => $thongTinLop,
+            'namHoc' => $namHoc,
+            'hocKy' => $hocKy,
+            'danhSachMonHoc' => $danhSachMonHoc, // Truyền array thay vì PDOStatement
+            'phanCongArray' => $phanCongArray,
+            'message' => $this->message,
+            'messageType' => $this->messageType
+        ]);
+    }
 }

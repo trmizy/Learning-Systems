@@ -3,44 +3,68 @@
 
 // Bảo vệ & kiểm tra quyền
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
-require_role(['hs']); // ⚠️ THAY ĐỔI: 'hocsinh' → 'hs'
+require_role(['hs']);
 
 // Tiêu đề trang và header chung
 $pageTitle = 'Trang học sinh - THPT';
 require_once __DIR__ . '/../layouts/header.php';
 
+// KHỞI TẠO MODEL - THÊM PHẦN NÀY
+require_once __DIR__ . '/../../models/hs/DashboardModel.php';
+$dashboardModel = new DashboardModel();
+
 // Lấy user hiện tại
 $user = current_user() ?: [];
-$fullName = isset($user['full_name']) ? $user['full_name'] : 'Học sinh';
-$studentId = isset($user['student_id']) ? $user['student_id'] : 'HS0000';
-$className = isset($user['class_name']) ? $user['class_name'] : '12A1';
+$username = $user['username'] ?? '';
 
-// Số liệu demo (thay bằng truy vấn thật)
+// Lấy thông tin học sinh THẬT
+$thongTinHS = $dashboardModel->getThongTinHocSinh($username);
+
+if (!$thongTinHS) {
+    echo '<div class="alert alert-danger">Không tìm thấy thông tin học sinh!</div>';
+    require_once __DIR__ . '/../layouts/footer.php';
+    exit;
+}
+
+// Gán biến
+$maHS = $thongTinHS['maHS'];
+$fullName = $thongTinHS['hoTen'];
+$studentId = $maHS;
+$className = $thongTinHS['tenLop'];
+$namHoc = $thongTinHS['namHoc'];
+
+// Lấy mã lớp
+require_once __DIR__ . '/../../models/hs/ThoiKhoaBieuModel.php';
+$tkbModel = new ThoiKhoaBieuModel();
+$maLop = $tkbModel->getMaLopByMaHocSinh($maHS);
+
+// Lấy số liệu THẬT
+$hocKy = 'I';
 $stats = [
     'attendance_rate' => 95.5,
-    'gpa_semester' => 8.5,
-    'conduct_rating' => 'Tốt',
-    'pending_requests' => 2,
+    'gpa_semester' => $dashboardModel->getDiemTrungBinhHocKy($maHS, $hocKy, $namHoc),
+    'conduct_rating' => $dashboardModel->getHanhKiem($maHS, $hocKy, $namHoc),
+    'pending_requests' => $dashboardModel->demDonChoPheDuyet($maHS),
     'unread_notifications' => 5,
 ];
 
-// Dữ liệu mẫu
-$recentGrades = [
-    ['subject' => 'Toán', 'score' => 8.5, 'type' => 'Giữa kỳ', 'date' => '2024-03-15'],
-    ['subject' => 'Văn', 'score' => 9.0, 'type' => 'Miệng', 'date' => '2024-03-14'],
-    ['subject' => 'Anh', 'score' => 7.5, 'type' => '15 phút', 'date' => '2024-03-13'],
-];
+// Lấy dữ liệu THẬT
+$recentGrades = $dashboardModel->getDiemGanDay($maHS, 3);
 
-$todaySchedule = [
-    ['period' => 1, 'subject' => 'Toán', 'teacher' => 'Nguyễn Văn A', 'room' => 'A201'],
-    ['period' => 2, 'subject' => 'Văn', 'teacher' => 'Trần Thị B', 'room' => 'B105'],
-    ['period' => 3, 'subject' => 'Anh', 'teacher' => 'Lê Văn C', 'room' => 'C302'],
-];
+// Lấy lịch học hôm nay - XỬ LÝ TRƯỜNG HỢP CHƯA CÓ DỮ LIỆU
+$todaySchedule = [];
+if ($maLop) {
+    $todaySchedule = $dashboardModel->getLichHocHomNay($maLop);
+    
+    // DEBUG: Kiểm tra dữ liệu TKB
+    error_log("Dashboard: maLop=$maLop, todaySchedule count=" . count($todaySchedule));
+}
 
+// Thông báo - GIỮ NGUYÊN DEMO (chưa có bảng Thông báo)
 $notifications = [
-    ['title' => 'Thông báo nghỉ Tết Nguyên đán', 'type' => 'BGH', 'date' => '2024-03-15', 'unread' => true],
-    ['title' => 'Họp phụ huynh học kỳ 2', 'type' => 'GVCN', 'date' => '2024-03-14', 'unread' => true],
-    ['title' => 'Nộp học phí tháng 3', 'type' => 'Kế toán', 'date' => '2024-03-10', 'unread' => false],
+    ['title' => 'Thông báo nghỉ Tết Nguyên đán', 'type' => 'BGH', 'date' => date('Y-m-d'), 'unread' => true],
+    ['title' => 'Họp phụ huynh học kỳ 2', 'type' => 'GVCN', 'date' => date('Y-m-d', strtotime('-1 day')), 'unread' => true],
+    ['title' => 'Nộp học phí tháng 3', 'type' => 'Kế toán', 'date' => date('Y-m-d', strtotime('-5 days')), 'unread' => false],
 ];
 ?>
 
@@ -439,22 +463,29 @@ $notifications = [
                         <i class="fa-solid fa-clock text-primary me-2"></i>
                         Lịch học hôm nay
                     </h5>
-                    <?php foreach ($todaySchedule as $lesson): ?>
-                    <div class="schedule-item">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <div class="fw-bold text-primary">Tiết <?php echo $lesson['period']; ?>: <?php echo htmlspecialchars($lesson['subject']); ?></div>
-                                <div class="small text-muted">
-                                    <i class="fa-solid fa-chalkboard-user me-1"></i><?php echo htmlspecialchars($lesson['teacher']); ?>
-                                </div>
-                            </div>
-                            <span class="badge bg-light text-dark">
-                                <i class="fa-solid fa-door-open me-1"></i><?php echo htmlspecialchars($lesson['room']); ?>
-                            </span>
-                        </div>
+                    <?php if (empty($todaySchedule)): ?>
+                    <div class="alert alert-info">
+                        <i class="fa-solid fa-info-circle me-2"></i>
+                        Chưa có lịch học hôm nay hoặc đã hết giờ học.
                     </div>
-                    <?php endforeach; ?>
-                    <a href="?action=xem_tkb" class="btn btn-outline-primary w-100 mt-3">
+                    <?php else: ?>
+                        <?php foreach ($todaySchedule as $lesson): ?>
+                        <div class="schedule-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-bold text-primary">Tiết <?php echo $lesson['period']; ?>: <?php echo htmlspecialchars($lesson['subject']); ?></div>
+                                    <div class="small text-muted">
+                                        <i class="fa-solid fa-chalkboard-user me-1"></i><?php echo htmlspecialchars($lesson['teacher'] ?? 'Chưa phân công'); ?>
+                                    </div>
+                                </div>
+                                <span class="badge bg-light text-dark">
+                                    <i class="fa-solid fa-door-open me-1"></i><?php echo htmlspecialchars($lesson['room'] ?? 'TBA'); ?>
+                                </span>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                    <a href="index.php?action=xem_tkb" class="btn btn-outline-primary w-100 mt-3">
                         <i class="fa-solid fa-calendar-week me-2"></i>Xem lịch tuần
                     </a>
                 </div>

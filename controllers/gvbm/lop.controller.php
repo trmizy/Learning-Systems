@@ -46,7 +46,12 @@ class LopController {
             
             // --- Tab 2: Bảng điểm ---
             $danhSachMonHoc = $this->lopModel->getDanhSachMonHoc($maLop);
-            $diemTho = $this->lopModel->getBangDiemTho($maLop);
+            
+            // SỬA: Truyền thêm học kỳ và năm học (có thể lấy từ GET hoặc mặc định)
+            $hocKy = $_GET['hocKy'] ?? 'I';
+            $namHoc = $_GET['namHoc'] ?? '2024-2025';
+            $diemTho = $this->lopModel->getBangDiemTho($maLop, $hocKy, $namHoc);
+            
             foreach ($diemTho as $diem) {
                 $bangDiemLookup[$diem['maHS']][$diem['maMonHoc']] = $diem;
             }
