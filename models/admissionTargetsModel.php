@@ -298,7 +298,7 @@ class AdmissionTargetsModel {
                 return ['success' => false, 'message' => "Không tìm thấy chỉ tiêu năm $namHoc!"];
             }
 
-            return ['success' => true, 'message' => "✅ Đã xóa $soXoa chỉ tiêu năm học $namHoc!"];
+            return ['success' => true, 'message' => "Đã xóa $soXoa chỉ tiêu năm học $namHoc!"];
         } catch (PDOException $e) {
             error_log("Error xoaPhanBoTheoNamHoc: " . $e->getMessage());
             return ['success' => false, 'message' => "Lỗi: " . $e->getMessage()];

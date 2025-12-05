@@ -7,23 +7,70 @@ require_role(['bgh']);
 // Tiêu đề trang và header chung
 $pageTitle = 'Ban Giám Hiệu - THPT';
 require_once __DIR__ . '/../layouts/header.php';
+// Bảo vệ & kiểm tra quyền
+require_once __DIR__ . '/../../middlewares/AuthGuard.php';
+require_role(['bgh']);
+
+// Kết nối DB
+require_once __DIR__ . '/../../config/database.php';
+
+// Tiêu đề trang và header chung
+$pageTitle = 'Ban Giám Hiệu - THPT';
+require_once __DIR__ . '/../layouts/header.php';
 
 // Lấy user hiện tại
 $user = current_user() ?: [];
 $fullName = isset($user['full_name']) ? $user['full_name'] : 'Ban Giám Hiệu';
 $position = isset($user['position']) ? $user['position'] : 'Hiệu trưởng';
 
-// Số liệu thống kê
+// Số liệu thống kê (mặc định, sẽ cố gắng lấy từ DB khi có kết nối)
 $stats = [
-    'total_students' => 2487,
-    'total_teachers' => 152,
-    'total_classes' => 45,
-    'pending_approvals' => 18,
-    'score_edit_requests' => 5,
-    'conduct_approvals' => 8,
-    'exam_approvals' => 3,
-    'teaching_assignments' => 2,
+    'total_students'      => 0,
+    'total_teachers'      => 0,
+    'total_classes'       => 0,
+    'pending_approvals'   => 0,
+    'score_edit_requests' => 0,
+    'conduct_approvals'   => 0,
+    'exam_approvals'      => 0,
+    'teaching_assignments'=> 0,
 ];
+
+// Cố gắng lấy số liệu thực từ database, nếu có lỗi sẽ giữ lại mặc định
+try {
+    if (class_exists('Database')) {
+        $conn = Database::getInstance()->getConnection();
+
+        // Tổng học sinh
+        $stmt = $conn->query("SELECT COUNT(*) FROM hocsinh");
+        $count = $stmt ? (int) $stmt->fetchColumn() : null;
+        if ($count !== null) {
+            $stats['total_students'] = $count;
+        }
+
+        // Tổng giáo viên: ưu tiên bảng `giaovienbomon`, fallback `giaovien`
+        $teacherCount = null;
+        try {
+            $stmt = $conn->query("SELECT COUNT(*) FROM giaovienbomon");
+            $teacherCount = $stmt ? (int) $stmt->fetchColumn() : null;
+        } catch (Exception $e) {
+            // fallback
+            $stmt = $conn->query("SELECT COUNT(*) FROM giaovien");
+            $teacherCount = $stmt ? (int) $stmt->fetchColumn() : null;
+        }
+        if ($teacherCount !== null) {
+            $stats['total_teachers'] = $teacherCount;
+        }
+
+        // Tổng lớp học
+        $stmt = $conn->query("SELECT COUNT(*) FROM lophoc");
+        $count = $stmt ? (int) $stmt->fetchColumn() : null;
+        if ($count !== null) {
+            $stats['total_classes'] = $count;
+        }
+    }
+} catch (Exception $e) {
+    // Không làm gì - giữ lại giá trị mặc định nếu DB không khả dụng
+}
 
 // Yêu cầu chờ duyệt
 $pendingApprovals = [
@@ -47,12 +94,35 @@ $quickReports = [
     ['title' => 'Tỷ lệ hoàn thành chương trình', 'value' => '94.5%', 'change' => '-0.5%', 'trend' => 'down'],
 ];
 
-// Thông báo quan trọng
+// Thông báo quan trọng: cố gắng lấy 5 thông báo mới nhất từ DB, fallback về mẫu tĩnh
 $notifications = [
     ['title' => 'Họp BGH về kế hoạch tổ chức thi THPT Quốc gia', 'date' => '2024-03-20 09:00', 'type' => 'meeting'],
     ['title' => 'Báo cáo kết quả học tập học kỳ II cần hoàn thành', 'date' => '2024-03-18', 'type' => 'deadline'],
     ['title' => 'Kiểm tra cơ sở vật chất trường học', 'date' => '2024-03-17', 'type' => 'inspection'],
 ];
+
+try {
+    if (class_exists('Database')) {
+        $conn = Database::getInstance()->getConnection();
+
+        // Thử lấy dữ liệu từ bảng `thongbao` (các cột thông dụng: title, ngayTao, type)
+        $query = "SELECT title, ngayTao as date, type FROM thongbao ORDER BY ngayTao DESC LIMIT 5";
+        $stmt = $conn->query($query);
+        $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        if (!empty($rows)) {
+            $notifications = [];
+            foreach ($rows as $r) {
+                $notifications[] = [
+                    'title' => isset($r['title']) ? $r['title'] : (isset($r['tieu_de']) ? $r['tieu_de'] : 'Thông báo'),
+                    'date' => isset($r['date']) ? $r['date'] : (isset($r['ngayTao']) ? $r['ngayTao'] : ''),
+                    'type' => isset($r['type']) ? $r['type'] : 'meeting',
+                ];
+            }
+        }
+    }
+} catch (Exception $e) {
+    // Nếu lỗi, giữ nguyên $notifications mẫu
+}
 ?>
 
 <style>
@@ -657,7 +727,7 @@ $notifications = [
                     </div>
                     <div class="row g-2 mt-3">
                         <div class="col-md-6">
-                            <a href="/modules/bgh/reports/academic.php" class="btn btn-outline-primary w-100">
+                            <a href="/controllers/bgh/statisticsController.php" class="btn btn-outline-primary w-100">
                                 <i class="fa-solid fa-file-chart me-2"></i>Báo cáo học vụ
                             </a>
                         </div>
