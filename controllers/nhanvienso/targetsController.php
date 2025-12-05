@@ -1,5 +1,5 @@
 <?php
-// filepath: controllers/nhanvienso/targetsController.php
+// Controller: Phân bổ chỉ tiêu tuyển sinh
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
 require_once __DIR__ . '/../../models/admissionTargetsModel.php';
 
@@ -7,145 +7,170 @@ class TargetsController {
     private $model;
 
     public function __construct() {
-        // Kiểm tra quyền nhân viên sở
-        require_role(['nhanvienso']);
-        
+        require_role(['nhanvienso']); // Chỉ nhân viên sở mới truy cập được
         $this->model = new AdmissionTargetsModel();
     }
 
     /**
-     * Hiển thị trang phân bổ chỉ tiêu tuyển sinh
+     * Hiển thị trang phân bổ chỉ tiêu
      */
     public function index() {
-        // Lấy năm học từ query string
         $namHocSelected = $_GET['namHoc'] ?? '';
-        
-        // Lấy danh sách năm học
         $danhSachNamHoc = $this->model->loadNamHoc();
-        
-        // Nếu chưa chọn năm học, lấy năm học mới nhất
-        if (empty($namHocSelected) && !empty($danhSachNamHoc)) {
-            $namHocSelected = $danhSachNamHoc[0];
-        }
+        if (empty($namHocSelected) && !empty($danhSachNamHoc)) $namHocSelected = $danhSachNamHoc[0];
 
-        // Lấy danh sách trường
         $danhSachTruong = $this->model->getDanhSachTruong();
+        $chiTieuDaPhanBo = $this->layChiTieuDaPhanBo($namHocSelected);
+        $chiTieuNamTruoc = $this->layChiTieuNamTruoc($danhSachTruong, $namHocSelected);
+        $goiYChiTieu = $this->tinhGoiYChoTungTruong($danhSachTruong, $namHocSelected);
 
-        // Lấy chỉ tiêu đã phân bổ (nếu có)
-        $chiTieuDaPhanBo = [];
-        if (!empty($namHocSelected)) {
-            $chiTieuList = $this->model->getChiTieuTheoNamHoc($namHocSelected);
-            foreach ($chiTieuList as $ct) {
-                $chiTieuDaPhanBo[$ct['maTruong']] = $ct['chiTieuPhanBo'];
-            }
-        }
-
-        // Tính gợi ý chỉ tiêu cho từng trường
-        $goiYChiTieu = [];
-        foreach ($danhSachTruong as $truong) {
-            $goiYChiTieu[$truong['maTruong']] = $this->model->tinhGoiYChiTieu(
-                $truong['maTruong'], 
-                $namHocSelected
-            );
-        }
-
-        // Lấy tổng chỉ tiêu
         $tongChiTieuPheDuyet = $this->model->getTongPheDuyet($namHocSelected);
         $tongChiTieuDaPhanBo = $this->model->getTongChiTieuDaPhanBo($namHocSelected);
-
-        // Lấy lịch sử phân bổ
         $lichSuPhanBo = $this->model->getLichSuPhanBo(5);
 
-        // Render view
         require_once __DIR__ . '/../../views/nhanvienso/targetAllocation.php';
     }
 
     /**
-     * Xử lý submit phân bổ - CHO PHÉP PHÂN BỔ 1 HOẶC NHIỀU TRƯỜNG
+     * Lấy chỉ tiêu đã phân bổ cho các trường
+     */
+    private function layChiTieuDaPhanBo($namHoc) {
+        $map = [];
+        if (empty($namHoc)) return $map;
+        $list = $this->model->getChiTieuTheoNamHoc($namHoc);
+        foreach ($list as $r) $map[$r['maTruong']] = (int)$r['chiTieuPhanBo'];
+        return $map;
+    }
+
+    /**
+     * Lấy chỉ tiêu năm trước thực tế từ database
+     */
+    private function layChiTieuNamTruoc($danhSachTruong, $namHocHienTai) {
+        $res = [];
+        foreach ($danhSachTruong as $t) $res[$t['maTruong']] = $this->model->getChiTieuNamTruocThucTe($t['maTruong'], $namHocHienTai);
+        return $res;
+    }
+
+    /**
+     * Tính gợi ý chỉ tiêu cho từng trường
+     */
+    private function tinhGoiYChoTungTruong($danhSachTruong, $namHoc) {
+        $out = [];
+        foreach ($danhSachTruong as $t) $out[$t['maTruong']] = $this->model->tinhGoiYChiTieu($t['maTruong'], $namHoc);
+        return $out;
+    }
+
+    /**
+     * Xử lý submit phân bổ chỉ tiêu
      */
     public function submit() {
+        // Chỉ chấp nhận POST request
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: /public/index.php?controller=targets&action=index');
+            header('Location: targetsController.php');
             exit;
         }
 
         $namHoc = $_POST['namHoc'] ?? '';
         
-        // KHÓA năm 2023-2024
-        if ($namHoc === '2023-2024') {
-            $_SESSION['error'] = '❌ Năm 2023-2024 đã cố định, không thể sửa!';
-            header('Location: /public/index.php?controller=targets&action=index&namHoc=' . urlencode($namHoc));
-            exit;
+        // Kiểm tra năm học 2023-2024 (đã cố định, không cho sửa)
+        if ($this->kiemTraNamHocCodinh($namHoc)) {
+            $_SESSION['error'] = '❌ Năm học 2023-2024 đã được cố định, không thể chỉnh sửa!';
+            $this->redirect($namHoc);
         }
-        
-        // Thu thập dữ liệu - CHỈ LẤY CÁC TRƯỜNG CÓ NHẬP
+
+        // Bước 1: Thu thập dữ liệu chỉ tiêu từ form
+        $chiTieuData = $this->thuThapDuLieuChiTieu();
+
+        // Bước 2: Lấy mã nhân viên sở từ user đang đăng nhập
+        $maNhanVienSo = $this->layMaNhanVienSo();
+
+        // Bước 3: Validate dữ liệu
+        if (!$this->validateChiTieu($chiTieuData, $namHoc)) {
+            $this->redirect($namHoc);
+        }
+
+        // Bước 4: Lưu phân bổ vào database
+        $result = $this->model->luuPhanBo($namHoc, $chiTieuData, $maNhanVienSo);
+
+        // Bước 5: Hiển thị kết quả
+        $_SESSION[$result['success'] ? 'success' : 'error'] = $result['message'];
+        $this->redirect($namHoc);
+    }
+
+    /**
+     * Kiểm tra năm học có phải năm cố định không
+     */
+    private function kiemTraNamHocCodinh($namHoc) {
+        return $namHoc === '2023-2024';
+    }
+
+    /**
+     * Thu thập dữ liệu chỉ tiêu từ form POST
+     */
+    private function thuThapDuLieuChiTieu() {
         $chiTieuData = [];
-        $chiTieuMoi = []; // Dữ liệu mới nhập
-        $chiTieuCu = [];  // Dữ liệu cũ giữ nguyên
         
         foreach ($_POST as $key => $value) {
+            // Chỉ lấy các field có tên bắt đầu bằng 'chitieu_'
             if (strpos($key, 'chitieu_') === 0) {
                 $maTruong = str_replace('chitieu_', '', $key);
                 $soLuong = trim($value);
                 
-                // Nếu có nhập giá trị (không để trống)
-                if ($soLuong !== '') {
-                    $soLuongInt = (int)$soLuong;
-                    
-                    if ($soLuongInt > 0) {
-                        $chiTieuData[$maTruong] = $soLuongInt;
-                        $chiTieuMoi[$maTruong] = $soLuongInt;
-                    }
+                if (!empty($soLuong)) {
+                    $chiTieuData[$maTruong] = (int)$soLuong;
                 }
             }
         }
+        
+        return $chiTieuData;
+    }
 
-        // Validate: Phải nhập ít nhất 1 trường
-        if (empty($chiTieuData)) {
-            $_SESSION['error'] = '⚠️ Vui lòng nhập chỉ tiêu cho ít nhất 1 trường!';
-            header('Location: /public/index.php?controller=targets&action=index&namHoc=' . urlencode($namHoc));
-            exit;
+    /**
+     * Lấy mã nhân viên sở từ user hiện tại
+     */
+    private function layMaNhanVienSo() {
+        $user = current_user();
+        
+        if ($user && isset($user['username'])) {
+            return $this->model->getMaNhanVienSoByUsername($user['username']);
         }
+        
+        return null;
+    }
 
-        // Validate số âm/0 - KHÔNG kiểm tra tổng
+    /**
+     * Validate dữ liệu chỉ tiêu
+     */
+    private function validateChiTieu($chiTieuData, $namHoc) {
+        // Kiểm tra 1: Validate tổng chỉ tiêu
         $validation = $this->model->kiemTraTongChiTieu($chiTieuData, $namHoc);
+        
         if (!$validation['valid']) {
             $_SESSION['error'] = implode('<br>', $validation['errors']);
-            header('Location: /public/index.php?controller=targets&action=index&namHoc=' . urlencode($namHoc));
-            exit;
+            return false;
         }
 
-        // Lấy chỉ tiêu cũ (các trường không được chỉnh sửa)
-        $chiTieuCuData = $this->model->getChiTieuTheoNamHoc($namHoc);
-        foreach ($chiTieuCuData as $ct) {
-            if (!isset($chiTieuMoi[$ct['maTruong']])) {
-                // Trường không được nhập mới → giữ nguyên giá trị cũ
-                $chiTieuCu[$ct['maTruong']] = $ct['chiTieuPhanBo'];
-            }
+        // Kiểm tra 2: Đã nhập đủ cho tất cả các trường chưa
+        $danhSachTruong = $this->model->getDanhSachTruong();
+        if (count($chiTieuData) < count($danhSachTruong)) {
+            $_SESSION['error'] = 'Vui lòng nhập chỉ tiêu cho tất cả các trường!';
+            return false;
         }
 
-        // Merge: Dữ liệu mới + dữ liệu cũ
-        $chiTieuHoanChinh = array_merge($chiTieuCu, $chiTieuMoi);
+        return true;
+    }
 
-        // Lấy mã nhân viên
-        $user = current_user();
-        $maNhanVienSo = $this->model->getMaNhanVienSoByUsername($user['username'] ?? '');
-
-        // Lưu vào DB (CẬP NHẬT PARTIAL)
-        $result = $this->model->luuPhanBoPartial($namHoc, $chiTieuMoi, $chiTieuHoanChinh, $maNhanVienSo);
-
-        if ($result['success']) {
-            $_SESSION['success'] = $result['message'];
-        } else {
-            $_SESSION['error'] = $result['message'];
-        }
-
-        header('Location: /public/index.php?controller=targets&action=index&namHoc=' . urlencode($namHoc));
+    /**
+     * Redirect về trang chủ với năm học
+     */
+    private function redirect($namHoc) {
+        header('Location: targetsController.php?namHoc=' . urlencode($namHoc));
         exit;
     }
 
     /**
      * API lấy gợi ý chỉ tiêu (AJAX)
+     * Dùng cho nút "Gợi ý" trên form
      */
     public function getGoiY() {
         header('Content-Type: application/json');
@@ -153,85 +178,65 @@ class TargetsController {
         $maTruong = $_GET['maTruong'] ?? '';
         $namHoc = $_GET['namHoc'] ?? '';
 
+        // Kiểm tra tham số đầu vào
         if (empty($maTruong) || empty($namHoc)) {
-            echo json_encode(['success' => false, 'message' => 'Thiếu tham số']);
-            exit;
+            $this->jsonResponse(false, 'Thiếu tham số maTruong hoặc namHoc');
         }
 
+        // Tính gợi ý chỉ tiêu
         $goiY = $this->model->tinhGoiYChiTieu($maTruong, $namHoc);
-        
-        echo json_encode([
-            'success' => true,
-            'goiY' => $goiY
-        ]);
+        $this->jsonResponse(true, 'Thành công', $goiY);
+    }
+
+    /**
+     * Trả về JSON response
+     */
+    private function jsonResponse($success, $message, $goiY = null) {
+        $response = ['success' => $success, 'message' => $message];
+        if ($goiY !== null) {
+            $response['goiY'] = $goiY;
+        }
+        echo json_encode($response);
         exit;
     }
 
     /**
-     * Hủy phân bổ
+     * Hủy phân bổ (chỉ hủy form, KHÔNG xóa database)
      */
     public function cancel() {
         $namHoc = $_GET['namHoc'] ?? '';
-        $_SESSION['info'] = 'Đã hủy phân bổ chỉ tiêu tuyển sinh.';
-        header('Location: /public/index.php?controller=targets&action=index&namHoc=' . urlencode($namHoc));
-        exit;
+        $_SESSION['info'] = 'Đã hủy thao tác nhập liệu.';
+        $this->redirect($namHoc);
     }
 
     /**
-     * Reset toàn bộ phân bổ của 1 năm học
+     * Reset phân bổ (XÓA toàn bộ dữ liệu trong DATABASE)
      */
     public function reset() {
-        $namHoc = $_GET['namHoc'] ?? '';
+        // Chỉ chấp nhận POST request
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: targetsController.php');
+            exit;
+        }
 
+        $namHoc = $_POST['namHoc'] ?? '';
+        
+        // Kiểm tra năm học cố định
+        if ($this->kiemTraNamHocCodinh($namHoc)) {
+            $_SESSION['error'] = '❌ Năm học 2023-2024 đã được cố định, không thể xóa!';
+            $this->redirect($namHoc);
+        }
+
+        // Kiểm tra năm học có được chọn không
         if (empty($namHoc)) {
-            $_SESSION['error'] = '⚠️ Thiếu thông tin năm học!';
-            header('Location: /public/index.php?controller=targets&action=index');
-            exit;
+            $_SESSION['error'] = 'Vui lòng chọn năm học!';
+            $this->redirect('');
         }
 
-        // Xác nhận từ form POST
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $result = $this->model->resetPhanBoTheoNam($namHoc);
-
-            if ($result['success']) {
-                $_SESSION['success'] = $result['message'];
-            } else {
-                $_SESSION['error'] = $result['message'];
-            }
-
-            header('Location: /public/index.php?controller=targets&action=index&namHoc=' . urlencode($namHoc));
-            exit;
-        }
-
-        // Nếu GET, redirect về trang chính (không cho phép reset trực tiếp qua URL)
-        $_SESSION['error'] = '⚠️ Yêu cầu không hợp lệ!';
-        header('Location: /public/index.php?controller=targets&action=index&namHoc=' . urlencode($namHoc));
-        exit;
-    }
-
-    /**
-     * Xóa 1 lịch sử phân bổ cụ thể
-     */
-    public function deleteHistory() {
-        $namHoc = $_GET['namHoc'] ?? '';
-        $ngayBanHanh = $_GET['ngayBanHanh'] ?? '';
-
-        if (empty($namHoc) || empty($ngayBanHanh)) {
-            $_SESSION['error'] = '⚠️ Thiếu thông tin!';
-            header('Location: /public/index.php?controller=targets&action=index');
-            exit;
-        }
-
-        $result = $this->model->xoaLichSu($namHoc, $ngayBanHanh);
-
-        if ($result['success']) {
-            $_SESSION['success'] = $result['message'];
-        } else {
-            $_SESSION['error'] = $result['message'];
-        }
-
-        header('Location: /public/index.php?controller=targets&action=index');
-        exit;
+        // Xóa phân bổ
+        $result = $this->model->xoaPhanBoTheoNamHoc($namHoc);
+        $_SESSION[$result['success'] ? 'success' : 'error'] = $result['message'];
+        $this->redirect($namHoc);
     }
 }
 
@@ -254,9 +259,6 @@ switch ($action) {
         break;
     case 'reset':
         $controller->reset();
-        break;
-    case 'deleteHistory':
-        $controller->deleteHistory();
         break;
     default:
         $controller->index();
