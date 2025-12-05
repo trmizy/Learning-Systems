@@ -1,70 +1,166 @@
 <?php
-// filepath: d:\Hk1_2025\PTUD_Nhom4\Đồ Án Nhóm\Learning_System\views\gvbm\dashboard.php
+// filepath: d:\Hk1_2025\PTUD_Nhom4\Đồ Án Nhóm\Learning_System\views\ph\dashboard.php
 // Bảo vệ & kiểm tra quyền
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
-require_role(['gvbm', 'gvcn', 'ttbm']);
+require_role(['ph']);
 
 // Tiêu đề trang và header chung
-$pageTitle = 'Trang giáo viên - THPT';
+$pageTitle = 'Trang phụ huynh - THPT';
 require_once __DIR__ . '/../layouts/header.php';
 
 // Lấy user hiện tại
 $user = current_user() ?: [];
-$fullName = isset($user['full_name']) ? $user['full_name'] : 'Giáo viên';
-$teacherId = isset($user['teacher_id']) ? $user['teacher_id'] : 'GV0000';
-$currentRole = isset($user['role']) ? $user['role'] : 'gvbm';
+$fullName = isset($user['full_name']) ? $user['full_name'] : 'Phụ huynh';
+// Prefer session-provided parent_id; nếu không có thì sẽ thử lookup theo maTaiKhoan
+$parentId = isset($user['parent_id']) ? $user['parent_id'] : null;
+// Kết nối DB và kiểm tra phụ huynh đã liên kết với học sinh hay chưa
+require_once __DIR__ . '/../../config/database.php';
+try {
+    $db   = Database::getInstance();
+    $conn = $db->getConnection();
 
-// Thông tin giáo viên
-$teacherInfo = [
-    'subject' => 'Toán học',
-    'department' => 'Tổ Toán - Tin',
-    'homeroom_class' => $currentRole === 'gvcn' ? '12A1' : null,
-];
+    // Nếu session không cung cấp maPH, thử lookup theo maTaiKhoan
+    if (empty($parentId) && !empty($user['maTaiKhoan'])) {
+        $stmt0 = $conn->prepare("SELECT maPH FROM PhuHuynh WHERE maTaiKhoan = ? LIMIT 1");
+        $stmt0->execute([$user['maTaiKhoan']]);
+        $r0 = $stmt0->fetch();
+        if ($r0 && !empty($r0['maPH'])) {
+            $parentId = $r0['maPH'];
+        }
+    }
 
-// Số liệu demo
-$stats = [
-    'total_classes' => 4,
-    'total_students' => 120,
-    'pending_scores' => 15,
-    'pending_requests' => $currentRole === 'gvcn' ? 3 : 0,
-    'unread_notifications' => 5,
-];
+    // Nếu vẫn chưa có maPH, thử lookup theo email đăng nhập
+    if (empty($parentId) && !empty($user['email'])) {
+        $stmtEmail = $conn->prepare("SELECT maPH FROM PhuHuynh WHERE email = ? LIMIT 1");
+        $stmtEmail->execute([$user['email']]);
+        $rEmail = $stmtEmail->fetch();
+        if ($rEmail && !empty($rEmail['maPH'])) {
+            $parentId = $rEmail['maPH'];
+        }
+    }
 
-// Lớp giảng dạy
-$teachingClasses = [
-    ['class' => '12A1', 'students' => 35, 'avg_score' => 8.2, 'period' => 'Tiết 1-2'],
-    ['class' => '12A2', 'students' => 32, 'avg_score' => 7.8, 'period' => 'Tiết 3-4'],
-    ['class' => '11B1', 'students' => 30, 'avg_score' => 7.5, 'period' => 'Tiết 5-6'],
-    ['class' => '11B2', 'students' => 23, 'avg_score' => 8.0, 'period' => 'Tiết 7-8'],
-];
-
-// Lịch dạy hôm nay
-$todaySchedule = [
-    ['period' => 1, 'class' => '12A1', 'room' => 'A201', 'time' => '07:00 - 07:45'],
-    ['period' => 2, 'class' => '12A1', 'room' => 'A201', 'time' => '07:50 - 08:35'],
-    ['period' => 5, 'class' => '11B1', 'room' => 'B105', 'time' => '10:05 - 10:50'],
-];
-
-// Thông báo
-$notifications = [
-    ['title' => 'Họp tổ bộ môn tuần 12', 'type' => 'Tổ trưởng', 'date' => '2024-03-15', 'unread' => true],
-    ['title' => 'Nộp điểm học kỳ II trước ngày 20/03', 'type' => 'BGH', 'date' => '2024-03-14', 'unread' => true],
-    ['title' => 'Thông báo lịch thi giữa kỳ', 'type' => 'Phòng KHTC', 'date' => '2024-03-10', 'unread' => false],
-];
-
-// Đơn xin nghỉ (chỉ cho GVCN)
-$leaveRequests = [];
-if ($currentRole === 'gvcn') {
-    $leaveRequests = [
-        ['student' => 'Nguyễn Văn A', 'reason' => 'Ốm đau', 'date' => '2024-03-16', 'status' => 'pending'],
-        ['student' => 'Trần Thị B', 'reason' => 'Việc gia đình', 'date' => '2024-03-17', 'status' => 'pending'],
-        ['student' => 'Lê Văn C', 'reason' => 'Khám bệnh', 'date' => '2024-03-15', 'status' => 'pending'],
-    ];
+    if (!empty($parentId)) {
+        // Kiểm tra xem maPH này có trong bảng phuhuynh_hocsinh không
+        $stmt = $conn->prepare("SELECT 1 FROM phuhuynh_hocsinh WHERE maPH = :maPH LIMIT 1");
+        $stmt->execute(['maPH' => $parentId]);
+        $hasStudent = (bool)$stmt->fetchColumn();
+    }
+} catch (PDOException $e) {
+    error_log('Error checking phuhuynh_hocsinh in parent dashboard: ' . $e->getMessage());
+    // Nếu lỗi DB thì tạm coi như chưa có HS để tránh chặn nhầm
+    $hasStudent = false;
 }
+
+
+// Thông tin con: truy vấn từ DB nếu phụ huynh đã liên kết
+$childInfo = [
+    'name' => 'Chưa có',
+    'student_id' => '',
+    'class' => '',
+    'homeroom_teacher' => ''
+];
+
+if (!empty($parentId)) {
+    try {
+        $stmtChild = $conn->prepare("SELECT hs.hoTen AS name, hs.maHS AS maHS, hs.maLop AS maLop FROM phuhuynh_hocsinh phh JOIN hocsinh hs ON phh.maHS = hs.maHS WHERE phh.maPH = ? LIMIT 1");
+        $stmtChild->execute([$parentId]);
+        $rChild = $stmtChild->fetch();
+        if ($rChild) {
+            $childInfo['name'] = $rChild['name'] ?? $childInfo['name'];
+            $childInfo['student_id'] = $rChild['maHS'] ?? $childInfo['student_id'];
+            $childInfo['class'] = $rChild['maLop'] ?? $childInfo['class'];
+        }
+    } catch (PDOException $e) {
+        error_log('Error fetching child info in dashboard: ' . $e->getMessage());
+    }
+}
+
+// Số liệu lấy từ DB (nếu có maHS)
+$stats = [
+    'attendance_rate' => null,
+    'gpa_semester' => null,
+    'conduct_rating' => null,
+    'pending_requests' => 0,
+    'unread_notifications' => 0,
+    'violations' => 0,
+    'rewards' => 0,
+];
+
+if (!empty($childInfo['student_id'])) {
+    $maHS = $childInfo['student_id'];
+    try {
+        // Truy vấn viewThongKeDiemHanhKiem để lấy điểm TB chung và hạnh kiểm
+        $stmtStats = $conn->prepare("SELECT diemTrungBinhChung, loaiHanhKiem, soBuoiNghiCoPhep, soBuoiNghiKhongCoPhep, soLanViPham FROM viewThongKeDiemHanhKiem WHERE maHS = ? LIMIT 1");
+        $stmtStats->execute([$maHS]);
+        $rStats = $stmtStats->fetch();
+        if ($rStats) {
+            $stats['gpa_semester'] = $rStats['diemTrungBinhChung'] !== null ? floatval($rStats['diemTrungBinhChung']) : null;
+            $stats['conduct_rating'] = $rStats['loaiHanhKiem'] ?? null;
+            $stats['violations'] = isset($rStats['soLanViPham']) ? intval($rStats['soLanViPham']) : 0;
+
+            // Tính tỷ lệ chuyên cần dựa trên số buổi nghỉ (nếu có). Sử dụng tổng ngày học mặc định 180 nếu không biết.
+            $totalDays = 180; // thay đổi theo quy mô năm học nếu cần
+            $absences = (intval($rStats['soBuoiNghiCoPhep'] ?? 0) + intval($rStats['soBuoiNghiKhongCoPhep'] ?? 0));
+            $attendanceRate = $totalDays > 0 ? max(0, min(100, round((($totalDays - $absences) / $totalDays) * 100, 1))) : null;
+            $stats['attendance_rate'] = $attendanceRate;
+        }
+
+        // Tìm bảng khen thưởng (nếu có) bằng thông tin_schema; dùng tên bảng chứa 'khen' hoặc 'thuong' nếu có.
+        $stmtTable = $conn->prepare("SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() AND (table_name LIKE '%khen%' OR table_name LIKE '%thuong%' OR table_name LIKE '%reward%') LIMIT 1");
+        $stmtTable->execute();
+        $rTable = $stmtTable->fetchColumn();
+        if ($rTable) {
+            // thử đếm theo cột maHS hoặc maThiSinh
+            $count = 0;
+            // nếu cột maHS tồn tại
+            $colExists = $conn->prepare("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = 'maHS'");
+            $colExists->execute([$rTable]);
+            if ($colExists->fetchColumn() > 0) {
+                $stmtCount = $conn->prepare("SELECT COUNT(*) FROM `" . $rTable . "` WHERE maHS = ?");
+                $stmtCount->execute([$maHS]);
+                $count = intval($stmtCount->fetchColumn() ?? 0);
+            } else {
+                // thử theo maThiSinh
+                $colExists2 = $conn->prepare("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = 'maThiSinh'");
+                $colExists2->execute([$rTable]);
+                if ($colExists2->fetchColumn() > 0) {
+                    $stmtCount2 = $conn->prepare("SELECT COUNT(*) FROM `" . $rTable . "` WHERE maThiSinh = ?");
+                    $stmtCount2->execute([$maHS]);
+                    $count = intval($stmtCount2->fetchColumn() ?? 0);
+                }
+            }
+            $stats['rewards'] = $count;
+        }
+    } catch (PDOException $e) {
+        error_log('Error fetching student stats in dashboard: ' . $e->getMessage());
+    }
+}
+
+// Dữ liệu mẫu - Kết quả học tập gần đây
+$recentGrades = [
+    ['subject' => 'Toán', 'score' => 8.5, 'type' => 'Giữa kỳ', 'date' => '2024-03-15'],
+    ['subject' => 'Văn', 'score' => 9.0, 'type' => 'Cuối kỳ', 'date' => '2024-03-14'],
+    ['subject' => 'Anh', 'score' => 8.0, 'type' => '15 phút', 'date' => '2024-03-13'],
+];
+
+// Thông báo quan trọng
+$notifications = [
+    ['title' => 'Thông báo họp phụ huynh cuối học kỳ 2', 'type' => 'GVCN', 'date' => '2024-03-15', 'unread' => true, 'priority' => 'high'],
+    ['title' => 'Con em bạn được khen thưởng học sinh giỏi', 'type' => 'BGH', 'date' => '2024-03-14', 'unread' => true, 'priority' => 'high'],
+    ['title' => 'Nhắc nhở nộp học phí tháng 3', 'type' => 'Kế toán', 'date' => '2024-03-10', 'unread' => false, 'priority' => 'normal'],
+];
+
+// Khen thưởng & Vi phạm
+$rewards = [
+    ['title' => 'Học sinh giỏi học kỳ I', 'date' => '2024-01-15', 'type' => 'Khen thưởng'],
+    ['title' => 'Giải nhất Olympic Toán cấp trường', 'date' => '2024-02-20', 'type' => 'Khen thưởng'],
+];
+
+$violations = [];
 ?>
 
 <style>
-    .teacher-dashboard {
+    .parent-dashboard {
         animation: fadeIn 0.5s ease;
     }
     
@@ -93,6 +189,10 @@ if ($currentRole === 'gvcn') {
     
     .stat-card.info {
         background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    
+    .stat-card.danger {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
     }
     
     .stat-card h3 {
@@ -145,59 +245,48 @@ if ($currentRole === 'gvcn') {
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
     
-    .welcome-banner {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 2rem;
-        border-radius: 16px;
+    .child-info-card {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border-left: 4px solid #667eea;
+        border-radius: 12px;
+        padding: 1.5rem;
         margin-bottom: 2rem;
-        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
     }
     
-    .welcome-banner h2 {
-        font-size: 2rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
-    
-    .role-badge-large {
-        padding: 0.5rem 1.5rem;
-        border-radius: 25px;
-        font-weight: 700;
-        font-size: 1rem;
-        background: white;
-        color: #667eea;
-        display: inline-block;
-        margin-top: 0.5rem;
-    }
-    
-    .class-card {
-        padding: 1.25rem;
+    .grade-item {
+        padding: 1rem;
         border-radius: 12px;
         background: white;
-        border: 2px solid #e9ecef;
-        margin-bottom: 1rem;
-        transition: all 0.3s ease;
-    }
-    
-    .class-card:hover {
-        border-color: #667eea;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-        transform: translateX(5px);
-    }
-    
-    .schedule-item {
-        padding: 1rem;
-        border-left: 4px solid #667eea;
-        background: linear-gradient(90deg, rgba(102, 126, 234, 0.05) 0%, transparent 100%);
-        border-radius: 8px;
+        border: 1px solid #e9ecef;
         margin-bottom: 0.75rem;
         transition: all 0.3s ease;
     }
     
-    .schedule-item:hover {
-        background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, transparent 100%);
+    .grade-item:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         transform: translateX(5px);
+    }
+    
+    .grade-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+    
+    .grade-excellent {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+    }
+    
+    .grade-good {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .grade-average {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
     }
     
     .notification-item {
@@ -227,28 +316,94 @@ if ($currentRole === 'gvcn') {
         font-weight: 500;
     }
     
+    .notification-item.priority-high::before {
+        background: linear-gradient(180deg, #f5576c, #f093fb);
+    }
+    
     .notification-item:hover {
         transform: translateX(5px);
         box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
     
-    .request-item {
+    .badge-type {
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .welcome-banner {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+    }
+    
+    .welcome-banner h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .quick-action-btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: 2px solid white;
+        color: white;
+        background: transparent;
+    }
+    
+    .quick-action-btn:hover {
+        background: white;
+        color: #667eea;
+        transform: translateY(-2px);
+    }
+    
+    .reward-item {
+        padding: 1rem;
+        background: linear-gradient(135deg, rgba(17, 153, 142, 0.1) 0%, rgba(56, 239, 125, 0.1) 100%);
+        border-left: 4px solid #11998e;
+        border-radius: 8px;
+        margin-bottom: 0.75rem;
+    }
+    
+    .violation-item {
         padding: 1rem;
         background: linear-gradient(135deg, rgba(240, 147, 251, 0.1) 0%, rgba(245, 87, 108, 0.1) 100%);
         border-left: 4px solid #f5576c;
         border-radius: 8px;
         margin-bottom: 0.75rem;
     }
-    
-    .badge-status {
-        padding: 0.35rem 0.75rem;
-        border-radius: 12px;
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
 </style>
 
-<div class="teacher-dashboard">
+<div class="parent-dashboard">
+    <?php
+    // Hiển thị thông báo từ session (nếu có)
+    $messages = $_SESSION['messages'] ?? [];
+    unset($_SESSION['messages']);
+    if (!empty($messages)): ?>
+        <div class="container my-3">
+            <?php foreach ($messages as $msg):
+                $type = $msg['type'] ?? 'info';
+                $cls = match($type) {
+                    'success' => 'alert-success',
+                    'danger' => 'alert-danger',
+                    'warning' => 'alert-warning',
+                    'info' => 'alert-info',
+                    default => 'alert-info'
+                };
+            ?>
+                <div class="alert <?php echo $cls; ?> alert-dismissible fade show" role="alert" style="color:#a94442;">
+                    <?php echo htmlspecialchars($msg['text']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
     <!-- Welcome Banner -->
     <div class="welcome-banner">
         <div class="row align-items-center">
@@ -258,27 +413,38 @@ if ($currentRole === 'gvcn') {
                     Xin chào, <?php echo htmlspecialchars($fullName); ?>!
                 </h2>
                 <p class="mb-0">
-                    <i class="fa-solid fa-id-card me-2"></i>Mã GV: <?php echo htmlspecialchars($teacherId); ?>
+                    <i class="fa-solid fa-child me-2"></i>Con em: <strong><?php echo htmlspecialchars($childInfo['name']); ?></strong>
                     <span class="mx-2">|</span>
-                    <i class="fa-solid fa-book me-2"></i>Bộ môn: <?php echo htmlspecialchars($teacherInfo['subject']); ?>
-                    <?php if ($teacherInfo['homeroom_class']): ?>
+                    <i class="fa-solid fa-id-card me-2"></i>Mã HS: <strong><?php echo htmlspecialchars($childInfo['student_id']); ?></strong>
                     <span class="mx-2">|</span>
-                    <i class="fa-solid fa-users me-2"></i>Lớp CN: <?php echo htmlspecialchars($teacherInfo['homeroom_class']); ?>
-                    <?php endif; ?>
+                    <i class="fa-solid fa-users me-2"></i>Lớp: <strong><?php echo htmlspecialchars($childInfo['class']); ?></strong>
                 </p>
-                <div>
-                    <?php
-                    $roleName = $currentRole === 'gvcn' ? 'Giáo viên Chủ nhiệm' : 
-                               ($currentRole === 'ttbm' ? 'Tổ trưởng Bộ môn' : 'Giáo viên Bộ môn');
-                    ?>
-                    <span class="role-badge-large">
-                        <i class="fa-solid fa-star me-2"></i><?php echo $roleName; ?>
-                    </span>
-                </div>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                <a href="/modules/teachers/profile.php" class="btn btn-light btn-lg">
-                    <i class="fa-solid fa-user me-2"></i>Hồ sơ cá nhân
+                <a href="/modules/parents/child-profile.php" class="quick-action-btn btn">
+                    <i class="fa-solid fa-user me-2"></i>Hồ sơ con em
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- GVCN Info Card -->
+    <div class="child-info-card">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h5 class="mb-2">
+                    <i class="fa-solid fa-chalkboard-user text-primary me-2"></i>
+                    Giáo viên chủ nhiệm: <strong><?php echo htmlspecialchars($childInfo['homeroom_teacher']); ?></strong>
+                </h5>
+                <p class="mb-0 text-muted">
+                    <i class="fa-solid fa-phone me-2"></i>(028) 3456-7890
+                    <span class="mx-2">|</span>
+                    <i class="fa-solid fa-envelope me-2"></i>gvcn.12a1@thpt.edu.vn
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="/modules/parents/contact-teacher.php" class="btn btn-primary">
+                    <i class="fa-solid fa-comments me-2"></i>Liên hệ GVCN
                 </a>
             </div>
         </div>
@@ -287,37 +453,25 @@ if ($currentRole === 'gvcn') {
     <!-- Stats Overview -->
     <div class="row g-3 mb-4">
         <div class="col-6 col-lg-3">
-            <div class="stat-card">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h3><?php echo $stats['total_classes']; ?></h3>
-                        <p><i class="fa-solid fa-chalkboard me-2"></i>Lớp giảng dạy</p>
-                    </div>
-                    <i class="fa-solid fa-school fa-2x opacity-50"></i>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-6 col-lg-3">
             <div class="stat-card success">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <h3><?php echo $stats['total_students']; ?></h3>
-                        <p><i class="fa-solid fa-users me-2"></i>Học sinh</p>
+                        <h3><?php echo $stats['attendance_rate']; ?>%</h3>
+                        <p><i class="fa-solid fa-calendar-check me-2"></i>Chuyên cần</p>
                     </div>
-                    <i class="fa-solid fa-user-graduate fa-2x opacity-50"></i>
+                    <i class="fa-solid fa-chart-line fa-2x opacity-50"></i>
                 </div>
             </div>
         </div>
         
         <div class="col-6 col-lg-3">
-            <div class="stat-card warning">
+            <div class="stat-card">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <h3><?php echo $stats['pending_scores']; ?></h3>
-                        <p><i class="fa-solid fa-clipboard-list me-2"></i>Điểm chưa nhập</p>
+                        <h3><?php echo $stats['gpa_semester']; ?></h3>
+                        <p><i class="fa-solid fa-star me-2"></i>Điểm TB HK</p>
                     </div>
-                    <i class="fa-solid fa-exclamation-triangle fa-2x opacity-50"></i>
+                    <i class="fa-solid fa-trophy fa-2x opacity-50"></i>
                 </div>
             </div>
         </div>
@@ -326,12 +480,22 @@ if ($currentRole === 'gvcn') {
             <div class="stat-card info">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <h3><?php echo $currentRole === 'gvcn' ? $stats['pending_requests'] : $stats['unread_notifications']; ?></h3>
-                        <p><i class="fa-solid <?php echo $currentRole === 'gvcn' ? 'fa-file-lines' : 'fa-bell'; ?> me-2"></i>
-                            <?php echo $currentRole === 'gvcn' ? 'Đơn chờ duyệt' : 'Thông báo'; ?>
-                        </p>
+                        <h3><?php echo $stats['rewards']; ?></h3>
+                        <p><i class="fa-solid fa-award me-2"></i>Khen thưởng</p>
                     </div>
-                    <i class="fa-solid fa-envelope fa-2x opacity-50"></i>
+                    <i class="fa-solid fa-medal fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-6 col-lg-3">
+            <div class="stat-card <?php echo $stats['violations'] > 0 ? 'danger' : 'success'; ?>">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h3><?php echo $stats['violations']; ?></h3>
+                        <p><i class="fa-solid fa-triangle-exclamation me-2"></i>Vi phạm</p>
+                    </div>
+                    <i class="fa-solid fa-shield-halved fa-2x opacity-50"></i>
                 </div>
             </div>
         </div>
@@ -339,91 +503,60 @@ if ($currentRole === 'gvcn') {
 
     <!-- Main Functions Grid -->
     <div class="row g-4 mb-4">
-        <!-- Nhập điểm -->
+        <!-- Kết quả học tập -->
         <div class="col-md-6 col-xl-3">
             <div class="card feature-card h-100">
                 <div class="card-body text-center">
                     <div class="feature-icon mx-auto">
-                        <i class="fa-solid fa-pen-to-square"></i>
+                        <i class="fa-solid fa-chart-bar"></i>
                     </div>
-                    <h5 class="card-title fw-bold">Nhập điểm</h5>
-                    <p class="text-muted small">Nhập, sửa điểm kiểm tra, thi</p>
-                    <a href="/modules/teachers/scores/input.php" class="btn btn-primary w-100 mt-3">
-                        <i class="fa-solid fa-keyboard me-2"></i>Nhập điểm
+                    <h5 class="card-title fw-bold">Kết quả học tập</h5>
+                    <p class="text-muted small">Điểm số, xếp loại học lực chi tiết</p>
+                    <a href="/modules/parents/grades.php" class="btn btn-primary w-100 mt-3">
+                        <i class="fa-solid fa-eye me-2"></i>Xem chi tiết
                     </a>
                 </div>
             </div>
         </div>
 
-        <!-- Lớp giảng dạy -->
-        <div class="col-md-6 col-xl-3">
-            <div class="card feature-card h-100">
-                <div class="card-body text-center">
-                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-                        <i class="fa-solid fa-chalkboard-user"></i>
-                    </div>
-                    <h5 class="card-title fw-bold">Lớp giảng dạy</h5>
-                    <p class="text-muted small">Danh sách lớp và học sinh</p>
-                    <a href="/modules/teachers/classes.php" class="btn btn-success w-100 mt-3">
-                        <i class="fa-solid fa-list me-2"></i>Xem danh sách
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Thời khóa biểu -->
+        <!-- Đơn xin nghỉ -->
         <div class="col-md-6 col-xl-3">
             <div class="card feature-card h-100">
                 <div class="card-body text-center">
                     <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                        <i class="fa-solid fa-calendar-days"></i>
+                        <i class="fa-solid fa-file-medical"></i>
                     </div>
-                    <h5 class="card-title fw-bold">Thời khóa biểu</h5>
-                    <p class="text-muted small">Lịch dạy trong tuần</p>
-                    <a href="/modules/teachers/schedule.php" class="btn btn-danger w-100 mt-3">
-                        <i class="fa-solid fa-calendar me-2"></i>Xem TKB
+                    <h5 class="card-title fw-bold">Đơn xin nghỉ</h5>
+                    <p class="text-muted small">Gửi đơn, upload minh chứng</p>
+                    <div class="d-grid gap-2 mt-3">
+                        <a href="/modules/parents/leave-requests/create.php" class="btn btn-danger btn-sm">
+                            <i class="fa-solid fa-plus me-1"></i>Tạo đơn mới
+                        </a>
+                        <a href="/modules/parents/leave-requests/list.php" class="btn btn-outline-danger btn-sm">
+                            <i class="fa-solid fa-list me-1"></i>Lịch sử đơn
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hạnh kiểm & Vi phạm -->
+        <div class="col-md-6 col-xl-3">
+            <div class="card feature-card h-100">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                        <i class="fa-solid fa-shield-heart"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Hạnh kiểm</h5>
+                    <p class="text-muted small">Vi phạm, khen thưởng</p>
+                    <a href="/modules/parents/conduct.php" class="btn btn-success w-100 mt-3">
+                        <i class="fa-solid fa-clipboard-check me-2"></i>Xem chi tiết
                     </a>
                 </div>
             </div>
         </div>
 
-        <!-- GVCN/TTBM Features -->
-        <?php if ($currentRole === 'gvcn'): ?>
-        <div class="col-md-6 col-xl-3">
-            <div class="card feature-card h-100">
-                <div class="card-body text-center">
-                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                        <i class="fa-solid fa-clipboard-check"></i>
-                    </div>
-                    <h5 class="card-title fw-bold">Duyệt đơn</h5>
-                    <p class="text-muted small">Đơn xin nghỉ học sinh</p>
-                    <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/teachers/requests/pending.php" class="btn btn-info btn-sm">
-                            <i class="fa-solid fa-clock me-1"></i>Chờ duyệt (<?php echo $stats['pending_requests']; ?>)
-                        </a>
-                        <a href="/modules/teachers/requests/list.php" class="btn btn-outline-info btn-sm">
-                            <i class="fa-solid fa-list me-1"></i>Tất cả
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <?php elseif ($currentRole === 'ttbm'): ?>
-        <div class="col-md-6 col-xl-3">
-            <div class="card feature-card h-100">
-                <div class="card-body text-center">
-                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                        <i class="fa-solid fa-tasks"></i>
-                    </div>
-                    <h5 class="card-title fw-bold">Phân công</h5>
-                    <p class="text-muted small">Ra đề thi, giảng dạy</p>
-                    <a href="/modules/teachers/department/assignments.php" class="btn btn-info w-100 mt-3">
-                        <i class="fa-solid fa-user-gear me-2"></i>Quản lý
-                    </a>
-                </div>
-            </div>
-        </div>
-        <?php else: ?>
+        <!-- Thông báo -->
         <div class="col-md-6 col-xl-3">
             <div class="card feature-card h-100">
                 <div class="card-body text-center">
@@ -431,151 +564,175 @@ if ($currentRole === 'gvcn') {
                         <i class="fa-solid fa-bell"></i>
                     </div>
                     <h5 class="card-title fw-bold">Thông báo</h5>
-                    <p class="text-muted small">Tin từ BGH, tổ bộ môn</p>
-                    <a href="/modules/teachers/notifications.php" class="btn btn-info w-100 mt-3">
+                    <p class="text-muted small">Tin từ GVCN, BGH</p>
+                    <a href="/modules/parents/notifications.php" class="btn btn-info w-100 mt-3">
                         <i class="fa-solid fa-envelope me-2"></i>Xem tất cả
+                        <?php if ($stats['unread_notifications'] > 0): ?>
+                        <span class="badge bg-danger rounded-pill ms-2"><?php echo $stats['unread_notifications']; ?></span>
+                        <?php endif; ?>
                     </a>
                 </div>
             </div>
         </div>
-        <?php endif; ?>
+        <!-- Đăng ký nguyện vọng -->
+        <div class="col-md-6 col-xl-3">
+            <div class="card feature-card h-100">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Đăng ký nguyện vọng</h5>
+                    <p class="text-muted small">Đăng ký nguyện vọng vào trường THPT</p>
+
+                        <!-- Luôn hiển thị nút; controller sẽ kiểm tra và redirect với thông báo nếu phụ huynh đã liên kết -->
+                        <a href="/controllers/ph/wishRegistrationController.php" class="btn btn-primary w-100 mt-3">
+                            <i class="fa-solid fa-pen-to-square me-2"></i>Đăng ký ngay
+                        </a>
+
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="row g-4">
-        <!-- Teaching Classes -->
+        <!-- Recent Grades -->
         <div class="col-lg-4">
             <div class="card feature-card">
                 <div class="card-body">
                     <h5 class="card-title fw-bold mb-4">
-                        <i class="fa-solid fa-school text-primary me-2"></i>
-                        Lớp giảng dạy (<?php echo count($teachingClasses); ?>)
+                        <i class="fa-solid fa-star text-warning me-2"></i>
+                        Điểm số mới nhất
                     </h5>
-                    <?php foreach ($teachingClasses as $class): ?>
-                    <div class="class-card">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
+                    <?php foreach ($recentGrades as $grade): ?>
+                    <div class="grade-item">
+                        <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <div class="fw-bold text-primary fs-5">Lớp <?php echo htmlspecialchars($class['class']); ?></div>
+                                <div class="fw-bold"><?php echo htmlspecialchars($grade['subject']); ?></div>
                                 <div class="small text-muted">
-                                    <i class="fa-solid fa-users me-1"></i><?php echo $class['students']; ?> học sinh
+                                    <i class="fa-solid fa-calendar me-1"></i><?php echo $grade['date']; ?>
                                 </div>
                             </div>
                             <div class="text-end">
-                                <div class="badge bg-success">ĐTB: <?php echo $class['avg_score']; ?></div>
+                                <div class="grade-badge <?php 
+                                    echo $grade['score'] >= 8 ? 'grade-excellent' : 
+                                        ($grade['score'] >= 6.5 ? 'grade-good' : 'grade-average'); 
+                                ?>">
+                                    <?php echo $grade['score']; ?>
+                                </div>
+                                <div class="small text-muted mt-1"><?php echo $grade['type']; ?></div>
                             </div>
-                        </div>
-                        <div class="small text-muted">
-                            <i class="fa-solid fa-clock me-1"></i><?php echo htmlspecialchars($class['period']); ?>
                         </div>
                     </div>
                     <?php endforeach; ?>
-                    <a href="/modules/teachers/classes.php" class="btn btn-outline-primary w-100 mt-3">
-                        <i class="fa-solid fa-list me-2"></i>Xem chi tiết
+                    <a href="/modules/parents/grades.php" class="btn btn-outline-warning w-100 mt-3">
+                        <i class="fa-solid fa-chart-line me-2"></i>Xem tất cả điểm
                     </a>
                 </div>
             </div>
         </div>
 
-        <!-- Today's Schedule -->
+        <!-- Rewards & Violations -->
         <div class="col-lg-4">
             <div class="card feature-card">
                 <div class="card-body">
                     <h5 class="card-title fw-bold mb-4">
-                        <i class="fa-solid fa-clock text-warning me-2"></i>
-                        Lịch dạy hôm nay
+                        <i class="fa-solid fa-award text-success me-2"></i>
+                        Khen thưởng & Vi phạm
                     </h5>
-                    <?php foreach ($todaySchedule as $lesson): ?>
-                    <div class="schedule-item">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <div class="fw-bold text-primary">Tiết <?php echo $lesson['period']; ?>: Lớp <?php echo htmlspecialchars($lesson['class']); ?></div>
-                                <div class="small text-muted">
-                                    <i class="fa-solid fa-door-open me-1"></i>Phòng: <?php echo htmlspecialchars($lesson['room']); ?>
-                                </div>
+                    
+                    <?php if (count($rewards) > 0): ?>
+                        <h6 class="text-success mb-3">
+                            <i class="fa-solid fa-trophy me-2"></i>Khen thưởng (<?php echo count($rewards); ?>)
+                        </h6>
+                        <?php foreach ($rewards as $reward): ?>
+                        <div class="reward-item">
+                            <div class="fw-bold text-success"><?php echo htmlspecialchars($reward['title']); ?></div>
+                            <div class="small text-muted">
+                                <i class="fa-solid fa-calendar me-1"></i><?php echo $reward['date']; ?>
                             </div>
-                            <span class="badge bg-light text-dark">
-                                <?php echo $lesson['time']; ?>
-                            </span>
                         </div>
-                    </div>
-                    <?php endforeach; ?>
-                    <a href="/modules/teachers/schedule.php" class="btn btn-outline-warning w-100 mt-3">
-                        <i class="fa-solid fa-calendar-week me-2"></i>Xem lịch tuần
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                    
+                    <?php if (count($violations) > 0): ?>
+                        <h6 class="text-danger mb-3 mt-3">
+                            <i class="fa-solid fa-triangle-exclamation me-2"></i>Vi phạm (<?php echo count($violations); ?>)
+                        </h6>
+                        <?php foreach ($violations as $violation): ?>
+                        <div class="violation-item">
+                            <div class="fw-bold text-danger"><?php echo htmlspecialchars($violation['title']); ?></div>
+                            <div class="small text-muted">
+                                <i class="fa-solid fa-calendar me-1"></i><?php echo $violation['date']; ?>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="alert alert-success mt-3">
+                            <i class="fa-solid fa-check-circle me-2"></i>
+                            Con em không có vi phạm nào!
+                        </div>
+                    <?php endif; ?>
+                    
+                    <a href="/modules/parents/conduct.php" class="btn btn-outline-success w-100 mt-3">
+                        <i class="fa-solid fa-clipboard-list me-2"></i>Xem chi tiết
                     </a>
                 </div>
             </div>
         </div>
 
-        <!-- Notifications / Leave Requests -->
+        <!-- Notifications -->
         <div class="col-lg-4">
             <div class="card feature-card">
                 <div class="card-body">
-                    <?php if ($currentRole === 'gvcn' && count($leaveRequests) > 0): ?>
-                        <h5 class="card-title fw-bold mb-4">
-                            <i class="fa-solid fa-file-lines text-danger me-2"></i>
-                            Đơn xin nghỉ chờ duyệt
-                            <span class="badge bg-danger rounded-pill"><?php echo count($leaveRequests); ?></span>
-                        </h5>
-                        <?php foreach ($leaveRequests as $request): ?>
-                        <div class="request-item">
-                            <div class="fw-bold"><?php echo htmlspecialchars($request['student']); ?></div>
-                            <div class="small text-muted mb-2">
-                                <i class="fa-solid fa-calendar me-1"></i><?php echo $request['date']; ?>
+                    <h5 class="card-title fw-bold mb-4">
+                        <i class="fa-solid fa-bell text-info me-2"></i>
+                        Thông báo quan trọng
+                        <?php if ($stats['unread_notifications'] > 0): ?>
+                        <span class="badge bg-danger rounded-pill"><?php echo $stats['unread_notifications']; ?></span>
+                        <?php endif; ?>
+                    </h5>
+                    <?php foreach ($notifications as $notif): ?>
+                    <div class="notification-item <?php echo $notif['unread'] ? 'unread' : ''; ?> priority-<?php echo $notif['priority']; ?>">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold mb-1">
+                                    <?php if ($notif['priority'] === 'high'): ?>
+                                    <i class="fa-solid fa-circle-exclamation text-danger me-1"></i>
+                                    <?php endif; ?>
+                                    <?php echo htmlspecialchars($notif['title']); ?>
+                                </div>
+                                <div class="small text-muted">
+                                    <span class="badge-type bg-primary text-white me-2">
+                                        <?php echo htmlspecialchars($notif['type']); ?>
+                                    </span>
+                                    <i class="fa-solid fa-clock me-1"></i><?php echo $notif['date']; ?>
+                                </div>
                             </div>
-                            <div class="small mb-2">
-                                Lý do: <?php echo htmlspecialchars($request['reason']); ?>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-success flex-1">
-                                    <i class="fa-solid fa-check me-1"></i>Duyệt
-                                </button>
-                                <button class="btn btn-sm btn-danger flex-1">
-                                    <i class="fa-solid fa-times me-1"></i>Từ chối
-                                </button>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                        <a href="/modules/teachers/requests/pending.php" class="btn btn-outline-danger w-100 mt-3">
-                            <i class="fa-solid fa-list me-2"></i>Xem tất cả
-                        </a>
-                    <?php else: ?>
-                        <h5 class="card-title fw-bold mb-4">
-                            <i class="fa-solid fa-bell text-info me-2"></i>
-                            Thông báo mới
-                            <?php if ($stats['unread_notifications'] > 0): ?>
-                            <span class="badge bg-danger rounded-pill"><?php echo $stats['unread_notifications']; ?></span>
+                            <?php if ($notif['unread']): ?>
+                            <span class="badge bg-danger rounded-circle" style="width: 10px; height: 10px; padding: 0;"></span>
                             <?php endif; ?>
-                        </h5>
-                        <?php foreach ($notifications as $notif): ?>
-                        <div class="notification-item <?php echo $notif['unread'] ? 'unread' : ''; ?>">
-                            <div class="fw-semibold mb-1"><?php echo htmlspecialchars($notif['title']); ?></div>
-                            <div class="small text-muted">
-                                <span class="badge bg-primary me-2"><?php echo htmlspecialchars($notif['type']); ?></span>
-                                <i class="fa-solid fa-clock me-1"></i><?php echo $notif['date']; ?>
-                            </div>
                         </div>
-                        <?php endforeach; ?>
-                        <a href="/modules/teachers/notifications.php" class="btn btn-outline-info w-100 mt-3">
-                            <i class="fa-solid fa-envelope-open me-2"></i>Xem tất cả
-                        </a>
-                    <?php endif; ?>
+                    </div>
+                    <?php endforeach; ?>
+                    <a href="/modules/parents/notifications.php" class="btn btn-outline-info w-100 mt-3">
+                        <i class="fa-solid fa-envelope-open me-2"></i>Xem tất cả
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Additional Features based on Role -->
+    <!-- Additional Quick Links -->
     <div class="row g-3 mt-4">
-        <?php if ($currentRole === 'gvcn'): ?>
-        <!-- GVCN specific features -->
         <div class="col-md-4">
             <div class="card feature-card">
                 <div class="card-body">
                     <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-clipboard-check text-success me-2"></i>Hạnh kiểm & Học lực
+                        <i class="fa-solid fa-calendar-days text-primary me-2"></i>Thời khóa biểu con
                     </h6>
-                    <p class="text-muted small mb-3">Xếp loại học sinh lớp chủ nhiệm</p>
-                    <a href="/modules/teachers/homeroom/conduct.php" class="btn btn-outline-success w-100">
-                        <i class="fa-solid fa-star me-2"></i>Xếp loại
+                    <p class="text-muted small mb-3">Xem lịch học trong tuần của con em</p>
+                    <a href="/modules/parents/schedule.php" class="btn btn-outline-primary w-100">
+                        <i class="fa-solid fa-eye me-2"></i>Xem TKB
                     </a>
                 </div>
             </div>
@@ -585,11 +742,11 @@ if ($currentRole === 'gvcn') {
             <div class="card feature-card">
                 <div class="card-body">
                     <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-award text-warning me-2"></i>Khen thưởng & Vi phạm
+                        <i class="fa-solid fa-messages text-success me-2"></i>Tin nhắn với GVCN
                     </h6>
-                    <p class="text-muted small mb-3">Ghi nhận khen thưởng, vi phạm</p>
-                    <a href="/modules/teachers/homeroom/rewards.php" class="btn btn-outline-warning w-100">
-                        <i class="fa-solid fa-pen me-2"></i>Ghi nhận
+                    <p class="text-muted small mb-3">Trao đổi trực tiếp với giáo viên chủ nhiệm</p>
+                    <a href="/modules/parents/messages.php" class="btn btn-outline-success w-100">
+                        <i class="fa-solid fa-envelope me-2"></i>Tin nhắn
                     </a>
                 </div>
             </div>
@@ -599,104 +756,15 @@ if ($currentRole === 'gvcn') {
             <div class="card feature-card">
                 <div class="card-body">
                     <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-file-export text-primary me-2"></i>Báo cáo lớp
+                        <i class="fa-solid fa-money-bill text-warning me-2"></i>Học phí
                     </h6>
-                    <p class="text-muted small mb-3">Xuất báo cáo Excel, PDF</p>
-                    <a href="/modules/teachers/homeroom/reports.php" class="btn btn-outline-primary w-100">
-                        <i class="fa-solid fa-download me-2"></i>Xuất báo cáo
+                    <p class="text-muted small mb-3">Tra cứu và thanh toán học phí</p>
+                    <a href="/modules/parents/tuition.php" class="btn btn-outline-warning w-100">
+                        <i class="fa-solid fa-receipt me-2"></i>Xem chi tiết
                     </a>
                 </div>
             </div>
         </div>
-
-        <?php elseif ($currentRole === 'ttbm'): ?>
-        <!-- TTBM specific features -->
-        <div class="col-md-4">
-            <div class="card feature-card">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-file-pen text-primary me-2"></i>Phân công ra đề
-                    </h6>
-                    <p class="text-muted small mb-3">Phân công giáo viên ra đề thi</p>
-                    <a href="/modules/teachers/department/exam-assignments.php" class="btn btn-outline-primary w-100">
-                        <i class="fa-solid fa-tasks me-2"></i>Phân công
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card feature-card">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-chart-line text-success me-2"></i>Báo cáo bộ môn
-                    </h6>
-                    <p class="text-muted small mb-3">Tổng hợp báo cáo chuyên môn</p>
-                    <a href="/modules/teachers/department/reports.php" class="btn btn-outline-success w-100">
-                        <i class="fa-solid fa-file-chart me-2"></i>Xem báo cáo
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card feature-card">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-users-gear text-warning me-2"></i>Quản lý tổ
-                    </h6>
-                    <p class="text-muted small mb-3">Giáo viên và phân công giảng dạy</p>
-                    <a href="/modules/teachers/department/teachers.php" class="btn btn-outline-warning w-100">
-                        <i class="fa-solid fa-list me-2"></i>Danh sách
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <?php else: ?>
-        <!-- GVBM basic features -->
-        <div class="col-md-4">
-            <div class="card feature-card">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-chart-simple text-primary me-2"></i>Thống kê điểm
-                    </h6>
-                    <p class="text-muted small mb-3">Xem thống kê kết quả học tập</p>
-                    <a href="/modules/teachers/statistics.php" class="btn btn-outline-primary w-100">
-                        <i class="fa-solid fa-chart-bar me-2"></i>Xem thống kê
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card feature-card">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-book text-success me-2"></i>Tài liệu giảng dạy
-                    </h6>
-                    <p class="text-muted small mb-3">Quản lý tài liệu, bài giảng</p>
-                    <a href="/modules/teachers/materials.php" class="btn btn-outline-success w-100">
-                        <i class="fa-solid fa-folder me-2"></i>Tài liệu
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card feature-card">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-headset text-warning me-2"></i>Hỗ trợ
-                    </h6>
-                    <p class="text-muted small mb-3">Hướng dẫn sử dụng hệ thống</p>
-                    <a href="/modules/teachers/support.php" class="btn btn-outline-warning w-100">
-                        <i class="fa-solid fa-circle-question me-2"></i>Trợ giúp
-                    </a>
-                </div>
-            </div>
-        </div>
-        <?php endif; ?>
     </div>
 </div>
 
