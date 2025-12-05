@@ -1,143 +1,101 @@
 <?php
 // File: controllers/gvbm/LopController.php
-// (ĐÃ CẬP NHẬT - LOGIC ACTIVE TAB CHO NÚT TUẦN HIỆN TẠI)
-
 require_once __DIR__ . '/../../models/gvbm/lop.model.php'; 
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
 
 class LopController {
-    
-    private $lopModel;
-
-    public function __construct() {
-        $this->lopModel = new LopModel();
-    }
-
-    /**
-     * Action 1: Hiển thị trang "Xem thông tin lớp phụ trách" (3 tab)
-     */
     public function xemLopChuNhiem() {
-        require_role(['gvcn']); 
+        // Lưu ý: Trong CSDL mới, GVCN chỉ có role là 'gvbm', nên ta phải cho phép 'gvbm' truy cập
+        require_role(['gvcn', 'gvbm']); 
+        
         $user = current_user();
         $maGiaoVien = $user['teacher_id'] ?? ''; 
+        
+        $model = new LopModel();
+        $info = $model->getThongTinLopChuNhiemByMaGV($maGiaoVien);
 
-        $thongTinLop = $this->lopModel->getThongTinLopChuNhiemByMaGV($maGiaoVien);
+        // Khởi tạo biến mặc định để tránh lỗi Undefined variable
+        $tenLop = ''; $tenGiaoVien = ''; 
+        $danhSachHocSinh = []; $danhSachMonHoc = []; $bangDiemLookup = []; 
+        $tkbGrid = []; $daysOfWeek = [];
+        $tuanHienTai = ''; $selected_date = date('Y-m-d');
+        $prevWeekDate = ''; $nextWeekDate = '';
 
-        // Khai báo biến
-        $danhSachHocSinh = $danhSachMonHoc = $bangDiemLookup = $tkbGrid = [];
-        $tuanHienTai = '';
-        $selected_date = '';
-        $daysOfWeek = []; 
-        $prevWeekDate = ''; 
-        $nextWeekDate = ''; 
-
-        if (!$thongTinLop) {
-            $tenLop = "Chưa được phân công";
-            $tenGiaoVien = htmlspecialchars($user['full_name'] ?? 'Giáo viên');
-            $error_message = "Giáo viên chưa được phân công chủ nhiệm lớp nào.";
+        if (!$info) {
+            $error_message = "Bạn chưa được phân công chủ nhiệm lớp nào.";
         } else {
-            // Lấy dữ liệu cơ bản
-            $tenLop = $thongTinLop['tenLop'];
-            $tenGiaoVien = $thongTinLop['tenGiaoVien'];
-            $maLop = $thongTinLop['maLop'];
-            
-            // --- Tab 1: Danh sách học sinh ---
-            $danhSachHocSinh = $this->lopModel->getDanhSachHocSinhByLopId($maLop);
-            
-            // --- Tab 2: Bảng điểm ---
-            $danhSachMonHoc = $this->lopModel->getDanhSachMonHoc($maLop);
-            
-            // SỬA: Truyền thêm học kỳ và năm học (có thể lấy từ GET hoặc mặc định)
-            $hocKy = $_GET['hocKy'] ?? 'I';
-            $namHoc = $_GET['namHoc'] ?? '2024-2025';
-            $diemTho = $this->lopModel->getBangDiemTho($maLop, $hocKy, $namHoc);
-            
-            foreach ($diemTho as $diem) {
-                $bangDiemLookup[$diem['maHS']][$diem['maMonHoc']] = $diem;
+            $tenLop = $info['tenLop'];
+            $tenGiaoVien = $info['tenGiaoVien'];
+            $maLop = $info['maLop'];
+
+            // Tab 1 & 2:
+            $danhSachHocSinh = $model->getDanhSachHocSinhByLopId($maLop);
+            $danhSachMonHoc = $model->getDanhSachMonHoc($maLop);
+            $diemRaw = $model->getBangDiemTho($maLop);
+            foreach ($diemRaw as $d) {
+                $bangDiemLookup[$d['maHS']][$d['maMonHoc']] = $d;
             }
-            
-            // --- Tab 3: Thời khóa biểu ---
-            // Nếu người dùng chọn tuần (gửi lên ?week=...): lấy ngày đó
-            // Nếu không, lấy ngày hôm nay (dùng cho nút 'Tuần hiện tại')
+
+            // Tab 3: TKB (Xử lý ngày tháng)
             $selected_date = $_GET['week'] ?? date('Y-m-d');
-            $dateObj = new DateTime($selected_date, new DateTimeZone('Asia/Ho_Chi_Minh'));
+            $dateObj = new DateTime($selected_date);
             
-            $ngayTrongTuan = (int) $dateObj->format('N'); 
-            $startDateObj = (clone $dateObj)->modify('-' . ($ngayTrongTuan - 1) . ' days');
-            $endDateObj = (clone $dateObj)->modify('+' . (7 - $ngayTrongTuan) . ' days');
+            // Tính đầu tuần (T2) và cuối tuần (CN)
+            $ngayTrongTuan = (int)$dateObj->format('N'); // 1=T2
+            $startObj = (clone $dateObj)->modify('-' . ($ngayTrongTuan - 1) . ' days');
+            $endObj   = (clone $dateObj)->modify('+' . (7 - $ngayTrongTuan) . ' days');
             
-            $startDate = $startDateObj->format('Y-m-d');
-            $endDate = $endDateObj->format('Y-m-d');
-            $tuanHienTai = $startDateObj->format('d/m') . ' - ' . $endDateObj->format('d/m/Y');
+            $startDate = $startObj->format('Y-m-d');
+            $endDate   = $endObj->format('Y-m-d');
+            $tuanHienTai = $startObj->format('d/m') . ' - ' . $endObj->format('d/m/Y');
 
-            // Tính ngày cho nút Tuần Trước / Tuần Sau
-            $prevWeekDate = (clone $startDateObj)->modify('-7 days')->format('Y-m-d');
-            $nextWeekDate = (clone $startDateObj)->modify('+7 days')->format('Y-m-d');
+            $prevWeekDate = (clone $startObj)->modify('-7 days')->format('Y-m-d');
+            $nextWeekDate = (clone $startObj)->modify('+7 days')->format('Y-m-d');
 
-            // Tạo mảng 7 ngày của tuần
-            $daysOfWeek = [];
-            $currentDay = clone $startDateObj;
+            // Tạo header bảng TKB
+            $curr = clone $startObj;
             $dayNames = ["", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ Nhật"];
             for ($i = 1; $i <= 7; $i++) {
-                $daysOfWeek[$i] = [
-                    'name' => $dayNames[$i],
-                    'date' => $currentDay->format('d/m/Y')
-                ];
-                $currentDay->modify('+1 day');
+                $daysOfWeek[$i] = ['name' => $dayNames[$i], 'date' => $curr->format('d/m')];
+                $curr->modify('+1 day');
             }
 
-            // Lấy TKB và xây dựng Grid
-            $tkbTho = $this->lopModel->getThoiKhoaBieuByWeek($maLop, $startDate, $endDate);
-            foreach ($tkbTho as $tietHoc) {
-                $ngayTrongTuanKey = (int) (new DateTime($tietHoc['ngayHoc']))->format('N');
-                $tietKey = (int) $tietHoc['tiet'];
-                $tkbGrid[$ngayTrongTuanKey][$tietKey] = [
-                    'tenMon' => $tietHoc['tenMon'],
-                    'tenPhong' => $tietHoc['tenPhong']
+            // Lấy dữ liệu TKB và map vào lưới
+            $tkbData = $model->getThoiKhoaBieuByWeek($maLop, $startDate, $endDate);
+            foreach ($tkbData as $row) {
+                // SQL trả về: thu_trong_tuan (1=CN, 2=T2...). PHP: 1=T2, 7=CN
+                // Ta cần convert lại cho khớp với vòng lặp view
+                $sqlDay = (int)$row['thu_trong_tuan'];
+                $phpDay = ($sqlDay == 1) ? 7 : ($sqlDay - 1); // Convert SQL day to PHP ISO-8601 day
+                
+                $tiet = (int)$row['tiet'];
+                $tkbGrid[$phpDay][$tiet] = [
+                    'tenMon' => $row['tenMon'],
+                    'tenPhong' => $row['tenPhong']
                 ];
             }
         }
 
-        // === 🚀 ĐÂY LÀ LOGIC CẬP NHẬT ===
-        // Xác định tab nào đang active
-        $activeTab = 'danhsach'; // Mặc định
-        if (isset($_GET['week'])) {
-            $activeTab = 'tkb'; // Nếu có 'week' trên URL, set active là 'tkb'
-        } elseif (isset($_GET['tab'])) {
-             // Nếu có 'tab' trên URL, set active theo nó
-             if ($_GET['tab'] == 'diem') $activeTab = 'diem';
-             if ($_GET['tab'] == 'tkb') $activeTab = 'tkb'; // <-- THÊM DÒNG NÀY
-        }
-        // =================================
+        $activeTab = 'danhsach';
+        if (isset($_GET['week']) || (isset($_GET['tab']) && $_GET['tab'] == 'tkb')) $activeTab = 'tkb';
+        elseif (isset($_GET['tab']) && $_GET['tab'] == 'diem') $activeTab = 'diem';
 
-        $pageTitle = 'Thông tin lớp chủ nhiệm';
+        // Gọi View
+        $pageTitle = 'Lớp chủ nhiệm';
         require_once __DIR__ . '/../../views/layouts/header.php';
         require_once __DIR__ . '/../../views/gvbm/xem_lop_phu_trach.php';
         require_once __DIR__ . '/../../views/layouts/footer.php';
     }
 
-    /**
-     * Action 2: Hiển thị trang "Xem chi tiết 1 học sinh"
-     */
     public function xemChiTietHocSinh() {
-        // (Hàm này giữ nguyên, không thay đổi)
-        require_role(['gvcn', 'gvbm', 'ttbm']); 
+        require_role(['gvcn', 'gvbm']);
+        $maHS = $_GET['id'] ?? '';
+        $model = new LopModel();
+        $hocSinh = $model->getChiTietHocSinh($maHS);
         
-        $maHS = $_GET['id'] ?? null;
-        if (!$maHS) {
-            $_SESSION['flash_error'] = "Không có mã học sinh được cung cấp.";
-            header('Location: index.php?action=xem_lop_cn'); 
-            exit;
-        }
+        if (!$hocSinh) { header('Location: index.php?action=xem_lop_cn'); exit; }
         
-        $hocSinh = $this->lopModel->getChiTietHocSinh($maHS); 
-        if (!$hocSinh) {
-            $_SESSION['flash_error'] = "Không tìm thấy học sinh với mã " . htmlspecialchars($maHS);
-            header('Location: index.php?action=xem_lop_cn');
-            exit;
-        }
-        
-        $pageTitle = 'Chi tiết học sinh - ' . $hocSinh['hoTen'];
+        $pageTitle = 'Chi tiết HS';
         require_once __DIR__ . '/../../views/layouts/header.php';
         require_once __DIR__ . '/../../views/gvbm/xem_chi_tiet_hoc_sinh.php';
         require_once __DIR__ . '/../../views/layouts/footer.php';

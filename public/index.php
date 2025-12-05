@@ -82,30 +82,38 @@ if (isset($_GET['action'])) {
             $controller = new LopController();
             $controller->xemChiTietHocSinh();
             exit;
-            
-        // Thời khóa biểu học sinh VÀ phụ huynh
-        case 'xem_tkb':
-            require_once __DIR__ . '/../controllers/hs/ThoiKhoaBieuController.php';
-            $controller = new ThoiKhoaBieuController();
-            
-            // Kiểm tra role - SỬA LẠI ĐỂ DEBUG
-            if (!isset($_SESSION['auth']) || !isset($_SESSION['auth']['role'])) {
-                $_SESSION['flash_error'] = 'Bạn chưa đăng nhập!';
-                header('Location: /public/index.php');
-                exit;
-            }
-            
-            $role = $_SESSION['auth']['role'];
-            
-            if ($role === 'hs') {
-                $controller->indexHocSinh();
-            } elseif ($role === 'ph') {
-                $controller->indexPhuHuynh();
-            } else {
-                $_SESSION['flash_error'] = 'Bạn không có quyền xem thời khóa biểu!';
-                header('Location: /public/index.php');
-                exit;
-            }
+        // ========================================================
+        // --- Usecase 2: Xếp loại học lực, hạnh kiểm (GVCN) ---
+        case 'xep_loai':
+            require_once __DIR__ . '/../controllers/gvbm/XepLoaiController.php';
+            $controller = new XepLoaiController();
+            $controller->showXepLoaiPage();
+            exit;
+
+        case 'luu_xep_loai':
+            require_once __DIR__ . '/../controllers/gvbm/XepLoaiController.php';
+            $controller = new XepLoaiController();
+            $controller->saveXepLoai();
+            exit;
+
+        // --- Usecase 3: Yêu cầu sửa điểm (GVBM) ---
+        // --- Usecase 4: Yêu cầu sửa điểm (GVBM) ---
+        case 'yeu_cau_sua_diem':
+            require_once __DIR__ . '/../controllers/gvbm/DiemController.php';
+            $controller = new DiemController();
+            $controller->showYeuCauForm();
+            exit;
+
+        case 'gui_yeu_cau_sua_diem':
+            require_once __DIR__ . '/../controllers/gvbm/DiemController.php';
+            $controller = new DiemController();
+            $controller->submitYeuCau();
+            exit;
+        // --- Usecase: Xem báo cáo thống kê (Nhân viên Sở) ---
+        case 'xem_bao_cao':
+            require_once __DIR__ . '/../controllers/nhanvienso/BaoCaoController.php';
+            $controller = new BaoCaoController();
+            $controller->showBaoCaoPage();
             exit;
     }
 }
