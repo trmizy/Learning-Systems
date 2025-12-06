@@ -4,78 +4,71 @@
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
 require_role(['ph']);
 
+// Lấy thông tin phụ huynh và con từ database
+require_once __DIR__ . '/../../models/DiemModel.php';
+$diemModel = new DiemModel();
+
+// Lấy thông tin user từ session
+$user = $_SESSION['auth'] ?? [];
+$maPH = null;
+if ($user && isset($user['username'])) {
+    $maPH = $diemModel->getMaPhuHuynhByUsername($user['username']);
+}
+
+// Lấy thông tin phụ huynh
+$thongTinPH = null;
+if ($maPH) {
+    $thongTinPH = $diemModel->getThongTinPhuHuynhByMaPH($maPH);
+}
+
+// Gán giá trị cho hiển thị
+$fullName = $thongTinPH ? $thongTinPH['hoTen'] : 'Phụ huynh';
+$parentId = $thongTinPH ? $thongTinPH['maPH'] : 'PH0000';
+
+// Lấy danh sách con
+$danhSachCon = [];
+if ($maPH) {
+    $danhSachConStmt = $diemModel->getDanhSachConCuaPhuHuynh($maPH);
+    while ($con = $danhSachConStmt->fetch()) {
+        $danhSachCon[] = $con;
+    }
+}
+
+// Thông tin con đầu tiên (để hiển thị)
+$childInfo = null;
+if (!empty($danhSachCon)) {
+    $con = $danhSachCon[0];
+    // Lấy thông tin chi tiết học sinh
+    $thongTinHS = $diemModel->getThongTinHocSinh($con['maHS']);
+    if ($thongTinHS) {
+        $childInfo = [
+            'name' => $thongTinHS['hoTen'],
+            'student_id' => $thongTinHS['maHS'],
+            'class' => str_replace('Lop ', '', $thongTinHS['tenLop'] ?? ''),
+            'homeroom_teacher' => $thongTinHS['tenGVCN'] ?? 'Chưa có',
+            'teacher_phone' => $thongTinHS['sdtGVCN'] ?? 'Chưa có',
+            'teacher_email' => $thongTinHS['emailGVCN'] ?? 'Chưa có'
+        ];
+    }
+}
+
+// Nếu không có con thì dùng giá trị mặc định
+if (!$childInfo) {
+    $childInfo = [
+        'name' => 'Chưa có thông tin',
+        'student_id' => '',
+        'class' => '',
+        'homeroom_teacher' => '',
+        'teacher_phone' => '',
+        'teacher_email' => ''
+    ];
+}
+
 // Tiêu đề trang và header chung
 $pageTitle = 'Trang phụ huynh - THPT';
 require_once __DIR__ . '/../layouts/header.php';
 
-// Lấy user hiện tại
-$user = current_user() ?: [];
-$fullName = isset($user['full_name']) ? $user['full_name'] : 'Phụ huynh';
-// Prefer session-provided parent_id; nếu không có thì sẽ thử lookup theo maTaiKhoan
-$parentId = isset($user['parent_id']) ? $user['parent_id'] : null;
-// Kết nối DB và kiểm tra phụ huynh đã liên kết với học sinh hay chưa
-require_once __DIR__ . '/../../config/database.php';
-try {
-    $db   = Database::getInstance();
-    $conn = $db->getConnection();
-
-    // Nếu session không cung cấp maPH, thử lookup theo maTaiKhoan
-    if (empty($parentId) && !empty($user['maTaiKhoan'])) {
-        $stmt0 = $conn->prepare("SELECT maPH FROM PhuHuynh WHERE maTaiKhoan = ? LIMIT 1");
-        $stmt0->execute([$user['maTaiKhoan']]);
-        $r0 = $stmt0->fetch();
-        if ($r0 && !empty($r0['maPH'])) {
-            $parentId = $r0['maPH'];
-        }
-    }
-
-    // Nếu vẫn chưa có maPH, thử lookup theo email đăng nhập
-    if (empty($parentId) && !empty($user['email'])) {
-        $stmtEmail = $conn->prepare("SELECT maPH FROM PhuHuynh WHERE email = ? LIMIT 1");
-        $stmtEmail->execute([$user['email']]);
-        $rEmail = $stmtEmail->fetch();
-        if ($rEmail && !empty($rEmail['maPH'])) {
-            $parentId = $rEmail['maPH'];
-        }
-    }
-
-    if (!empty($parentId)) {
-        // Kiểm tra xem maPH này có trong bảng phuhuynh_hocsinh không
-        $stmt = $conn->prepare("SELECT 1 FROM phuhuynh_hocsinh WHERE maPH = :maPH LIMIT 1");
-        $stmt->execute(['maPH' => $parentId]);
-        $hasStudent = (bool)$stmt->fetchColumn();
-    }
-} catch (PDOException $e) {
-    error_log('Error checking phuhuynh_hocsinh in parent dashboard: ' . $e->getMessage());
-    // Nếu lỗi DB thì tạm coi như chưa có HS để tránh chặn nhầm
-    $hasStudent = false;
-}
-
-
-// Thông tin con: truy vấn từ DB nếu phụ huynh đã liên kết
-$childInfo = [
-    'name' => 'Chưa có',
-    'student_id' => '',
-    'class' => '',
-    'homeroom_teacher' => ''
-];
-
-if (!empty($parentId)) {
-    try {
-        $stmtChild = $conn->prepare("SELECT hs.hoTen AS name, hs.maHS AS maHS, hs.maLop AS maLop FROM phuhuynh_hocsinh phh JOIN hocsinh hs ON phh.maHS = hs.maHS WHERE phh.maPH = ? LIMIT 1");
-        $stmtChild->execute([$parentId]);
-        $rChild = $stmtChild->fetch();
-        if ($rChild) {
-            $childInfo['name'] = $rChild['name'] ?? $childInfo['name'];
-            $childInfo['student_id'] = $rChild['maHS'] ?? $childInfo['student_id'];
-            $childInfo['class'] = $rChild['maLop'] ?? $childInfo['class'];
-        }
-    } catch (PDOException $e) {
-        error_log('Error fetching child info in dashboard: ' . $e->getMessage());
-    }
-}
-
-// Số liệu lấy từ DB (nếu có maHS)
+// Số liệu demo
 $stats = [
     'attendance_rate' => null,
     'gpa_semester' => null,
@@ -437,9 +430,9 @@ $violations = [];
                     Giáo viên chủ nhiệm: <strong><?php echo htmlspecialchars($childInfo['homeroom_teacher']); ?></strong>
                 </h5>
                 <p class="mb-0 text-muted">
-                    <i class="fa-solid fa-phone me-2"></i>(028) 3456-7890
+                    <i class="fa-solid fa-phone me-2"></i><?php echo htmlspecialchars($childInfo['teacher_phone']); ?>
                     <span class="mx-2">|</span>
-                    <i class="fa-solid fa-envelope me-2"></i>gvcn.12a1@thpt.edu.vn
+                    <i class="fa-solid fa-envelope me-2"></i><?php echo htmlspecialchars($childInfo['teacher_email']); ?>
                 </p>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
@@ -510,9 +503,9 @@ $violations = [];
                     <div class="feature-icon mx-auto">
                         <i class="fa-solid fa-chart-bar"></i>
                     </div>
-                    <h5 class="card-title fw-bold">Kết quả học tập</h5>
+                    <h5 class="card-title fw-bold">Bảng điểm con</h5>
                     <p class="text-muted small">Điểm số, xếp loại học lực chi tiết</p>
-                    <a href="/modules/parents/grades.php" class="btn btn-primary w-100 mt-3">
+                    <a href="/public/index.php?page=ph-xem-diem" class="btn btn-primary w-100 mt-3">
                         <i class="fa-solid fa-eye me-2"></i>Xem chi tiết
                     </a>
                 </div>

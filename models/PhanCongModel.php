@@ -2,10 +2,10 @@
 /**
  * Model: PhanCongModel
  * Quản lý phân công giảng dạy, GVCN và phòng học
- * Path: models/bgh/PhanCongModel.php
+ * Path: models/PhanCongModel.php
  */
 
-require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 class PhanCongModel {
     private $db;
@@ -31,12 +31,12 @@ class PhanCongModel {
                 gv.hoTen as tenGVCN,
                 pc.maPhong,
                 p.tenPhong
-            FROM LopHoc l
-            LEFT JOIN GiaoVienChuNhiem gvcn ON gvcn.lop = l.maLop COLLATE utf8mb4_unicode_ci
-            LEFT JOIN GiaoVienBoMon gv ON gv.maGV = gvcn.maGV COLLATE utf8mb4_unicode_ci
-            LEFT JOIN PhanCongPhongHoc pc ON pc.maLop COLLATE utf8mb4_unicode_ci = l.maLop COLLATE utf8mb4_unicode_ci 
+            FROM lophoc l
+            LEFT JOIN giaovienchunhiem gvcn ON gvcn.lop = l.maLop COLLATE utf8mb4_unicode_ci
+            LEFT JOIN giaovienbomon gv ON gv.maGV = gvcn.maGV COLLATE utf8mb4_unicode_ci
+            LEFT JOIN phancongphonghoc pc ON pc.maLop COLLATE utf8mb4_unicode_ci = l.maLop COLLATE utf8mb4_unicode_ci 
                 AND pc.namHoc COLLATE utf8mb4_unicode_ci = l.namHoc COLLATE utf8mb4_unicode_ci
-            LEFT JOIN PhongHoc p ON p.maPhong COLLATE utf8mb4_unicode_ci = pc.maPhong COLLATE utf8mb4_unicode_ci
+            LEFT JOIN phonghoc p ON p.maPhong COLLATE utf8mb4_unicode_ci = pc.maPhong COLLATE utf8mb4_unicode_ci
         ";
         
         if ($namHoc) {
@@ -58,7 +58,7 @@ class PhanCongModel {
     public function getAllNamHoc() {
         $stmt = $this->db->prepare("
             SELECT DISTINCT namHoc 
-            FROM LopHoc 
+            FROM lophoc 
             WHERE namHoc IS NOT NULL 
             ORDER BY namHoc DESC
         ");
@@ -80,8 +80,8 @@ class PhanCongModel {
                     gv.hoTen,
                     gv.monHocPhuTrach,
                     gvcn.lop as lopDangChuNhiem
-                FROM GiaoVienBoMon gv
-                LEFT JOIN GiaoVienChuNhiem gvcn ON gvcn.maGV = gv.maGV
+                FROM giaovienbomon gv
+                LEFT JOIN giaovienchunhiem gvcn ON gvcn.maGV = gv.maGV
                 WHERE gv.tinhTrangTaiKhoan = 'ACTIVE'
                   AND (gvcn.maGV IS NULL OR gvcn.lop = ?)
                 ORDER BY gv.hoTen
@@ -94,8 +94,8 @@ class PhanCongModel {
                     gv.maGV,
                     gv.hoTen,
                     gv.monHocPhuTrach
-                FROM GiaoVienBoMon gv
-                LEFT JOIN GiaoVienChuNhiem gvcn ON gvcn.maGV = gv.maGV
+                FROM giaovienbomon gv
+                LEFT JOIN giaovienchunhiem gvcn ON gvcn.maGV = gv.maGV
                 WHERE gv.tinhTrangTaiKhoan = 'ACTIVE'
                   AND gvcn.maGV IS NULL
                 ORDER BY gv.hoTen
@@ -113,50 +113,24 @@ class PhanCongModel {
      */
     public function getPhongHocChuaGan($maLopHienTai = null, $namHoc = null) {
         if (!$namHoc) {
-            // Lấy năm học từ lớp hiện tại
-            if ($maLopHienTai) {
-                $stmtYear = $this->db->prepare("SELECT namHoc FROM LopHoc WHERE maLop = ?");
-                $stmtYear->execute([$maLopHienTai]);
-                $result = $stmtYear->fetch();
-                $namHoc = $result['namHoc'] ?? '2024-2025';
-            } else {
-                $namHoc = '2024-2025'; // Mặc định
-            }
+            $namHoc = '2024-2025'; // Mặc định
         }
         
-        // Lấy phòng chưa được gán trong năm học này (hoặc đang gán cho lớp hiện tại)
-        if ($maLopHienTai) {
-            $stmt = $this->db->prepare("
-                SELECT 
-                    p.maPhong,
-                    p.tenPhong,
-                    p.sucChua,
-                    pc.maLop as dangGiaoChoMaLop
-                FROM PhongHoc p
-                LEFT JOIN PhanCongPhongHoc pc 
-                    ON p.maPhong = pc.maPhong
-                    AND pc.namHoc = ?
-                WHERE (p.trangThai IN ('ACTIVE', 'DANG_SU_DUNG') OR p.trangThai IS NULL)
-                  AND (pc.maPhong IS NULL OR pc.maLop = ?)
-                ORDER BY p.tenPhong
-            ");
-            $stmt->execute([$namHoc, $maLopHienTai]);
-        } else {
-            $stmt = $this->db->prepare("
-                SELECT 
-                    p.maPhong,
-                    p.tenPhong,
-                    p.sucChua
-                FROM PhongHoc p
-                LEFT JOIN PhanCongPhongHoc pc 
-                    ON p.maPhong = pc.maPhong
-                    AND pc.namHoc = ?
-                WHERE (p.trangThai IN ('ACTIVE', 'DANG_SU_DUNG') OR p.trangThai IS NULL)
-                  AND pc.maPhong IS NULL
-                ORDER BY p.tenPhong
-            ");
-            $stmt->execute([$namHoc]);
-        }
+        // Lấy TẤT CẢ phòng học kèm thông tin lớp đã gán (để JS xử lý ẩn/hiện)
+        $stmt = $this->db->prepare("
+            SELECT 
+                p.maPhong,
+                p.tenPhong,
+                p.sucChua,
+                pc.maLop as lopDangGan
+            FROM phonghoc p
+            LEFT JOIN phancongphonghoc pc 
+                ON p.maPhong = pc.maPhong
+                AND pc.namHoc = ?
+            ORDER BY p.tenPhong
+        ");
+        $stmt->execute([$namHoc]);
+        
         return $stmt;
     }
 
@@ -168,8 +142,8 @@ class PhanCongModel {
     public function kiemTraGVCN($maGV) {
         $stmt = $this->db->prepare("
             SELECT gvcn.lop, l.tenLop
-            FROM GiaoVienChuNhiem gvcn
-            JOIN LopHoc l ON l.maLop = gvcn.lop
+            FROM giaovienchunhiem gvcn
+            JOIN lophoc l ON l.maLop = gvcn.lop
             WHERE gvcn.maGV = ?
         ");
         $stmt->execute([$maGV]);
@@ -185,8 +159,8 @@ class PhanCongModel {
     public function kiemTraPhongHoc($maPhong, $namHoc = '2024-2025') {
         $stmt = $this->db->prepare("
             SELECT pc.maLop, l.tenLop
-            FROM PhanCongPhongHoc pc
-            JOIN LopHoc l ON l.maLop COLLATE utf8mb4_unicode_ci = pc.maLop COLLATE utf8mb4_unicode_ci
+            FROM phancongphonghoc pc
+            JOIN lophoc l ON l.maLop COLLATE utf8mb4_unicode_ci = pc.maLop COLLATE utf8mb4_unicode_ci
             WHERE pc.maPhong = ? AND pc.namHoc = ?
         ");
         $stmt->execute([$maPhong, $namHoc]);
@@ -195,20 +169,100 @@ class PhanCongModel {
 
     /**
      * Gán GVCN cho lớp
+     * Tự động phân công môn học cho GVCN (môn mà GV phụ trách)
      * @param string $maLop
      * @param string $maGV
      * @return bool
      */
     public function ganGVCN($maLop, $maGV) {
         try {
+            $this->db->beginTransaction();
+            
             // Xóa GVCN cũ nếu có
-            $stmtDelete = $this->db->prepare("DELETE FROM GiaoVienChuNhiem WHERE lop = ?");
+            $stmtDelete = $this->db->prepare("DELETE FROM giaovienchunhiem WHERE lop = ?");
             $stmtDelete->execute([$maLop]);
 
             // Thêm GVCN mới
-            $stmtInsert = $this->db->prepare("INSERT INTO GiaoVienChuNhiem (maGV, lop) VALUES (?, ?)");
-            return $stmtInsert->execute([$maGV, $maLop]);
+            $stmtInsert = $this->db->prepare("INSERT INTO giaovienchunhiem (maGV, lop) VALUES (?, ?)");
+            $stmtInsert->execute([$maGV, $maLop]);
+            
+            // Tự động phân công môn học cho GVCN
+            // Lấy thông tin GV và lớp
+            $stmtGV = $this->db->prepare("SELECT monHocPhuTrach FROM giaovienbomon WHERE maGV = ?");
+            $stmtGV->execute([$maGV]);
+            $gvInfo = $stmtGV->fetch();
+            
+            $stmtLop = $this->db->prepare("SELECT namHoc FROM lophoc WHERE maLop = ?");
+            $stmtLop->execute([$maLop]);
+            $lopInfo = $stmtLop->fetch();
+            
+            if ($gvInfo && $lopInfo && !empty($gvInfo['monHocPhuTrach'])) {
+                $monPhuTrach = $gvInfo['monHocPhuTrach'];
+                $namHoc = $lopInfo['namHoc'];
+                
+                // Tìm môn học tương ứng trong bảng monhoc
+                // Ưu tiên: 1) Match mã môn, 2) Match tên chính xác, 3) Match tên bắt đầu/kết thúc
+                $stmtMon = $this->db->prepare("
+                    SELECT maMonHoc, tenMon FROM monhoc 
+                    WHERE namHoc = ? 
+                    AND (
+                        maMonHoc = ?
+                        OR maMonHoc LIKE ?
+                        OR tenMon = ? 
+                        OR tenMon LIKE CONCAT(?, ' %')
+                        OR tenMon LIKE CONCAT('% ', ?)
+                    )
+                    ORDER BY 
+                        CASE 
+                            WHEN maMonHoc = ? THEN 1
+                            WHEN maMonHoc LIKE ? THEN 2
+                            WHEN tenMon = ? THEN 3
+                            WHEN tenMon LIKE CONCAT(?, ' %') THEN 4
+                            WHEN tenMon LIKE CONCAT('% ', ?) THEN 5
+                            ELSE 6
+                        END,
+                        LENGTH(tenMon) ASC
+                    LIMIT 1
+                ");
+                $stmtMon->execute([
+                    $namHoc,
+                    $monPhuTrach,           // Match mã chính xác: 'GDCD' = 'GDCD'
+                    "%{$monPhuTrach}%",     // Match mã có chứa: 'GDCD' trong mã
+                    $monPhuTrach,           // Match tên chính xác: 'Toán' = 'Toán'
+                    $monPhuTrach,           // Match tên bắt đầu: 'Địa' → 'Địa lý'
+                    $monPhuTrach,           // Match tên kết thúc: 'Lý' → 'Vật lý'
+                    $monPhuTrach,           // ORDER: priority 1 (mã chính xác)
+                    "%{$monPhuTrach}%",     // ORDER: priority 2 (mã chứa)
+                    $monPhuTrach,           // ORDER: priority 3 (tên chính xác)
+                    $monPhuTrach,           // ORDER: priority 4 (tên bắt đầu)
+                    $monPhuTrach            // ORDER: priority 5 (tên kết thúc)
+                ]);
+                $monHoc = $stmtMon->fetch();
+                
+                if ($monHoc) {
+                    // Xóa phân công cũ cho môn này (nếu có)
+                    $stmtDelPC = $this->db->prepare("
+                        DELETE FROM phanconggiangday 
+                        WHERE maLop = ? AND maMonHoc = ? AND namHoc = ?
+                    ");
+                    $stmtDelPC->execute([$maLop, $monHoc['maMonHoc'], $namHoc]);
+                    
+                    // Thêm phân công mới cho cả 2 học kỳ
+                    foreach (['1', '2'] as $hocKy) {
+                        $maPhanCong = 'PC_' . $maLop . '_' . $monHoc['maMonHoc'] . '_HK' . $hocKy . '_' . time();
+                        $stmtAddPC = $this->db->prepare("
+                            INSERT INTO phanconggiangday (maPhanCong, maLop, maMonHoc, maGV, namHoc, hocKy)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        ");
+                        $stmtAddPC->execute([$maPhanCong, $maLop, $monHoc['maMonHoc'], $maGV, $namHoc, $hocKy]);
+                    }
+                }
+            }
+            
+            $this->db->commit();
+            return true;
         } catch (PDOException $e) {
+            $this->db->rollBack();
             error_log("Lỗi gán GVCN: " . $e->getMessage());
             return false;
         }
@@ -223,14 +277,14 @@ class PhanCongModel {
     public function ganPhongHoc($maLop, $maPhong) {
         try {
             // Lấy năm học của lớp
-            $stmtYear = $this->db->prepare("SELECT namHoc FROM LopHoc WHERE maLop = ?");
+            $stmtYear = $this->db->prepare("SELECT namHoc FROM lophoc WHERE maLop = ?");
             $stmtYear->execute([$maLop]);
             $result = $stmtYear->fetch();
             $namHoc = $result['namHoc'] ?? '2024-2025';
             
             // Xóa phân công phòng cũ của lớp trong năm này (nếu có)
             $stmtDelete = $this->db->prepare("
-                DELETE FROM PhanCongPhongHoc 
+                DELETE FROM phancongphonghoc 
                 WHERE maLop = ? AND namHoc = ?
             ");
             $stmtDelete->execute([$maLop, $namHoc]);
@@ -240,7 +294,7 @@ class PhanCongModel {
             
             // Thêm phân công mới
             $stmtInsert = $this->db->prepare("
-                INSERT INTO PhanCongPhongHoc (maPhanCong, maPhong, maLop, namHoc, ngayPhanCong)
+                INSERT INTO phancongphonghoc (maPhanCong, maPhong, maLop, namHoc, ngayPhanCong)
                 VALUES (?, ?, ?, ?, NOW())
             ");
             return $stmtInsert->execute([$maPhanCong, $maPhong, $maLop, $namHoc]);
@@ -257,7 +311,7 @@ class PhanCongModel {
      */
     public function xoaGVCN($maLop) {
         try {
-            $stmt = $this->db->prepare("DELETE FROM GiaoVienChuNhiem WHERE lop = ?");
+            $stmt = $this->db->prepare("DELETE FROM giaovienchunhiem WHERE lop = ?");
             return $stmt->execute([$maLop]);
         } catch (PDOException $e) {
             error_log("Lỗi xóa GVCN: " . $e->getMessage());
@@ -273,14 +327,14 @@ class PhanCongModel {
     public function xoaPhongHoc($maLop) {
         try {
             // Lấy năm học của lớp
-            $stmtYear = $this->db->prepare("SELECT namHoc FROM LopHoc WHERE maLop = ?");
+            $stmtYear = $this->db->prepare("SELECT namHoc FROM lophoc WHERE maLop = ?");
             $stmtYear->execute([$maLop]);
             $result = $stmtYear->fetch();
             $namHoc = $result['namHoc'] ?? '2024-2025';
             
             // Xóa phân công trong bảng PhanCongPhongHoc
             $stmt = $this->db->prepare("
-                DELETE FROM PhanCongPhongHoc 
+                DELETE FROM phancongphonghoc 
                 WHERE maLop = ? AND namHoc = ?
             ");
             return $stmt->execute([$maLop, $namHoc]);
@@ -309,10 +363,11 @@ class PhanCongModel {
                 p.maPhong,
                 p.tenPhong,
                 p.sucChua
-            FROM LopHoc l
-            LEFT JOIN GiaoVienChuNhiem gvcn ON gvcn.lop = l.maLop
-            LEFT JOIN GiaoVienBoMon gv ON gv.maGV = gvcn.maGV
-            LEFT JOIN PhongHoc p ON p.dangGiaoChoMaLop = l.maLop
+            FROM lophoc l
+            LEFT JOIN giaovienchunhiem gvcn ON gvcn.lop = l.maLop
+            LEFT JOIN giaovienbomon gv ON gv.maGV = gvcn.maGV
+            LEFT JOIN phancongphonghoc pc ON pc.maLop = l.maLop AND pc.namHoc = l.namHoc
+            LEFT JOIN phonghoc p ON p.maPhong = pc.maPhong
             WHERE l.maLop = ?
         ");
         $stmt->execute([$maLop]);
@@ -330,7 +385,7 @@ class PhanCongModel {
         if ($namHoc) {
             $stmt = $this->db->prepare("
                 SELECT maMonHoc, tenMon, soTietTuan, loaiMonHoc, hocKy, namHoc
-                FROM MonHoc
+                FROM monhoc
                 WHERE namHoc = ?
                 ORDER BY tenMon
             ");
@@ -338,7 +393,7 @@ class PhanCongModel {
         } else {
             $stmt = $this->db->prepare("
                 SELECT maMonHoc, tenMon, soTietTuan, loaiMonHoc, hocKy, namHoc
-                FROM MonHoc
+                FROM monhoc
                 ORDER BY tenMon
             ");
             $stmt->execute();
@@ -355,16 +410,31 @@ class PhanCongModel {
         // Map tên môn đầy đủ về tên viết tắt để tìm kiếm
         $monHocMap = [
             'Giáo dục công dân' => 'GDCD',
+            'GDCD' => 'GDCD',
             'Ngữ văn' => 'Văn',
+            'Ngu van' => 'Văn',
             'Tiếng Anh' => 'Anh',
+            'Tieng Anh' => 'Anh',
             'Vật lý' => 'Lý',
+            'Vat ly' => 'Lý',
             'Hóa học' => 'Hóa',
+            'Hoa hoc' => 'Hóa',
             'Sinh học' => 'Sinh',
+            'Sinh hoc' => 'Sinh',
             'Lịch sử' => 'Sử',
+            'Lich su' => 'Sử',
             'Địa lý' => 'Địa',
+            'Dia ly' => 'Địa',
             'Thể dục' => 'TD',
+            'The duc' => 'TD',
             'Quốc phòng' => 'QP',
+            'GDQP-AN' => 'QP',
             'Tin học' => 'Tin',
+            'Tin hoc' => 'Tin',
+            'Công nghệ' => 'CN',
+            'Cong nghe' => 'CN',
+            'Toán' => 'Toán',
+            'Toan' => 'Toán',
         ];
         
         // Nếu có trong map thì dùng tên viết tắt, không thì dùng tên gốc
@@ -378,7 +448,7 @@ class PhanCongModel {
                 monHocPhuTrach,
                 email,
                 soDienThoai
-            FROM GiaoVienBoMon
+            FROM giaovienbomon
             WHERE tinhTrangTaiKhoan = 'ACTIVE'
               AND monHocPhuTrach LIKE ?
             ORDER BY hoTen
@@ -410,9 +480,9 @@ class PhanCongModel {
                 gv.hoTen as tenGV,
                 gv.email as emailGV,
                 gv.soDienThoai as sdtGV
-            FROM PhanCongGiangDay pc
-            JOIN MonHoc mh ON mh.maMonHoc = pc.maMonHoc
-            JOIN GiaoVienBoMon gv ON gv.maGV = pc.maGV
+            FROM phanconggiangday pc
+            JOIN monhoc mh ON mh.maMonHoc = pc.maMonHoc
+            JOIN giaovienbomon gv ON gv.maGV = pc.maGV
             WHERE pc.maLop = ?
         ";
         
@@ -446,8 +516,8 @@ class PhanCongModel {
     public function kiemTraPhanCongTonTai($maLop, $maMonHoc, $namHoc, $hocKy) {
         $stmt = $this->db->prepare("
             SELECT pc.*, gv.hoTen as tenGV
-            FROM PhanCongGiangDay pc
-            JOIN GiaoVienBoMon gv ON gv.maGV = pc.maGV
+            FROM phanconggiangday pc
+            JOIN giaovienbomon gv ON gv.maGV = pc.maGV
             WHERE pc.maLop = ? AND pc.maMonHoc = ? AND pc.namHoc = ? AND pc.hocKy = ?
         ");
         $stmt->execute([$maLop, $maMonHoc, $namHoc, $hocKy]);
@@ -466,17 +536,67 @@ class PhanCongModel {
      */
     public function themPhanCongGiangDay($maLop, $maMonHoc, $maGV, $namHoc, $hocKy, $ghiChu = null) {
         try {
+            // Ràng buộc 1: Kiểm tra GV bộ môn chỉ được phụ trách tối đa 5 lớp
+            $stmtCheck = $this->db->prepare("
+                SELECT COUNT(DISTINCT maLop) as soLop
+                FROM phanconggiangday
+                WHERE maGV = ? AND namHoc = ? AND hocKy = ?
+            ");
+            $stmtCheck->execute([$maGV, $namHoc, $hocKy]);
+            $result = $stmtCheck->fetch();
+            
+            if ($result['soLop'] >= 5) {
+                throw new Exception('Giáo viên này đã phụ trách đủ 5 lớp. Không thể phân công thêm.');
+            }
+            
+            // Ràng buộc 2: Kiểm tra nếu GV là GVCN của lớp này thì tự động được phân môn của mình
+            $stmtGVCN = $this->db->prepare("
+                SELECT gv.maGV, gv.monHocPhuTrach
+                FROM giaovienchunhiem gvcn
+                JOIN giaovienbomon gv ON gv.maGV = gvcn.maGV
+                WHERE gvcn.lop = ?
+            ");
+            $stmtGVCN->execute([$maLop]);
+            $gvcnInfo = $stmtGVCN->fetch();
+            
+            if ($gvcnInfo) {
+                // Lấy thông tin môn học để so sánh
+                $stmtMon = $this->db->prepare("SELECT tenMon FROM monhoc WHERE maMonHoc = ?");
+                $stmtMon->execute([$maMonHoc]);
+                $monInfo = $stmtMon->fetch();
+                
+                // Nếu là GVCN và môn học trùng với môn phụ trách
+                if ($gvcnInfo['maGV'] === $maGV && $monInfo) {
+                    // Kiểm tra xem môn này có khớp với môn phụ trách không
+                    $monPhuTrach = $gvcnInfo['monHocPhuTrach'];
+                    $tenMon = $monInfo['tenMon'];
+                    
+                    // Map để so sánh (có thể mở rộng)
+                    $isMatchingSubject = (
+                        strpos($monPhuTrach, $tenMon) !== false || 
+                        strpos($tenMon, $monPhuTrach) !== false
+                    );
+                    
+                    if (!$isMatchingSubject) {
+                        throw new Exception("GVCN phải dạy môn {$monPhuTrach} cho lớp mình chủ nhiệm.");
+                    }
+                }
+            }
+            
             $maPhanCong = 'PC_' . $maLop . '_' . $maMonHoc . '_' . time();
             
             $stmt = $this->db->prepare("
-                INSERT INTO PhanCongGiangDay 
+                INSERT INTO phanconggiangday 
                 (maPhanCong, maLop, maMonHoc, maGV, namHoc, hocKy, ghiChu)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
             return $stmt->execute([$maPhanCong, $maLop, $maMonHoc, $maGV, $namHoc, $hocKy, $ghiChu]);
+        } catch (Exception $e) {
+            // Ném lại exception để controller bắt được
+            throw $e;
         } catch (PDOException $e) {
             error_log("Lỗi thêm phân công giảng dạy: " . $e->getMessage());
-            return false;
+            throw new Exception("Lỗi hệ thống khi thêm phân công");
         }
     }
 
@@ -491,15 +611,63 @@ class PhanCongModel {
      */
     public function capNhatPhanCongGiangDay($maLop, $maMonHoc, $maGV, $namHoc, $hocKy) {
         try {
+            // Áp dụng cùng ràng buộc như khi thêm mới
+            
+            // Ràng buộc 1: Kiểm tra GV bộ môn chỉ được phụ trách tối đa 5 lớp
+            $stmtCheck = $this->db->prepare("
+                SELECT COUNT(DISTINCT maLop) as soLop
+                FROM phanconggiangday
+                WHERE maGV = ? AND namHoc = ? AND hocKy = ?
+                  AND NOT (maLop = ? AND maMonHoc = ?)
+            ");
+            $stmtCheck->execute([$maGV, $namHoc, $hocKy, $maLop, $maMonHoc]);
+            $result = $stmtCheck->fetch();
+            
+            if ($result['soLop'] >= 5) {
+                throw new Exception('Giáo viên này đã phụ trách đủ 5 lớp. Không thể phân công thêm.');
+            }
+            
+            // Ràng buộc 2: Kiểm tra GVCN phải dạy môn của mình
+            $stmtGVCN = $this->db->prepare("
+                SELECT gv.maGV, gv.monHocPhuTrach
+                FROM giaovienchunhiem gvcn
+                JOIN giaovienbomon gv ON gv.maGV = gvcn.maGV
+                WHERE gvcn.lop = ?
+            ");
+            $stmtGVCN->execute([$maLop]);
+            $gvcnInfo = $stmtGVCN->fetch();
+            
+            if ($gvcnInfo && $gvcnInfo['maGV'] === $maGV) {
+                $stmtMon = $this->db->prepare("SELECT tenMon FROM monhoc WHERE maMonHoc = ?");
+                $stmtMon->execute([$maMonHoc]);
+                $monInfo = $stmtMon->fetch();
+                
+                if ($monInfo) {
+                    $monPhuTrach = $gvcnInfo['monHocPhuTrach'];
+                    $tenMon = $monInfo['tenMon'];
+                    
+                    $isMatchingSubject = (
+                        strpos($monPhuTrach, $tenMon) !== false || 
+                        strpos($tenMon, $monPhuTrach) !== false
+                    );
+                    
+                    if (!$isMatchingSubject) {
+                        throw new Exception("GVCN phải dạy môn {$monPhuTrach} cho lớp mình chủ nhiệm.");
+                    }
+                }
+            }
+            
             $stmt = $this->db->prepare("
-                UPDATE PhanCongGiangDay
+                UPDATE phanconggiangday
                 SET maGV = ?
                 WHERE maLop = ? AND maMonHoc = ? AND namHoc = ? AND hocKy = ?
             ");
             return $stmt->execute([$maGV, $maLop, $maMonHoc, $namHoc, $hocKy]);
+        } catch (Exception $e) {
+            throw $e;
         } catch (PDOException $e) {
             error_log("Lỗi cập nhật phân công giảng dạy: " . $e->getMessage());
-            return false;
+            throw new Exception("Lỗi hệ thống khi cập nhật phân công");
         }
     }
 
@@ -510,7 +678,7 @@ class PhanCongModel {
      */
     public function xoaPhanCongGiangDay($maPhanCong) {
         try {
-            $stmt = $this->db->prepare("DELETE FROM PhanCongGiangDay WHERE maPhanCong = ?");
+            $stmt = $this->db->prepare("DELETE FROM phanconggiangday WHERE maPhanCong = ?");
             return $stmt->execute([$maPhanCong]);
         } catch (PDOException $e) {
             error_log("Lỗi xóa phân công giảng dạy: " . $e->getMessage());
@@ -528,7 +696,7 @@ class PhanCongModel {
     public function demSoMonGVDang($maGV, $namHoc, $hocKy) {
         $stmt = $this->db->prepare("
             SELECT COUNT(DISTINCT maMonHoc) as soMon
-            FROM PhanCongGiangDay
+            FROM phanconggiangday
             WHERE maGV = ? AND namHoc = ? AND hocKy = ?
         ");
         $stmt->execute([$maGV, $namHoc, $hocKy]);
@@ -543,13 +711,32 @@ class PhanCongModel {
      * @param string $hocKy
      * @return int
      */
-    public function demSoLopGVDang($maGV, $namHoc, $hocKy) {
+    /**
+     * Đếm số lớp GV đang phụ trách (trả về PDOStatement để dùng ở controller)
+     * @param string $maGV
+     * @param string $namHoc
+     * @param string $hocKy
+     * @return PDOStatement
+     */
+    public function countClassesByTeacher($maGV, $namHoc, $hocKy) {
         $stmt = $this->db->prepare("
             SELECT COUNT(DISTINCT maLop) as soLop
-            FROM PhanCongGiangDay
+            FROM phanconggiangday
             WHERE maGV = ? AND namHoc = ? AND hocKy = ?
         ");
         $stmt->execute([$maGV, $namHoc, $hocKy]);
+        return $stmt;
+    }
+
+    /**
+     * Đếm số lớp GV đang phụ trách (trả về số nguyên)
+     * @param string $maGV
+     * @param string $namHoc
+     * @param string $hocKy
+     * @return int
+     */
+    public function demSoLopGVDang($maGV, $namHoc, $hocKy) {
+        $stmt = $this->countClassesByTeacher($maGV, $namHoc, $hocKy);
         $result = $stmt->fetch();
         return (int)($result['soLop'] ?? 0);
     }
@@ -603,9 +790,9 @@ class PhanCongModel {
                 pc.maMonHoc,
                 mh.tenMon,
                 mh.soTietTuan
-            FROM PhanCongGiangDay pc
-            JOIN LopHoc l ON l.maLop = pc.maLop
-            JOIN MonHoc mh ON mh.maMonHoc = pc.maMonHoc
+            FROM phanconggiangday pc
+            JOIN lophoc l ON l.maLop = pc.maLop
+            JOIN monhoc mh ON mh.maMonHoc = pc.maMonHoc
             WHERE pc.maGV = ? AND pc.namHoc = ? AND pc.hocKy = ?
             ORDER BY l.khoi, l.tenLop, mh.tenMon
         ");
@@ -619,3 +806,6 @@ class PhanCongModel {
         return $danhSach;
     }
 }
+
+
+

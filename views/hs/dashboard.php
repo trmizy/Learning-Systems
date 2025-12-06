@@ -5,41 +5,33 @@
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
 require_role(['hs']);
 
+// Lấy thông tin học sinh từ database
+require_once __DIR__ . '/../../models/DiemModel.php';
+$diemModel = new DiemModel();
+
+// Lấy thông tin user từ session
+$user = $_SESSION['auth'] ?? [];
+$maHS = null;
+if ($user && isset($user['username'])) {
+    $maHS = $diemModel->getMaHocSinhByUsername($user['username']);
+}
+
+// Lấy thông tin chi tiết học sinh
+$thongTinHS = null;
+if ($maHS) {
+    $thongTinHS = $diemModel->getThongTinHocSinh($maHS);
+}
+
+// Gán giá trị cho hiển thị
+$fullName = $thongTinHS ? $thongTinHS['hoTen'] : 'Học sinh';
+$studentId = $thongTinHS ? $thongTinHS['maHS'] : 'HS0000';
+$className = $thongTinHS ? $thongTinHS['tenLop'] : 'Chưa có lớp';
+
 // Tiêu đề trang và header chung
 $pageTitle = 'Trang học sinh - THPT';
 require_once __DIR__ . '/../layouts/header.php';
 
-// KHỞI TẠO MODEL - THÊM PHẦN NÀY
-require_once __DIR__ . '/../../models/hs/DashboardModel.php';
-$dashboardModel = new DashboardModel();
-
-// Lấy user hiện tại
-$user = current_user() ?: [];
-$username = $user['username'] ?? '';
-
-// Lấy thông tin học sinh THẬT
-$thongTinHS = $dashboardModel->getThongTinHocSinh($username);
-
-if (!$thongTinHS) {
-    echo '<div class="alert alert-danger">Không tìm thấy thông tin học sinh!</div>';
-    require_once __DIR__ . '/../layouts/footer.php';
-    exit;
-}
-
-// Gán biến
-$maHS = $thongTinHS['maHS'];
-$fullName = $thongTinHS['hoTen'];
-$studentId = $maHS;
-$className = $thongTinHS['tenLop'];
-$namHoc = $thongTinHS['namHoc'];
-
-// Lấy mã lớp
-require_once __DIR__ . '/../../models/hs/ThoiKhoaBieuModel.php';
-$tkbModel = new ThoiKhoaBieuModel();
-$maLop = $tkbModel->getMaLopByMaHocSinh($maHS);
-
-// Lấy số liệu THẬT
-$hocKy = 'I';
+// Số liệu demo (thay bằng truy vấn thật)
 $stats = [
     'attendance_rate' => 95.5,
     'gpa_semester' => $dashboardModel->getDiemTrungBinhHocKy($maHS, $hocKy, $namHoc),
@@ -320,7 +312,7 @@ $notifications = [
                 <p class="mb-0">
                     <i class="fa-solid fa-id-card me-2"></i>Mã số: <?php echo htmlspecialchars($studentId); ?>
                     <span class="mx-3">|</span>
-                    <i class="fa-solid fa-users me-2"></i>Lớp: <?php echo htmlspecialchars($className); ?>
+                    <i class="fa-solid fa-users me-2"></i>Lớp: <?php echo htmlspecialchars(str_replace('Lop ', '', $className)); ?>
                 </p>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
@@ -393,7 +385,7 @@ $notifications = [
                     </div>
                     <h5 class="card-title fw-bold">Bảng điểm</h5>
                     <p class="text-muted small">Xem điểm chi tiết theo môn, kỳ học</p>
-                    <a href="/modules/students/grades.php" class="btn btn-primary w-100 mt-3">
+                    <a href="/public/index.php?page=hs-xem-diem" class="btn btn-primary w-100 mt-3">
                         <i class="fa-solid fa-eye me-2"></i>Xem điểm
                     </a>
                 </div>
@@ -519,7 +511,7 @@ $notifications = [
                         </div>
                     </div>
                     <?php endforeach; ?>
-                    <a href="/modules/students/grades.php" class="btn btn-outline-warning w-100 mt-3">
+                    <a href="/public/index.php?page=hs-xem-diem" class="btn btn-outline-warning w-100 mt-3">
                         <i class="fa-solid fa-chart-line me-2"></i>Xem tất cả điểm
                     </a>
                 </div>
