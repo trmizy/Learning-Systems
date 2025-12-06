@@ -1,8 +1,7 @@
 <?php
-session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/roles.php';
-require_once __DIR__ . '/../../models/SchoolAccountModel.php';
+require_once __DIR__ . '/../../models/nhanvienso/SchoolAccountModel.php';
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
 
 // Kiểm tra đăng nhập và quyền nhân viên sở
@@ -41,9 +40,37 @@ if (!$maNhanVienSo) {
     die('Không tìm thấy thông tin nhân viên sở trong hệ thống. Vui lòng liên hệ quản trị viên.');
 }
 
-// Xử lý POST request - Tạo tài khoản cho trường
+// Xử lý POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     
+    // Thêm trường mới vào hệ thống
+    if ($_POST['action'] === 'add_school') {
+        $data = [
+            'tenTruong' => trim($_POST['tenTruong'] ?? ''),
+            'diaChi' => trim($_POST['diaChi'] ?? ''),
+            'email' => trim($_POST['email'] ?? ''),
+            'soDienThoai' => trim($_POST['soDienThoai'] ?? '')
+        ];
+        
+        $result = $schoolAccountModel->themTruongMoi($data);
+        
+        if ($result['success']) {
+            $_SESSION['messages'][] = [
+                'type' => 'success',
+                'text' => $result['message'] . ' (Mã trường: ' . $result['data']['maTruong'] . ')'
+            ];
+        } else {
+            $_SESSION['messages'][] = [
+                'type' => 'danger',
+                'text' => $result['message']
+            ];
+        }
+        
+        header("Location: /public/index.php?action=schoolAccount_nhanvienso");
+        exit;
+    }
+    
+    // Tạo tài khoản cho trường có sẵn
     if ($_POST['action'] === 'create_account') {
         $maTruong = $_POST['maTruong'] ?? '';
         
@@ -52,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 'type' => 'danger',
                 'text' => 'Vui lòng chọn trường cần cấp tài khoản'
             ];
-            header("Location: " . $_SERVER['PHP_SELF']);
+            header("Location: /public/index.php?action=schoolAccount_nhanvienso");
             exit;
         }
         
@@ -84,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             ];
         }
         
-        header("Location: " . $_SERVER['PHP_SELF']);
+        header("Location: /public/index.php?action=schoolAccount_nhanvienso");
         exit;
     }
     
@@ -96,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 'type' => 'danger',
                 'text' => 'Vui lòng chọn trường cần xóa tài khoản'
             ];
-            header("Location: " . $_SERVER['PHP_SELF']);
+            header("Location: /public/index.php?action=schoolAccount_nhanvienso");
             exit;
         }
         
@@ -115,7 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             ];
         }
         
-        header("Location: " . $_SERVER['PHP_SELF']);
+        header("Location: /public/index.php?action=schoolAccount_nhanvienso");
         exit;
     }
 }

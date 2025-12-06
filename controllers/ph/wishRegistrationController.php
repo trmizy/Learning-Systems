@@ -1,8 +1,7 @@
 <?php
-session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/roles.php';
-require_once __DIR__ . '/../../models/WishRegistrationModel.php';
+require_once __DIR__ . '/../../models/ph/WishRegistrationModel.php';
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
 
 // Kiểm tra đăng nhập và quyền phụ huynh
@@ -91,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             ];
         }
 
-        header("Location: " . $_SERVER['PHP_SELF']);
+        header("Location: /public/index.php?action=wishRegistration_ph");
         exit;
     }
 }

@@ -451,8 +451,8 @@ if ($currentRole === 'gvcn') {
                     </div>
                     <h5 class="card-title fw-bold">Nhập điểm</h5>
                     <p class="text-muted small">Nhập, sửa điểm kiểm tra, thi</p>
-                    <a href="/controllers/gvbm/enterPointsController.php" class="btn btn-primary w-100 mt-3">
-                        <i class="fa-solid fa-keyboard me-2"></i>Nhập điểm
+                    <a href="/public/index.php?action=enterPoints_gvbm" class="btn btn-primary w-100 mt-3">
+                        <i class="fa-solid fa-pen-to-square me-2"></i>Nhập điểm
                     </a>
                 </div>
             </div>

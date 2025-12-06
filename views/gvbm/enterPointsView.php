@@ -35,7 +35,8 @@ function tinhDiemTrungBinh($tx, $gk, $ck) {
     <div class="page-header">
         <h1><i class="fas fa-edit"></i> Nhập điểm</h1>
         <div class="header-info">
-            <form method="GET" class="filter-form" style="display: flex; gap: 20px; align-items: center;">
+            <form method="GET" action="/public/index.php" class="filter-form" style="display: flex; gap: 20px; align-items: center;">
+                <input type="hidden" name="action" value="enterPoints_gvbm">
                 <?php $selectStyle = 'padding: 8px 12px; border-radius: 5px; border: 2px solid white; background: rgba(255,255,255,0.2); color: black; font-weight: bold; cursor: pointer;'; ?>
                 
                 <!-- Năm học -->
@@ -76,7 +77,7 @@ function tinhDiemTrungBinh($tx, $gk, $ck) {
             <?php else: ?>
                 <div class="class-grid">
                     <?php foreach ($danhSachLop as $lop): ?>
-                        <a href="?maLop=<?= urlencode($lop['maLop']) ?>&maMonHoc=<?= urlencode($lop['maMonHoc']) ?>&namHoc=<?= urlencode($namHoc) ?>&hocKy=<?= urlencode($hocKy) ?>" 
+                        <a href="/public/index.php?action=enterPoints_gvbm&maLop=<?= urlencode($lop['maLop']) ?>&maMonHoc=<?= urlencode($lop['maMonHoc']) ?>&namHoc=<?= urlencode($namHoc) ?>&hocKy=<?= urlencode($hocKy) ?>" 
                            class="class-card <?= ($selectedMaLop == $lop['maLop'] && $selectedMaMonHoc == $lop['maMonHoc']) ? 'active' : '' ?>">
                             <div class="class-card-icon">
                                 <i class="fas fa-chalkboard-teacher"></i>
@@ -118,7 +119,7 @@ function tinhDiemTrungBinh($tx, $gk, $ck) {
                         Điểm trung bình sẽ tự động tính theo công thức: (ĐTX + ĐGK×2 + ĐCK×3) / 6
                     </div>
 
-                    <form method="POST" class="grade-form">
+                    <form method="POST" action="/public/index.php?action=enterPoints_gvbm" class="grade-form">
                         <input type="hidden" name="maLop" value="<?= htmlspecialchars($selectedMaLop) ?>">
                         <input type="hidden" name="maMonHoc" value="<?= htmlspecialchars($selectedMaMonHoc) ?>">
                         <input type="hidden" name="namHoc" value="<?= htmlspecialchars($namHoc) ?>">

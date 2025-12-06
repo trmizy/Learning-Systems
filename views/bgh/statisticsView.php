@@ -14,7 +14,7 @@ require_once __DIR__ . '/../layouts/header.php';
                 
                 <div class="card-body">
                     <!-- Form bộ lọc -->
-                    <form method="POST" action="" id="filterForm">
+                    <form method="POST" action="/public/index.php?action=statistics_bgh" id="filterForm">
                         <input type="hidden" name="action" value="view_statistics">
                         
                         <div class="row g-3 mb-4">
@@ -79,13 +79,22 @@ require_once __DIR__ . '/../layouts/header.php';
                         <!-- Thống kê tổng quan -->
                         <div class="row mb-4">
                             <?php 
+                            // Xử lý hiển thị điểm trung bình
+                            $diemTB = $thongKeData['thongKe']['diemTrungBinhChung'] ?? null;
+                            if ($diemTB === null || $diemTB === 0) {
+                                $diemTBDisplay = '<span class="badge bg-secondary">Chưa có điểm</span>';
+                            } else {
+                                $diemTBDisplay = number_format($diemTB, 2);
+                            }
+                            
                             $overviewCards = [
                                 ['info', 'Tổng số học sinh', number_format($thongKeData['thongKe']['tongSoHocSinh'])],
-                                ['success', 'Điểm TB chung', number_format($thongKeData['thongKe']['diemTrungBinhChung'], 2)],
+                                ['primary', 'Học sinh có điểm', number_format($thongKeData['thongKe']['soHocSinhCoDiem'])],
+                                ['success', 'Điểm TB chung', $diemTBDisplay],
                                 ['warning', 'Năm học - Học kỳ', htmlspecialchars($thongKeData['filters']['namHoc']).' - '.htmlspecialchars($thongKeData['filters']['hocKy'])]
                             ];
                             foreach ($overviewCards as $card): ?>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <div class="card bg-<?= $card[0] ?> text-white"><div class="card-body"><h5><?= $card[1] ?></h5><h2><?= $card[2] ?></h2></div></div>
                                 </div>
                             <?php endforeach; ?>

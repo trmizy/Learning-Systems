@@ -52,7 +52,7 @@ require_role(['ph']);
                 </div>
                 
                 <div class="action-center">
-                    <a href="?action=new" class="btn btn-primary"><i class="fas fa-plus"></i> Đăng Ký Thí Sinh Khác</a>
+                    <a href="/public/index.php?action=wishRegistration_ph&param=new" class="btn btn-primary"><i class="fas fa-plus"></i> Đăng Ký Thí Sinh Khác</a>
                 </div>
             </div>
         <?php endif; ?>
@@ -85,7 +85,7 @@ require_role(['ph']);
         <div id="formAlerts" class="container my-2"></div>
 
         <!-- Registration Form -->
-        <form id="wishRegistrationForm" method="POST" action="../../controllers/ph/wishRegistrationController.php">
+        <form id="wishRegistrationForm" method="POST" action="/public/index.php?action=wishRegistration_ph">
             <input type="hidden" name="action" value="register_wish">
 
             <!-- Student Information Card -->

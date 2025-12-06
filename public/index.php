@@ -23,7 +23,26 @@ const ROLE_VIEWS = [
 // Handle actions
 if (isset($_GET['action'])) {
     switch ($_GET['action']) {
-        // THAY THẾ BẰNG ĐOẠN NÀY
+        case 'statistics_bgh':
+            require_once __DIR__ . '/../controllers/bgh/statisticsController.php';
+            exit;
+            
+        case 'enterPoints_gvbm':
+            require_once __DIR__ . '/../controllers/gvbm/enterPointsController.php';
+            exit;
+            
+        case 'schoolAccount_nhanvienso':
+            require_once __DIR__ . '/../controllers/nhanvienso/schoolAccountController.php';
+            exit;
+            
+        case 'targets_nhanvienso':
+            require_once __DIR__ . '/../controllers/nhanvienso/targetsController.php';
+            exit;
+            
+        case 'wishRegistration_ph':
+            require_once __DIR__ . '/../controllers/ph/wishRegistrationController.php';
+            exit;
+        
     case 'logout':
     // 1. Xóa tất cả các biến trong session
     session_unset();

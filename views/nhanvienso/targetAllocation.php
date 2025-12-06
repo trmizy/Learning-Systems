@@ -58,7 +58,8 @@ require_once __DIR__ . '/../layouts/header.php';
         <h2 class="section-title">Phân bổ chỉ tiêu cho các trường</h2>
 
         <!-- Select Academic Year -->
-        <form method="GET" action="../../controllers/nhanvienso/targetsController.php" class="form-inline">
+        <form method="GET" action="/public/index.php" class="form-inline">
+            <input type="hidden" name="action" value="targets_nhanvienso">
             <div class="form-group" style="flex: 2;">
                 <label for="namHoc">Chọn năm học</label>
                 <select name="namHoc" id="namHoc" class="form-control" onchange="this.form.submit()">
@@ -73,7 +74,7 @@ require_once __DIR__ . '/../layouts/header.php';
         <?php if (!empty($namHocSelected) && !empty($danhSachTruong)): ?>
         <!-- Allocation Form -->
         <form method="POST" 
-              action="../../controllers/nhanvienso/targetsController.php?action=submit" 
+              action="/public/index.php?action=targets_nhanvienso&param=submit" 
               id="phanBoForm"
               onsubmit="return validateForm()">
             
@@ -199,7 +200,7 @@ require_once __DIR__ . '/../layouts/header.php';
             <button type="button" class="btn btn-secondary" onclick="closeCancelModal()">
                 Không, tiếp tục
             </button>
-            <a href="../../controllers/nhanvienso/targetsController.php?action=cancel&namHoc=<?php echo urlencode($namHocSelected); ?>" 
+            <a href="/public/index.php?action=targets_nhanvienso&param=cancel&namHoc=<?php echo urlencode($namHocSelected); ?>" 
                class="btn btn-danger">
                 Có, hủy phân bổ
             </a>
@@ -320,12 +321,12 @@ function applyAllGoiY() {
 }
 
 function huyNhapLieu() {
-    if (!confirm('✗ Hủy thao tác nhập liệu?\n\nDữ liệu bạn vừa nhập sẽ bị xóa (chưa lưu vào database).')) return;
+    if (!confirm('✗ Hủy thao tác nhập liệu?\n\nDữ liệu bạn vừa nhập sẽ bị xoá (chưa lưu vào database).')) return;
     document.querySelectorAll('.chitieu-input').forEach(input => {
         if (!input.disabled && !input.readOnly) input.value = '';
     });
     updateTotal();
-    window.location.href = '../../controllers/nhanvienso/targetsController.php';
+    window.location.href = '/public/index.php?action=targets_nhanvienso';
 }
 
 function resetDatabase() {
@@ -336,7 +337,7 @@ function resetDatabase() {
 
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = '../../controllers/nhanvienso/targetsController.php?action=reset';
+    form.action = '/public/index.php?action=targets_nhanvienso&param=reset';
     const inputNamHoc = document.createElement('input');
     inputNamHoc.type = 'hidden';
     inputNamHoc.name = 'namHoc';
