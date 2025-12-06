@@ -29,8 +29,11 @@
     <?php endif; ?>
 
     <div class="card">
-        <div class="card-header">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h3><i class="fas fa-school"></i> Danh sách các trường THPT</h3>
+            <button type="button" class="btn btn-success" onclick="openAddSchoolModal()">
+                <i class="fas fa-plus"></i> Thêm trường mới
+            </button>
         </div>
         <div class="card-body">
             <?php if (empty($danhSachTruong)): ?>
@@ -74,6 +77,9 @@
                                             <i class="fas fa-<?= $daCap ? 'check' : 'times' ?>"></i> 
                                             <?= $daCap ? 'Đã cấp' : 'Chưa cấp' ?>
                                         </span>
+                                        <?php if (!$coEmail && !$daCap): ?>
+                                            <br><small style="color: #dc3545;">Thiếu email</small>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <?php if ($daCap): ?>
@@ -105,6 +111,59 @@
     </div>
 </div>
 
+<!-- Modal thêm trường mới -->
+<div id="addSchoolModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-plus"></i> Thêm trường mới vào hệ thống</h3>
+            <span class="close" onclick="closeAddSchoolModal()">&times;</span>
+        </div>
+        <form method="POST" action="/public/index.php?action=schoolAccount_nhanvienso" id="addSchoolForm">
+            <input type="hidden" name="action" value="add_school">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="tenTruong">Tên trường <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" id="tenTruong" name="tenTruong" required 
+                           placeholder="Ví dụ: THPT Lê Hồng Phong">
+                </div>
+                
+                <div class="form-group">
+                    <label for="diaChi">Địa chỉ</label>
+                    <input type="text" class="form-control" id="diaChi" name="diaChi" 
+                           placeholder="Ví dụ: 240 Nguyễn Thị Minh Khai, Quận 3, TP. HCM">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email <span style="color: red;">*</span></label>
+                    <input type="email" class="form-control" id="email" name="email" required 
+                           placeholder="Ví dụ: thptlehongphong@moet.edu.vn">
+                    <small class="form-text">Email sẽ được dùng làm tên đăng nhập khi cấp tài khoản</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="soDienThoai">Số điện thoại</label>
+                    <input type="tel" class="form-control" id="soDienThoai" name="soDienThoai" 
+                           pattern="[0-9]{10,11}" placeholder="Ví dụ: 02838293785">
+                    <small class="form-text">10-11 chữ số</small>
+                </div>
+                
+                <div class="alert alert-info" style="margin-top: 15px;">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Lưu ý:</strong> Mã trường sẽ được tạo tự động theo format TRXXX (ví dụ: TR001, TR002...)
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Lưu thông tin
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeAddSchoolModal()">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Modal cấp tài khoản -->
 <div id="createAccountModal" class="modal">
     <div class="modal-content">
@@ -118,7 +177,7 @@
             <p>Thông tin tài khoản sẽ được gửi đến email: <strong id="createSchoolEmail"></strong></p>
         </div>
         <div class="modal-footer">
-            <form method="POST" id="createAccountForm">
+            <form method="POST" action="/public/index.php?action=schoolAccount_nhanvienso" id="createAccountForm">
                 <input type="hidden" name="action" value="create_account">
                 <input type="hidden" name="maTruong" id="createMaTruong">
                 <button type="submit" class="btn btn-primary">
@@ -148,7 +207,7 @@
             </p>
         </div>
         <div class="modal-footer">
-            <form method="POST" id="deleteAccountForm">
+            <form method="POST" action="/public/index.php?action=schoolAccount_nhanvienso" id="deleteAccountForm">
                 <input type="hidden" name="action" value="delete_account">
                 <input type="hidden" name="maTruong" id="deleteMaTruong">
                 <button type="submit" class="btn btn-danger">
@@ -163,6 +222,19 @@
 </div>
 
 <script>
+// Mở modal thêm trường mới
+function openAddSchoolModal() {
+    document.getElementById('addSchoolModal').classList.add('show');
+    // Reset form
+    document.getElementById('addSchoolForm').reset();
+}
+
+// Đóng modal thêm trường
+function closeAddSchoolModal() {
+    document.getElementById('addSchoolModal').classList.remove('show');
+}
+
+// Mở modal cấp tài khoản
 function showModal(type, data) {
     if (type === 'create') {
         document.getElementById('createMaTruong').value = data.maTruong;
@@ -176,22 +248,38 @@ function showModal(type, data) {
     }
 }
 
+// Xử lý click nút "Cấp tài khoản" ở mỗi hàng
 document.querySelectorAll('.btn-create-account').forEach(btn => {
     btn.addEventListener('click', function() {
-        showModal('create', {maTruong: this.dataset.matruong, tenTruong: this.dataset.tentruong, email: this.dataset.email});
+        showModal('create', {
+            maTruong: this.dataset.matruong, 
+            tenTruong: this.dataset.tentruong, 
+            email: this.dataset.email
+        });
     });
 });
 
+// Xử lý click nút "Xóa TK"
 document.querySelectorAll('.btn-delete-account').forEach(btn => {
     btn.addEventListener('click', function() {
-        showModal('delete', {maTruong: this.dataset.matruong, tenTruong: this.dataset.tentruong});
+        showModal('delete', {
+            maTruong: this.dataset.matruong, 
+            tenTruong: this.dataset.tentruong
+        });
     });
 });
 
-function closeCreateModal() { document.getElementById('createAccountModal').classList.remove('show'); }
-function closeDeleteModal() { document.getElementById('deleteAccountModal').classList.remove('show'); }
+function closeCreateModal() { 
+    document.getElementById('createAccountModal').classList.remove('show'); 
+}
 
+function closeDeleteModal() { 
+    document.getElementById('deleteAccountModal').classList.remove('show'); 
+}
+
+// Đóng modal khi click bên ngoài
 window.onclick = function(event) {
+    if (event.target.id === 'addSchoolModal') closeAddSchoolModal();
     if (event.target.id === 'createAccountModal') closeCreateModal();
     if (event.target.id === 'deleteAccountModal') closeDeleteModal();
 }

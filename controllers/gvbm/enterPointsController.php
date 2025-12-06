@@ -1,8 +1,7 @@
 <?php
-session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/roles.php';
-require_once __DIR__ . '/../../models/enterPointsModel.php';
+require_once __DIR__ . '/../../models/gvbm/enterPointsModel.php';
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
 
 // Kiểm tra đăng nhập và quyền giáo viên bộ môn
@@ -131,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_grades'])) {
     }
     
     // Redirect để tránh resubmit
-    header("Location: ?maLop=$maLop&maMonHoc=$maMonHoc&namHoc=$namHocPost&hocKy=$hocKyPost");
+    header("Location: /public/index.php?action=enterPoints_gvbm&maLop=$maLop&maMonHoc=$maMonHoc&namHoc=$namHocPost&hocKy=$hocKyPost");
     exit;
 }
 

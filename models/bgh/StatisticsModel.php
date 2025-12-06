@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../../config/database.php';
 
 class StatisticsModel {
     /** @var PDO */
@@ -107,7 +107,9 @@ class StatisticsModel {
                     khoi,
                     diemTrungBinhChung,
                     loaiHanhKiem,
-                    xepLoaiHocLuc
+                    xepLoaiHocLuc,
+                    namHoc,
+                    hocKy
                 FROM viewThongKeDiemHanhKiem
                 WHERE namHoc = :namHoc AND hocKy = :hocKy";
 
@@ -163,6 +165,7 @@ class StatisticsModel {
     private function tinhToanThongKe(array $data): array {
         $tongSoHS   = count($data);
         $tongDiemTB = 0;
+        $soHSCoDiem = 0; // Đếm số học sinh thực sự có điểm
 
         $hocLuc = [
             'Gioi'       => 0,
@@ -179,6 +182,7 @@ class StatisticsModel {
         ];
 
         foreach ($data as $hs) {
+            // Chỉ tính học sinh có xếp loại học lực (tức là đã có điểm)
             if (!empty($hs['xepLoaiHocLuc']) && isset($hocLuc[$hs['xepLoaiHocLuc']])) {
                 $hocLuc[$hs['xepLoaiHocLuc']]++;
             }
@@ -187,7 +191,14 @@ class StatisticsModel {
                 $hanhKiem[$hs['loaiHanhKiem']]++;
             }
 
-            $tongDiemTB += $hs['diemTrungBinhChung'] ?? 0;
+            // Chỉ tính điểm trung bình cho học sinh có điểm thực sự
+            // Kiểm tra: điểm không null, lớn hơn 0, và có xếp loại học lực
+            if ($hs['diemTrungBinhChung'] !== null 
+                && $hs['diemTrungBinhChung'] > 0 
+                && !empty($hs['xepLoaiHocLuc'])) {
+                $tongDiemTB += $hs['diemTrungBinhChung'];
+                $soHSCoDiem++;
+            }
         }
 
         $buildTiLe = function (array $src) use ($tongSoHS): array {
@@ -203,7 +214,8 @@ class StatisticsModel {
 
         return [
             'tongSoHocSinh'      => $tongSoHS,
-            'diemTrungBinhChung' => $tongSoHS > 0 ? round($tongDiemTB / $tongSoHS, 2) : 0,
+            'soHocSinhCoDiem'    => $soHSCoDiem,
+            'diemTrungBinhChung' => $soHSCoDiem > 0 ? round($tongDiemTB / $soHSCoDiem, 2) : null,
             'hocLuc'             => $buildTiLe($hocLuc),
             'hanhKiem'           => $buildTiLe($hanhKiem)
         ];

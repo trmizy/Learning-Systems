@@ -1,8 +1,7 @@
 <?php
-session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/roles.php';
-require_once __DIR__ . '/../../models/StatisticsModel.php';
+require_once __DIR__ . '/../../models/bgh/StatisticsModel.php';
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
 
 // Kiểm tra đăng nhập và quyền ban giám hiệu

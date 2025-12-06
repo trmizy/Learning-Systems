@@ -49,12 +49,36 @@ if (isset($_GET['controller'])) {
 // Handle actions
 if (isset($_GET['action'])) {
     switch ($_GET['action']) {
-        
-        case 'logout':
-            session_unset();
-            session_destroy();
-            header('Location: index.php'); // Chuyển hướng về trang chủ
+        case 'statistics_bgh':
+            require_once __DIR__ . '/../controllers/bgh/statisticsController.php';
             exit;
+            
+        case 'enterPoints_gvbm':
+            require_once __DIR__ . '/../controllers/gvbm/enterPointsController.php';
+            exit;
+            
+        case 'schoolAccount_nhanvienso':
+            require_once __DIR__ . '/../controllers/nhanvienso/schoolAccountController.php';
+            exit;
+            
+        case 'targets_nhanvienso':
+            require_once __DIR__ . '/../controllers/nhanvienso/targetsController.php';
+            exit;
+            
+        case 'wishRegistration_ph':
+            require_once __DIR__ . '/../controllers/ph/wishRegistrationController.php';
+            exit;
+        
+    case 'logout':
+    // 1. Xóa tất cả các biến trong session
+    session_unset();
+
+    // 2. Hủy hoàn toàn session
+    session_destroy();
+
+    // 3. Chuyển hướng về trang chủ
+    header('Location: /public/index.php');
+    exit;
             
         case 'switch':
             if (isset($_GET['role']) && 

@@ -674,7 +674,7 @@ $violations = [];
                     <p class="text-muted small">Đăng ký nguyện vọng vào trường THPT</p>
 
                         <!-- Luôn hiển thị nút; controller sẽ kiểm tra và redirect với thông báo nếu phụ huynh đã liên kết -->
-                        <a href="/controllers/ph/wishRegistrationController.php" class="btn btn-primary w-100 mt-3">
+                        <a href="/public/index.php?action=wishRegistration_ph" class="btn btn-primary w-100 mt-3">
                             <i class="fa-solid fa-pen-to-square me-2"></i>Đăng ký ngay
                         </a>
 

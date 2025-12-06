@@ -497,7 +497,7 @@ $notifications = [
                         <a href="/modules/sogd/schools/list.php" class="btn btn-success btn-sm">
                             <i class="fa-solid fa-building me-1"></i>Danh sách
                         </a>
-                        <a href="/controllers/nhanvienso/schoolAccountController.php" class="btn btn-outline-success btn-sm">
+                        <a href="/public/index.php?action=schoolAccount_nhanvienso" class="btn btn-outline-success btn-sm">
                             <i class="fa-solid fa-user-plus me-1"></i>Tài khoản
                         </a>
                     </div>
@@ -536,7 +536,7 @@ $notifications = [
                     <h5 class="card-title fw-bold">Chỉ tiêu</h5>
                     <p class="text-muted small">Kế hoạch, chỉ tiêu tuyển sinh</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/controllers/nhanvienso/targetsController.php" class="btn btn-info btn-sm">
+                        <a href="/public/index.php?action=targets_nhanvienso" class="btn btn-info btn-sm">
                             <i class="fa-solid fa-chart-bar me-1"></i>Phân bổ chỉ tiêu
                         </a>
                         <a href="/modules/sogd/targets/planning.php" class="btn btn-outline-info btn-sm">

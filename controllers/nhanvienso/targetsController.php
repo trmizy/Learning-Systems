@@ -1,7 +1,7 @@
 <?php
 // Controller: Phân bổ chỉ tiêu tuyển sinh
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
-require_once __DIR__ . '/../../models/admissionTargetsModel.php';
+require_once __DIR__ . '/../../models/nhanvienso/admissionTargetsModel.php';
 
 class TargetsController {
     private $model;
@@ -33,6 +33,7 @@ class TargetsController {
 
     /**
      * Lấy chỉ tiêu đã phân bổ cho các trường
+     * Với năm cố định, tự động lấy phân bổ đều nếu chưa có trong DB
      */
     private function layChiTieuDaPhanBo($namHoc) {
         $map = [];
@@ -66,7 +67,7 @@ class TargetsController {
     public function submit() {
         // Chỉ chấp nhận POST request
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: targetsController.php');
+            header('Location: /public/index.php?action=targets_nhanvienso');
             exit;
         }
 
@@ -164,7 +165,7 @@ class TargetsController {
      * Redirect về trang chủ với năm học
      */
     private function redirect($namHoc) {
-        header('Location: targetsController.php?namHoc=' . urlencode($namHoc));
+        header('Location: /public/index.php?action=targets_nhanvienso&namHoc=' . urlencode($namHoc));
         exit;
     }
 
@@ -241,10 +242,10 @@ class TargetsController {
 }
 
 // Xử lý routing
-$action = $_GET['action'] ?? 'index';
+$param = $_GET['param'] ?? 'index';
 $controller = new TargetsController();
 
-switch ($action) {
+switch ($param) {
     case 'index':
         $controller->index();
         break;

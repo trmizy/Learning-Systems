@@ -727,7 +727,7 @@ try {
                     </div>
                     <div class="row g-2 mt-3">
                         <div class="col-md-6">
-                            <a href="/controllers/bgh/statisticsController.php" class="btn btn-outline-primary w-100">
+                            <a href="/public/index.php?action=statistics_bgh" class="btn btn-outline-primary w-100">
                                 <i class="fa-solid fa-file-chart me-2"></i>Báo cáo học vụ
                             </a>
                         </div>

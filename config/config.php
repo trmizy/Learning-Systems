@@ -55,7 +55,7 @@ $MENU_ITEMS = [
         ['icon' => 'fa-chart-simple', 'text' => 'Tổng kết', 'link' => '/modules/homeroom/summary.php'],
     ],
     'gvbm' => [
-        ['icon' => 'fa-square-poll-vertical', 'text' => 'Nhập điểm', 'link' => '/controllers/gvbm/enterPointsController.php'],
+        ['icon' => 'fa-square-poll-vertical', 'text' => 'Nhập điểm', 'link' => '/public/index.php?action=enterPoints_gvbm'],
         ['icon' => 'fa-calendar-check', 'text' => 'Điểm danh', 'link' => '/modules/attendance/mark.php'],
     ],
     'hocsinh' => [
