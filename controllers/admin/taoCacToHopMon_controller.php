@@ -7,12 +7,13 @@ $action = $_GET['action'] ?? 'list';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'create') {
     // Xử lý POST tạo mới
+    // Trang thái sẽ do BGH duyệt; admin không nhập trạng thái khi tạo.
+    // Mặc định trạng thái sẽ được thiết lập là 'PENDING' trong model khi tạo.
     $data = [
         'maToHop' => trim($_POST['maToHop'] ?? ''),
         'tenToHop' => trim($_POST['tenToHop'] ?? ''),
         'danhSachMon' => isset($_POST['danhSachMon']) ? implode(',', $_POST['danhSachMon']) : '',
-        'soLuongLop' => intval($_POST['soLuongLop'] ?? 0),
-        'trangThai' => $_POST['trangThai'] ?? 'ACTIVE'
+        'soLuongLop' => intval($_POST['soLuongLop'] ?? 0)
     ];
 
     // Validate

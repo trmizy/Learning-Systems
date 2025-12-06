@@ -2,6 +2,7 @@
 // filepath: d:\Hk1_2025\PTUD_Nhom4\Đồ Án Nhóm\Learning_System\views\bgh\dashboard.php
 // Bảo vệ & kiểm tra quyền
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
+require_once __DIR__ . '/../../config/database.php';
 require_role(['bgh']);
 
 // Tiêu đề trang và header chung
@@ -23,62 +24,82 @@ $user = current_user() ?: [];
 $fullName = isset($user['full_name']) ? $user['full_name'] : 'Ban Giám Hiệu';
 $position = isset($user['position']) ? $user['position'] : 'Hiệu trưởng';
 
-// Số liệu thống kê (mặc định, sẽ cố gắng lấy từ DB khi có kết nối)
+// Số liệu thống kê từ database
+$db = Database::getInstance()->getConnection();
 $stats = [
-    'total_students'      => 0,
-    'total_teachers'      => 0,
-    'total_classes'       => 0,
-    'pending_approvals'   => 0,
+    'total_students' => 0,
+    'total_teachers' => 0,
+    'total_classes' => 0,
+    'pending_approvals' => 0,
     'score_edit_requests' => 0,
-    'conduct_approvals'   => 0,
-    'exam_approvals'      => 0,
-    'teaching_assignments'=> 0,
+    'conduct_approvals' => 0,
+    'exam_approvals' => 0,
+    'teaching_assignments' => 0,
 ];
 
-// Cố gắng lấy số liệu thực từ database, nếu có lỗi sẽ giữ lại mặc định
 try {
-    if (class_exists('Database')) {
-        $conn = Database::getInstance()->getConnection();
+    // Tổng học sinh
+    $stmtStudents = $db->prepare("SELECT COUNT(*) as total FROM hocsinh");
+    $stmtStudents->execute();
+    $stats['total_students'] = $stmtStudents->fetchColumn();
 
-        // Tổng học sinh
-        $stmt = $conn->query("SELECT COUNT(*) FROM hocsinh");
-        $count = $stmt ? (int) $stmt->fetchColumn() : null;
-        if ($count !== null) {
-            $stats['total_students'] = $count;
-        }
+    // Tổng giáo viên
+    $stmtTeachers = $db->prepare("SELECT COUNT(*) as total FROM giaovienbomon");
+    $stmtTeachers->execute();
+    $stats['total_teachers'] = $stmtTeachers->fetchColumn();
 
-        // Tổng giáo viên: ưu tiên bảng `giaovienbomon`, fallback `giaovien`
-        $teacherCount = null;
-        try {
-            $stmt = $conn->query("SELECT COUNT(*) FROM giaovienbomon");
-            $teacherCount = $stmt ? (int) $stmt->fetchColumn() : null;
-        } catch (Exception $e) {
-            // fallback
-            $stmt = $conn->query("SELECT COUNT(*) FROM giaovien");
-            $teacherCount = $stmt ? (int) $stmt->fetchColumn() : null;
-        }
-        if ($teacherCount !== null) {
-            $stats['total_teachers'] = $teacherCount;
-        }
+    // Tổng lớp học
+    $stmtClasses = $db->prepare("SELECT COUNT(*) as total FROM lophoc");
+    $stmtClasses->execute();
+    $stats['total_classes'] = $stmtClasses->fetchColumn();
 
-        // Tổng lớp học
-        $stmt = $conn->query("SELECT COUNT(*) FROM lophoc");
-        $count = $stmt ? (int) $stmt->fetchColumn() : null;
-        if ($count !== null) {
-            $stats['total_classes'] = $count;
-        }
-    }
+    // Tổng yêu cầu chờ duyệt (các bảng cần duyệt)
+    // Giả định có các bảng: phieussuadiem, hanhkiem, dethi, phanconggiangday với cột trangThai
+    $stmtApprovals = $db->prepare("
+        SELECT COUNT(*) as total FROM tohopmon WHERE trangThai = 'PENDING'
+    ");
+    $stmtApprovals->execute();
+    $stats['pending_approvals'] = $stmtApprovals->fetchColumn();
+
+    // Nếu có bảng phieussuadiem, conduct, exam, assignment - cập nhật tương ứng
+    // Tạm thời gán 0 hoặc truy vấn từ các bảng nếu chúng tồn tại
+    $stats['score_edit_requests'] = 0;
+    $stats['conduct_approvals'] = 0;
+    $stats['exam_approvals'] = 0;
+    $stats['teaching_assignments'] = 0;
+
 } catch (Exception $e) {
-    // Không làm gì - giữ lại giá trị mặc định nếu DB không khả dụng
+    // Nếu có lỗi, giữ nguyên giá trị mặc định
 }
 
 // Yêu cầu chờ duyệt
-$pendingApprovals = [
-    ['type' => 'score_edit', 'title' => 'Đơn xin sửa điểm - Lớp 12A1', 'submitter' => 'GV. Nguyễn Văn A', 'date' => '2024-03-15', 'priority' => 'high'],
-    ['type' => 'conduct', 'title' => 'Xếp loại hạnh kiểm học kỳ II - Lớp 11B2', 'submitter' => 'GV. Trần Thị B', 'date' => '2024-03-15', 'priority' => 'high'],
-    ['type' => 'exam', 'title' => 'Đề thi giữa kỳ môn Toán khối 10', 'submitter' => 'Tổ Toán', 'date' => '2024-03-14', 'priority' => 'medium'],
-    ['type' => 'assignment', 'title' => 'Phân công giảng dạy học kỳ II', 'submitter' => 'Phòng KHTC', 'date' => '2024-03-13', 'priority' => 'medium'],
-];
+// Khởi tạo mảng chứa các mục chờ duyệt
+$pendingApprovals = [];
+// Thêm các yêu cầu từ "Chọn Tổ Hợp Môn" do admin tạo (trạng thái PENDING)
+require_once __DIR__ . '/../../models/bgh/chonToHopMonModel.php';
+try {
+    $chonModel = new chonToHopMonModel();
+    $pendingToHop = $chonModel->getDanhSachToHopMon('PENDING');
+    foreach ($pendingToHop as $t) {
+        $pendingApprovals[] = [
+            'type' => 'tohopmon',
+            'title' => 'Yêu cầu duyệt tổ hợp: ' . ($t['tenToHop'] ?? $t['maToHop']),
+            'submitter' => $t['nguoiTao'] ?? ($t['nguoiDuyet'] ?? 'Phòng Giáo Vụ'),
+            'date' => $t['ngayTao'] ?? date('Y-m-d'),
+            'priority' => 'high',
+            'maToHop' => $t['maToHop'] ?? null
+        ];
+    }
+} catch (Exception $e) {
+    // Nếu có lỗi kết nối DB, giữ nguyên các mục tĩnh
+}
+
+// Sắp xếp danh sách yêu cầu chờ duyệt theo ngày giảm dần (mới nhất lên đầu)
+usort($pendingApprovals, function($a, $b) {
+    $dateA = strtotime($a['date'] ?? '1970-01-01');
+    $dateB = strtotime($b['date'] ?? '1970-01-01');
+    return $dateB - $dateA; // Giảm dần: ngày mới nhất trước
+});
 
 // Thống kê theo khối
 $gradeStats = [
@@ -630,26 +651,33 @@ try {
                                         'score_edit' => 'Sửa điểm',
                                         'conduct' => 'Hạnh kiểm',
                                         'exam' => 'Đề thi',
-                                        'assignment' => 'Phân công'
+                                        'assignment' => 'Phân công',
+                                        'tohopmon' => 'Tổ hợp môn'
                                     ];
                                     echo $typeNames[$approval['type']];
                                 ?>
                             </span>
                         </div>
                         <div class="d-flex gap-2 mt-2">
-                            <button class="btn btn-sm btn-success flex-1">
-                                <i class="fa-solid fa-check me-1"></i>Duyệt
-                            </button>
-                            <button class="btn btn-sm btn-danger flex-1">
-                                <i class="fa-solid fa-times me-1"></i>Từ chối
-                            </button>
-                            <button class="btn btn-sm btn-outline-secondary">
-                                <i class="fa-solid fa-eye"></i>
-                            </button>
+                            <?php if (isset($approval['type']) && $approval['type'] === 'tohopmon' && !empty($approval['maToHop'])): ?>
+                                <a href="/modules/chonToHopMon/quanLyChonDetail.php?maToHop=<?php echo urlencode($approval['maToHop']); ?>" class="btn btn-sm btn-primary flex-1">
+                                    <i class="fa-solid fa-eye me-1"></i>Chi Tiết
+                                </a>
+                            <?php else: ?>
+                                <button class="btn btn-sm btn-success flex-1">
+                                    <i class="fa-solid fa-check me-1"></i>Duyệt
+                                </button>
+                                <button class="btn btn-sm btn-danger flex-1">
+                                    <i class="fa-solid fa-times me-1"></i>Từ chối
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <?php endforeach; ?>
-                    <a href="/modules/bgh/approvals/all.php" class="btn btn-outline-primary w-100 mt-3">
+                    <a href="/modules/bgh/approvals/allPending.php" class="btn btn-outline-primary w-100 mt-3">
                         <i class="fa-solid fa-list me-2"></i>Xem tất cả
                     </a>
                 </div>
@@ -816,6 +844,18 @@ try {
                     </h6>
                     <a href="/modules/bgh/documents/index.php" class="btn btn-outline-danger w-100">
                         <i class="fa-solid fa-folder-open me-2"></i>Xem văn bản
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold mb-3">
+                        <i class="fa-solid fa-layer-group text-primary me-2"></i>Chọn Tổ Hợp Môn
+                    </h6>
+                    <a href="/modules/chonToHopMon/quanLyChonList.php" class="btn btn-outline-primary w-100">
+                        <i class="fa-solid fa-list me-2"></i>Quản lý Tổ Hợp Môn
                     </a>
                 </div>
             </div>

@@ -67,13 +67,8 @@
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <label for="trangThai" class="form-label">Trạng thái</label>
-                    <select class="form-select" id="trangThai" name="trangThai">
-                        <option value="ACTIVE">Kích hoạt</option>
-                        <option value="INACTIVE">Không kích hoạt</option>
-                    </select>
-                </div>
+                <!-- Trạng thái được xử lý bởi Ban Giám Hiệu (BGH) sau khi tạo. -->
+                <!-- Không hiển thị trường trạng thái cho admin khi tạo tổ hợp môn. -->
 
                 <div class="d-flex justify-content-end gap-2">
                     <button type="button" class="btn btn-secondary" onclick="confirmCancel()">Hủy</button>

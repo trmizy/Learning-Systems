@@ -15,44 +15,31 @@ class Auth {
      */
     public function login($username, $password) {
         try {
-            // 1) Lấy tài khoản
-            $stmt = $this->db->prepare("
-                SELECT *
-                FROM TaiKhoan
-                WHERE (tenDangNhap = ? OR email = ?)
-                  AND trangThai = 'ACTIVE'
-                LIMIT 1
-            ");
+            // 1) Lấy tài khoản (KHÔNG group join vai trò để tránh nhân bản dòng)
+                // Use lowercase table names to match schema and fetch the active account
+                $stmt = $this->db->prepare(
+                    "SELECT t.*
+                    FROM taikhoan t
+                    WHERE (t.tenDangNhap = ? OR t.email = ?) AND UPPER(TRIM(COALESCE(t.trangThai,''))) = 'ACTIVE'
+                    LIMIT 1"
+                );
             $stmt->execute([$username, $username]);
             $tk = $stmt->fetch();
 
-            if (!$tk || $password !== $tk['matKhau']) {
-                return false;
-            }
+                // Kiểm tra tồn tại + mật khẩu (hệ thống dùng password_hash)
+                if (!$user || !password_verify($password, $user['matKhau'])) {
+                    return false;
+                }
 
-            // 2) Lấy thông tin giáo viên (Tổ trưởng hoặc GVBM)
-            $gvStmt = $this->db->prepare("
-                SELECT maGV, hoTen, monHocPhuTrach, chucVu, maTaiKhoan
-                FROM GiaoVienBoMon
-                WHERE maTaiKhoan = ?
-                LIMIT 1
-            ");
-            $gvStmt->execute([$tk['maTaiKhoan']]);
-            $gv = $gvStmt->fetch() ?: [
-                'maGV'            => null,
-                'hoTen'           => "Người dùng",
-                'monHocPhuTrach'  => null,
-                'chucVu'          => null,
-                'maTaiKhoan'      => $tk['maTaiKhoan']
-            ];
-
-            // 3) Lấy tất cả vai trò
-            $roleStmt = $this->db->prepare("
-                SELECT maVaiTro
-                FROM TaiKhoan_VaiTro
-                WHERE maTaiKhoan = ?
-            ");
-            $roleStmt->execute([$tk['maTaiKhoan']]);
+            // 2) Lấy TẤT CẢ vai trò của tài khoản -> mảng thô từ DB (vd: ['admin','gvbm', ...])
+                // Read roles from the taikhoan_vaitro table
+                $roleStmt = $this->db->prepare(
+                    "SELECT maVaiTro
+                    FROM taikhoan_vaitro
+                    WHERE maTaiKhoan = ?
+                    ORDER BY maVaiTro"
+                );
+            $roleStmt->execute([$user['maTaiKhoan']]);
             $dbRoles = $roleStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
 
             // 4) Chuẩn hoá vai trò
