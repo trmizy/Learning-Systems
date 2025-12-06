@@ -305,7 +305,7 @@ $stats = [
                         <a href="/modules/assignments/teachers.php" class="btn btn-danger btn-sm">
                             <i class="fa-solid fa-person-chalkboard me-1"></i>Phân công GV
                         </a>
-                        <a href="/modules/timetable/generate.php" class="btn btn-outline-danger btn-sm">
+                        <a href="/controllers/admin/ArrangeTKBController.php?module=tkb" class="btn btn-outline-danger btn-sm">
                             <i class="fa-solid fa-calendar me-1"></i>Thời khóa biểu
                         </a>
                     </div>
