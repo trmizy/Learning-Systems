@@ -128,6 +128,7 @@ class DiemModel {
                 hs.maLop,
                 l.tenLop,
                 l.khoi,
+                l.namHoc,
                 gvcn.maGV as maGVCN,
                 gv.hoTen as tenGVCN,
                 gv.email as emailGVCN,
@@ -142,31 +143,6 @@ class DiemModel {
         $thongTin = $stmt->fetch();
         
         return $thongTin ? $thongTin : false;
-    }
-
-    /**
-     * Lấy danh sách con của phụ huynh
-     * @param string $maPH - Mã phụ huynh
-     * @return PDOStatement
-     */
-    public function getDanhSachConCuaPhuHuynh($maPH) {
-        // Lấy danh sách con cơ bản (không cần bảng HocSinh_Lop)
-        $stmt = $this->db->prepare("
-            SELECT 
-                hs.maHS,
-                hs.hoTen,
-                hs.ngaySinh,
-                hs.gioiTinh,
-                '' as maLop,
-                '' as tenLop,
-                '' as khoi
-            FROM phuhuynh_hocsinh ph_hs
-            JOIN hocsinh hs ON hs.maHS = ph_hs.maHS
-            WHERE ph_hs.maPH = ?
-            ORDER BY hs.hoTen
-        ");
-        $stmt->execute([$maPH]);
-        return $stmt;
     }
 
     /**
@@ -210,26 +186,6 @@ class DiemModel {
     }
 
     /**
-     * Lấy thông tin phụ huynh theo mã phụ huynh
-     * @param string $maPH - Mã phụ huynh
-     * @return array|false
-     */
-    public function getThongTinPhuHuynhByMaPH($maPH) {
-        $stmt = $this->db->prepare("
-            SELECT 
-                ph.maPH,
-                ph.hoTen,
-                ph.email,
-                ph.soDienThoai,
-                ph.gioiTinh
-            FROM phuhuynh ph
-            WHERE ph.maPH = ?
-        ");
-        $stmt->execute([$maPH]);
-        return $stmt->fetch();
-    }
-
-    /**
      * Lấy mã học sinh từ username trong TaiKhoan
      * @param string $username - Tên đăng nhập
      * @return string|null
@@ -248,22 +204,137 @@ class DiemModel {
     }
 
     /**
-     * Lấy mã phụ huynh từ username trong TaiKhoan
-     * @param string $username - Tên đăng nhập
-     * @return string|null
+     * Lấy mã phụ huynh từ username
      */
     public function getMaPhuHuynhByUsername($username) {
-        // Lưu ý: Bảng PhuHuynh không có cột maTaiKhoan theo schema hiện tại
-        // Cần tạo liên kết hoặc dùng email để tìm
-        $stmt = $this->db->prepare("
-            SELECT ph.maPH
-            FROM phuhuynh ph
-            JOIN taikhoan tk ON tk.email = ph.email
-            WHERE tk.tenDangNhap = ?
-            LIMIT 1
-        ");
-        $stmt->execute([$username]);
-        $result = $stmt->fetch();
-        return $result ? $result['maPH'] : null;
+        try {
+            $stmt = $this->db->prepare("
+                SELECT ph.maPH
+                FROM taikhoan tk
+                INNER JOIN phuhuynh ph ON tk.maTaiKhoan = ph.maTaiKhoan
+                WHERE tk.tenDangNhap = ? AND tk.trangThai = 'ACTIVE'
+                LIMIT 1
+            ");
+            $stmt->execute([$username]);
+            $result = $stmt->fetch();
+            
+            return $result ? $result['maPH'] : null;
+            
+        } catch (PDOException $e) {
+            error_log("Error getMaPhuHuynhByUsername: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Lấy danh sách con của phụ huynh - TRẢ VỀ ARRAY
+     */
+    public function getDanhSachConCuaPhuHuynh($maPH) {
+        try {
+            $sql = "SELECT 
+                        hs.maHS,
+                        hs.hoTen,
+                        lh.tenLop,
+                        lh.namHoc
+                    FROM phuhuynh_hocsinh ph_hs
+                    INNER JOIN hocsinh hs ON ph_hs.maHS = hs.maHS
+                    INNER JOIN lophoc lh ON hs.maLop = lh.maLop
+                    WHERE ph_hs.maPH = ?
+                    ORDER BY hs.hoTen";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$maPH]);
+            
+            // TRẢ VỀ ARRAY, KHÔNG PHẢI STATEMENT
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            error_log("Error getDanhSachConCuaPhuHuynh: " . $e->getMessage());
+            return []; // Trả về array rỗng khi lỗi
+        }
+    }
+
+    /**
+     * Lấy thông tin phụ huynh theo mã PH
+     */
+    public function getThongTinPhuHuynhByMaPH($maPH) {
+        try {
+            $sql = "SELECT 
+                        maPH,
+                        hoTen,
+                        email,
+                        soDienThoai,
+                        diaChi,
+                        moiQuanHe,
+                        gioiTinh
+                    FROM phuhuynh
+                    WHERE maPH = ?
+                    LIMIT 1";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$maPH]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            error_log("Error getThongTinPhuHuynhByMaPH: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Lấy bảng điểm của học sinh theo học kỳ
+     */
+    public function getBangDiemHocSinh($maHS, $hocKy, $namHoc) {
+        try {
+            $sql = "SELECT 
+                        maMonHoc,
+                        tenMon,
+                        diemThuongXuyen,
+                        diemGiuaKy,
+                        diemCuoiKy,
+                        diemTrungBinhMon
+                    FROM v_diem_hocsinh
+                    WHERE maHS = ? 
+                      AND hocKy = ? 
+                      AND namHoc = ?
+                    ORDER BY tenMon";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$maHS, $hocKy, $namHoc]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            error_log("Error getBangDiemHocSinh: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Lấy bảng điểm của con theo phụ huynh - SỬ DỤNG VIEW v_diem_phuhuynh
+     */
+    public function getBangDiemConCuaPhuHuynh($maPH, $maHS, $hocKy, $namHoc) {
+        try {
+            $sql = "SELECT 
+                        maMonHoc,
+                        tenMon,
+                        diemThuongXuyen,
+                        diemGiuaKy,
+                        diemCuoiKy,
+                        diemTrungBinhMon
+                    FROM v_diem_phuhuynh
+                    WHERE maPH = ?
+                      AND maHS = ?
+                      AND hocKy = ?
+                      AND namHoc = ?
+                    ORDER BY tenMon";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$maPH, $maHS, $hocKy, $namHoc]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            error_log("Error getBangDiemConCuaPhuHuynh: " . $e->getMessage());
+            return [];
+        }
     }
 }

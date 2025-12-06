@@ -254,7 +254,7 @@ require_role(['ph']);
     
     function confirmCancel() {
         if (confirm('Bạn có chắc chắn muốn hủy bỏ đăng ký? Tất cả thông tin đã nhập sẽ bị mất.')) {
-            window.location.href = '../ph/dashboard.php';
+            window.location.href = '/public/index.php?action=ph-dashboard';
         }
     }
     

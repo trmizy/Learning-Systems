@@ -1,11 +1,9 @@
 <?php
 /**
  * View: Xem điểm (Học sinh)
- * Path: views/hs/xem_diem.php
- * Chỉ chứa HTML và hiển thị dữ liệu từ Controller
  */
 
-// Kiểm tra dữ liệu từ Controller
+// Kiểm tra dữ liệu từ Controller - FIX: Kiểm tra đúng biến
 if (!isset($thongTinHS) || !isset($danhSachDiem)) {
     die('Lỗi: View được gọi trực tiếp mà không qua Controller');
 }
@@ -157,6 +155,20 @@ require_once __DIR__ . '/../layouts/header.php';
     height: 20px;
     border-radius: 4px;
 }
+
+    .score-card {
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    .score-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+    }
+    .score-excellent { color: #28a745; font-weight: bold; }
+    .score-good { color: #17a2b8; font-weight: bold; }
+    .score-average { color: #ffc107; font-weight: bold; }
+    .score-poor { color: #dc3545; font-weight: bold; }
 </style>
 
 <div class="grades-container">
@@ -168,12 +180,12 @@ require_once __DIR__ . '/../layouts/header.php';
         </h2>
         <?php if ($thongTinHS): ?>
         <p class="mb-0 mt-2">
-            <i class="fa-solid fa-user me-2"></i><?php echo htmlspecialchars($thongTinHS['hoTen']); ?>
+            <i class="fa-solid fa-user me-2"></i><?php echo htmlspecialchars($thongTinHS['hoTen'] ?? 'N/A'); ?>
             <span class="mx-3">|</span>
-            <i class="fa-solid fa-id-card me-2"></i><?php echo htmlspecialchars($thongTinHS['maHS']); ?>
+            <i class="fa-solid fa-id-card me-2"></i><?php echo htmlspecialchars($thongTinHS['maHS'] ?? 'N/A'); ?>
             <?php if (!empty($thongTinHS['tenLop'])): ?>
             <span class="mx-3">|</span>
-            <i class="fa-solid fa-users me-2"></i>Lớp: <?php echo htmlspecialchars(str_replace('Lop ', '', $thongTinHS['tenLop'])); ?>
+            <i class="fa-solid fa-users me-2"></i>Lớp: <?php echo htmlspecialchars($thongTinHS['tenLop']); ?>
             <?php endif; ?>
         </p>
         <?php endif; ?>
@@ -182,26 +194,29 @@ require_once __DIR__ . '/../layouts/header.php';
     <!-- Alert thông tin -->
     <div class="alert-info-custom">
         <i class="fa-solid fa-info-circle me-2"></i>
-        <strong>Lưu ý:</strong> Bảng điểm này chỉ để tham khảo. 
-        Nếu môn học chưa có điểm, cột điểm sẽ hiển thị "Chưa có". 
-        Điểm trung bình được tính theo công thức: (ĐTX + ĐGK + ĐCK×2) / 4
+        <strong>Lưu ý:</strong> Điểm trung bình được tính từ VIEW v_diem_hocsinh.
     </div>
 
     <!-- Bộ lọc -->
     <div class="filter-card">
         <form method="GET" action="/public/index.php" class="row g-3 align-items-end">
-            <input type="hidden" name="page" value="hs-xem-diem">
+            <input type="hidden" name="action" value="hs-xem-diem">
+            
             <div class="col-md-4">
                 <label class="form-label fw-bold">
                     <i class="fa-solid fa-calendar me-2"></i>Năm học
                 </label>
                 <select name="namHoc" class="form-select" required>
-                    <?php while ($nh = $danhSachNamHoc->fetch()): ?>
-                        <option value="<?php echo htmlspecialchars($nh['namHoc']); ?>"
-                            <?php echo ($nh['namHoc'] == $namHoc) ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars($nh['namHoc']); ?>
-                        </option>
-                    <?php endwhile; ?>
+                    <?php if (isset($danhSachNamHoc)): ?>
+                        <?php while ($nh = $danhSachNamHoc->fetch()): ?>
+                            <option value="<?php echo htmlspecialchars($nh['namHoc']); ?>"
+                                <?php echo ($nh['namHoc'] == $namHoc) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($nh['namHoc']); ?>
+                            </option>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <option value="2024-2025" selected>2024-2025</option>
+                    <?php endif; ?>
                 </select>
             </div>
             
@@ -210,7 +225,10 @@ require_once __DIR__ . '/../layouts/header.php';
                     <i class="fa-solid fa-book me-2"></i>Học kỳ
                 </label>
                 <select name="hocKy" class="form-select" required>
-                    <?php foreach ($validHocKy as $hk): ?>
+                    <?php 
+                    $validHocKy = $validHocKy ?? ['HK1', 'HK2', 'Cả năm'];
+                    foreach ($validHocKy as $hk): 
+                    ?>
                         <option value="<?php echo htmlspecialchars($hk); ?>"
                             <?php echo ($hk == $hocKy) ? 'selected' : ''; ?>>
                             <?php echo htmlspecialchars($hk); ?>
@@ -228,7 +246,7 @@ require_once __DIR__ . '/../layouts/header.php';
     </div>
 
     <!-- Điểm trung bình chung -->
-    <?php if ($diemTBC !== null): ?>
+    <?php if (isset($diemTBC) && $diemTBC !== null): ?>
     <div class="row mb-4">
         <div class="col-md-4 mx-auto">
             <div class="summary-card">
@@ -251,7 +269,7 @@ require_once __DIR__ . '/../layouts/header.php';
     <div class="grades-table-container">
         <h5 class="mb-3">
             <i class="fa-solid fa-table me-2"></i>
-            Chi tiết điểm - <?php echo htmlspecialchars($namHoc); ?> - <?php echo htmlspecialchars($hocKy); ?>
+            Chi tiết điểm - <?php echo htmlspecialchars($namHoc ?? '2024-2025'); ?> - <?php echo htmlspecialchars($hocKy ?? 'HK1'); ?>
         </h5>
         
         <table class="grades-table">
@@ -263,70 +281,64 @@ require_once __DIR__ . '/../layouts/header.php';
                     <th>Điểm giữa kỳ</th>
                     <th>Điểm cuối kỳ</th>
                     <th>Điểm TB</th>
-                    <th>Giáo viên</th>
                 </tr>
             </thead>
             <tbody>
                 <?php 
                 $stt = 1;
                 $hasData = false;
-                while ($diem = $danhSachDiem->fetch()): 
-                    $hasData = true;
-                    
-                    // Xác định class màu điểm TB
-                    $tbClass = 'score-empty';
-                    if ($diem['diemTrungBinh'] !== null) {
-                        if ($diem['diemTrungBinh'] >= 8.0) $tbClass = 'score-excellent';
-                        elseif ($diem['diemTrungBinh'] >= 6.5) $tbClass = 'score-good';
-                        elseif ($diem['diemTrungBinh'] >= 5.0) $tbClass = 'score-average';
-                        else $tbClass = 'score-weak';
-                    }
-                    
-                    // Kiểm tra có điểm nào không
-                    $coDiem = ($diem['diemThuongXuyen'] !== null || 
-                               $diem['diemGiuaKy'] !== null || 
-                               $diem['diemCuoiKy'] !== null);
+                
+                // FIX: Kiểm tra $danhSachDiem là PDOStatement
+                if ($danhSachDiem && $danhSachDiem instanceof PDOStatement):
+                    while ($diem = $danhSachDiem->fetch()): 
+                        $hasData = true;
+                        
+                        // Xác định class màu điểm TB
+                        $tbClass = 'score-empty';
+                        $diemTB = $diem['diemTrungBinh'] ?? $diem['diemTrungBinhMon'] ?? null;
+                        
+                        if ($diemTB !== null) {
+                            if ($diemTB >= 8.0) $tbClass = 'score-excellent';
+                            elseif ($diemTB >= 6.5) $tbClass = 'score-good';
+                            elseif ($diemTB >= 5.0) $tbClass = 'score-average';
+                            else $tbClass = 'score-weak';
+                        }
                 ?>
-                <tr <?php echo !$coDiem ? 'class="no-data"' : ''; ?>>
+                <tr>
                     <td><?php echo $stt++; ?></td>
                     <td class="subject-name">
                         <i class="fa-solid fa-book-open me-2"></i>
-                        <?php echo htmlspecialchars($diem['tenMonHoc']); ?>
+                        <?php echo htmlspecialchars($diem['tenMonHoc'] ?? $diem['tenMon'] ?? 'N/A'); ?>
                     </td>
                     <td class="score-cell">
-                        <?php echo $diem['diemThuongXuyen'] !== null 
+                        <?php echo isset($diem['diemThuongXuyen']) && $diem['diemThuongXuyen'] !== null
                             ? number_format($diem['diemThuongXuyen'], 1) 
                             : '<span class="score-empty">Chưa có</span>'; ?>
                     </td>
                     <td class="score-cell">
-                        <?php echo $diem['diemGiuaKy'] !== null 
+                        <?php echo isset($diem['diemGiuaKy']) && $diem['diemGiuaKy'] !== null
                             ? number_format($diem['diemGiuaKy'], 1) 
                             : '<span class="score-empty">Chưa có</span>'; ?>
                     </td>
                     <td class="score-cell">
-                        <?php echo $diem['diemCuoiKy'] !== null 
+                        <?php echo isset($diem['diemCuoiKy']) && $diem['diemCuoiKy'] !== null
                             ? number_format($diem['diemCuoiKy'], 1) 
                             : '<span class="score-empty">Chưa có</span>'; ?>
                     </td>
                     <td class="score-cell <?php echo $tbClass; ?>">
-                        <?php echo $diem['diemTrungBinh'] !== null 
-                            ? number_format($diem['diemTrungBinh'], 2) 
+                        <?php echo $diemTB !== null
+                            ? number_format($diemTB, 2) 
                             : '<span class="score-empty">Chưa có</span>'; ?>
                     </td>
-                    <td>
-                        <?php if (!empty($diem['tenGiaoVien'])): ?>
-                            <i class="fa-solid fa-chalkboard-user me-1"></i>
-                            <?php echo htmlspecialchars($diem['tenGiaoVien']); ?>
-                        <?php else: ?>
-                            <span class="text-muted">Chưa phân công</span>
-                        <?php endif; ?>
-                    </td>
                 </tr>
-                <?php endwhile; ?>
+                <?php 
+                    endwhile;
+                endif;
                 
-                <?php if (!$hasData): ?>
+                if (!$hasData): 
+                ?>
                 <tr>
-                    <td colspan="7" class="text-center text-muted py-4">
+                    <td colspan="6" class="text-center text-muted py-4">
                         <i class="fa-solid fa-inbox fa-3x mb-3 d-block"></i>
                         Chưa có dữ liệu điểm cho năm học và học kỳ này
                     </td>
@@ -358,7 +370,7 @@ require_once __DIR__ . '/../layouts/header.php';
 
     <!-- Nút quay lại -->
     <div class="text-center mt-4">
-        <a href="/views/hs/dashboard.php" class="btn btn-secondary">
+        <a href="/public/index.php?action=hs-dashboard" class="btn btn-secondary">
             <i class="fa-solid fa-arrow-left me-2"></i>Quay lại Dashboard
         </a>
     </div>

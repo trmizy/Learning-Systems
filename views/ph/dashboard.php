@@ -6,7 +6,11 @@ require_role(['ph']);
 
 // Lấy thông tin phụ huynh và con từ database
 require_once __DIR__ . '/../../models/DiemModel.php';
+require_once __DIR__ . '/../../models/hs/DashboardModel.php'; // ⚠️ THÊM MODEL
+require_once __DIR__ . '/../../config/database.php';
+
 $diemModel = new DiemModel();
+$dashboardModel = new DashboardModel(); // ⚠️ KHỞI TẠO
 
 // Lấy thông tin user từ session
 $user = $_SESSION['auth'] ?? [];
@@ -28,23 +32,23 @@ $parentId = $thongTinPH ? $thongTinPH['maPH'] : 'PH0000';
 // Lấy danh sách con
 $danhSachCon = [];
 if ($maPH) {
-    $danhSachConStmt = $diemModel->getDanhSachConCuaPhuHuynh($maPH);
-    while ($con = $danhSachConStmt->fetch()) {
-        $danhSachCon[] = $con;
-    }
+    $danhSachCon = $diemModel->getDanhSachConCuaPhuHuynh($maPH);
 }
 
-// Thông tin con đầu tiên (để hiển thị)
+// ⚠️ FIX: Cho phép chọn con nào để xem - Lấy từ GET hoặc mặc định con đầu tiên
+$maHSChon = $_GET['maHS'] ?? ($danhSachCon[0]['maHS'] ?? null);
+
+// Thông tin con được chọn
 $childInfo = null;
-if (!empty($danhSachCon)) {
-    $con = $danhSachCon[0];
-    // Lấy thông tin chi tiết học sinh
-    $thongTinHS = $diemModel->getThongTinHocSinh($con['maHS']);
+if ($maHSChon) {
+    // Lấy thông tin chi tiết học sinh được chọn
+    $thongTinHS = $diemModel->getThongTinHocSinh($maHSChon);
     if ($thongTinHS) {
         $childInfo = [
             'name' => $thongTinHS['hoTen'],
             'student_id' => $thongTinHS['maHS'],
             'class' => str_replace('Lop ', '', $thongTinHS['tenLop'] ?? ''),
+            'school' => $thongTinHS['tenTruong'] ?? 'THPT',
             'homeroom_teacher' => $thongTinHS['tenGVCN'] ?? 'Chưa có',
             'teacher_phone' => $thongTinHS['sdtGVCN'] ?? 'Chưa có',
             'teacher_email' => $thongTinHS['emailGVCN'] ?? 'Chưa có'
@@ -58,6 +62,7 @@ if (!$childInfo) {
         'name' => 'Chưa có thông tin',
         'student_id' => '',
         'class' => '',
+        'school' => '',
         'homeroom_teacher' => '',
         'teacher_phone' => '',
         'teacher_email' => ''
@@ -68,7 +73,7 @@ if (!$childInfo) {
 $pageTitle = 'Trang phụ huynh - THPT';
 require_once __DIR__ . '/../layouts/header.php';
 
-// Số liệu demo
+// Số liệu demo - Lấy theo con được chọn
 $stats = [
     'attendance_rate' => null,
     'gpa_semester' => null,
@@ -82,6 +87,8 @@ $stats = [
 if (!empty($childInfo['student_id'])) {
     $maHS = $childInfo['student_id'];
     try {
+        $conn = Database::getInstance()->getConnection();
+        
         // Truy vấn viewThongKeDiemHanhKiem để lấy điểm TB chung và hạnh kiểm
         $stmtStats = $conn->prepare("SELECT diemTrungBinhChung, loaiHanhKiem, soBuoiNghiCoPhep, soBuoiNghiKhongCoPhep, soLanViPham FROM viewThongKeDiemHanhKiem WHERE maHS = ? LIMIT 1");
         $stmtStats->execute([$maHS]);
@@ -91,21 +98,20 @@ if (!empty($childInfo['student_id'])) {
             $stats['conduct_rating'] = $rStats['loaiHanhKiem'] ?? null;
             $stats['violations'] = isset($rStats['soLanViPham']) ? intval($rStats['soLanViPham']) : 0;
 
-            // Tính tỷ lệ chuyên cần dựa trên số buổi nghỉ (nếu có). Sử dụng tổng ngày học mặc định 180 nếu không biết.
-            $totalDays = 180; // thay đổi theo quy mô năm học nếu cần
+            // Tính tỷ lệ chuyên cần dựa trên số buổi nghỉ
+            $totalDays = 180;
             $absences = (intval($rStats['soBuoiNghiCoPhep'] ?? 0) + intval($rStats['soBuoiNghiKhongCoPhep'] ?? 0));
             $attendanceRate = $totalDays > 0 ? max(0, min(100, round((($totalDays - $absences) / $totalDays) * 100, 1))) : null;
             $stats['attendance_rate'] = $attendanceRate;
         }
 
-        // Tìm bảng khen thưởng (nếu có) bằng thông tin_schema; dùng tên bảng chứa 'khen' hoặc 'thuong' nếu có.
+        // Tìm bảng khen thưởng (nếu có)
         $stmtTable = $conn->prepare("SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() AND (table_name LIKE '%khen%' OR table_name LIKE '%thuong%' OR table_name LIKE '%reward%') LIMIT 1");
         $stmtTable->execute();
         $rTable = $stmtTable->fetchColumn();
         if ($rTable) {
-            // thử đếm theo cột maHS hoặc maThiSinh
             $count = 0;
-            // nếu cột maHS tồn tại
+            // Kiểm tra cột maHS tồn tại
             $colExists = $conn->prepare("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = 'maHS'");
             $colExists->execute([$rTable]);
             if ($colExists->fetchColumn() > 0) {
@@ -113,7 +119,7 @@ if (!empty($childInfo['student_id'])) {
                 $stmtCount->execute([$maHS]);
                 $count = intval($stmtCount->fetchColumn() ?? 0);
             } else {
-                // thử theo maThiSinh
+                // Thử theo maThiSinh
                 $colExists2 = $conn->prepare("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = 'maThiSinh'");
                 $colExists2->execute([$rTable]);
                 if ($colExists2->fetchColumn() > 0) {
@@ -129,12 +135,12 @@ if (!empty($childInfo['student_id'])) {
     }
 }
 
-// Dữ liệu mẫu - Kết quả học tập gần đây
-$recentGrades = [
-    ['subject' => 'Toán', 'score' => 8.5, 'type' => 'Giữa kỳ', 'date' => '2024-03-15'],
-    ['subject' => 'Văn', 'score' => 9.0, 'type' => 'Cuối kỳ', 'date' => '2024-03-14'],
-    ['subject' => 'Anh', 'score' => 8.0, 'type' => '15 phút', 'date' => '2024-03-13'],
-];
+// ⚠️ FIX: Lấy điểm gần đây theo con được chọn
+$recentGrades = [];
+if (!empty($childInfo['student_id'])) {
+    $maHS = $childInfo['student_id'];
+    $recentGrades = $dashboardModel->getDiemGanDayPhuHuynh($maHS, 3);
+}
 
 // Thông báo quan trọng
 $notifications = [
@@ -371,6 +377,48 @@ $violations = [];
         border-radius: 8px;
         margin-bottom: 0.75rem;
     }
+    
+    .child-selector {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    
+    .child-card {
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+        padding: 1rem;
+        border-radius: 10px;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+    }
+    
+    .child-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .child-card.active {
+        border-color: #667eea;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+    }
+    
+    .child-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
 </style>
 
 <div class="parent-dashboard">
@@ -406,29 +454,77 @@ $violations = [];
                     Xin chào, <?php echo htmlspecialchars($fullName); ?>!
                 </h2>
                 <p class="mb-0">
-                    <i class="fa-solid fa-child me-2"></i>Con em: <strong><?php echo htmlspecialchars($childInfo['name']); ?></strong>
-                    <span class="mx-2">|</span>
-                    <i class="fa-solid fa-id-card me-2"></i>Mã HS: <strong><?php echo htmlspecialchars($childInfo['student_id']); ?></strong>
-                    <span class="mx-2">|</span>
-                    <i class="fa-solid fa-users me-2"></i>Lớp: <strong><?php echo htmlspecialchars($childInfo['class']); ?></strong>
+                    <i class="fa-solid fa-children me-2"></i>Bạn có <strong><?php echo count($danhSachCon); ?></strong> con em đang học
+                    <?php if (count($danhSachCon) > 1): ?>
+                        <span class="mx-2">|</span>
+                        <i class="fa-solid fa-info-circle me-2"></i>Chọn con em bên dưới để xem thông tin chi tiết
+                    <?php endif; ?>
                 </p>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                <a href="/modules/parents/child-profile.php" class="quick-action-btn btn">
-                    <i class="fa-solid fa-user me-2"></i>Hồ sơ con em
+                <a href="/public/index.php?action=ph-family-profile" class="quick-action-btn btn">
+                    <i class="fa-solid fa-users me-2"></i>Quản lý gia đình
                 </a>
             </div>
         </div>
     </div>
 
-    <!-- GVCN Info Card -->
+    <!-- ⚠️ NEW: Child Selector - Hiển thị khi có nhiều con -->
+    <?php if (count($danhSachCon) > 1): ?>
+    <div class="child-selector">
+        <h5 class="mb-3">
+            <i class="fa-solid fa-children text-primary me-2"></i>
+            Chọn con em để xem thông tin
+        </h5>
+        <div class="row g-3">
+            <?php foreach ($danhSachCon as $con): ?>
+            <?php 
+                $isActive = ($con['maHS'] == $maHSChon);
+                $thongTinCon = $diemModel->getThongTinHocSinh($con['maHS']);
+            ?>
+            <div class="col-md-4 col-lg-3">
+                <div class="child-card <?php echo $isActive ? 'active' : ''; ?>" 
+                     onclick="window.location.href='?maHS=<?php echo htmlspecialchars($con['maHS']); ?>'">
+                    <div class="text-center">
+                        <div class="child-avatar mx-auto">
+                            <?php echo strtoupper(mb_substr($con['hoTen'], 0, 1, 'UTF-8')); ?>
+                        </div>
+                        <h6 class="mb-1 fw-bold"><?php echo htmlspecialchars($con['hoTen']); ?></h6>
+                        <p class="small text-muted mb-1">
+                            <i class="fa-solid fa-id-card me-1"></i><?php echo htmlspecialchars($con['maHS']); ?>
+                        </p>
+                        <p class="small text-muted mb-0">
+                            <i class="fa-solid fa-users me-1"></i>Lớp <?php echo htmlspecialchars(str_replace('Lop ', '', $thongTinCon['tenLop'] ?? 'N/A')); ?>
+                        </p>
+                        <?php if ($isActive): ?>
+                        <span class="badge bg-primary mt-2">
+                            <i class="fa-solid fa-check me-1"></i>Đang xem
+                        </span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- GVCN Info Card - Hiển thị thông tin con được chọn -->
     <div class="child-info-card">
         <div class="row align-items-center">
             <div class="col-md-8">
                 <h5 class="mb-2">
-                    <i class="fa-solid fa-chalkboard-user text-primary me-2"></i>
-                    Giáo viên chủ nhiệm: <strong><?php echo htmlspecialchars($childInfo['homeroom_teacher']); ?></strong>
+                    <i class="fa-solid fa-child text-primary me-2"></i>
+                    <strong><?php echo htmlspecialchars($childInfo['name']); ?></strong>
+                    <?php if (count($danhSachCon) > 1): ?>
+                        <span class="badge bg-secondary ms-2">
+                            <i class="fa-solid fa-graduation-cap me-1"></i><?php echo htmlspecialchars($childInfo['class']); ?>
+                        </span>
+                    <?php endif; ?>
                 </h5>
+                <p class="mb-2 text-muted">
+                    <i class="fa-solid fa-chalkboard-user me-2"></i>GVCN: <strong><?php echo htmlspecialchars($childInfo['homeroom_teacher']); ?></strong>
+                </p>
                 <p class="mb-0 text-muted">
                     <i class="fa-solid fa-phone me-2"></i><?php echo htmlspecialchars($childInfo['teacher_phone']); ?>
                     <span class="mx-2">|</span>
@@ -436,14 +532,14 @@ $violations = [];
                 </p>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                <a href="/modules/parents/contact-teacher.php" class="btn btn-primary">
+                <a href="/modules/parents/contact-teacher.php?maHS=<?php echo htmlspecialchars($childInfo['student_id']); ?>" class="btn btn-primary">
                     <i class="fa-solid fa-comments me-2"></i>Liên hệ GVCN
                 </a>
             </div>
         </div>
     </div>
 
-    <!-- Stats Overview -->
+    <!-- Stats Overview - Hiển thị số liệu của con được chọn -->
     <div class="row g-3 mb-4">
         <div class="col-6 col-lg-3">
             <div class="stat-card success">
@@ -505,7 +601,7 @@ $violations = [];
                     </div>
                     <h5 class="card-title fw-bold">Bảng điểm con</h5>
                     <p class="text-muted small">Điểm số, xếp loại học lực chi tiết</p>
-                    <a href="/public/index.php?page=ph-xem-diem" class="btn btn-primary w-100 mt-3">
+                    <a href="/public/index.php?action=ph-xem-diem&maHS=<?php echo htmlspecialchars($childInfo['student_id']); ?>" class="btn btn-primary w-100 mt-3">
                         <i class="fa-solid fa-eye me-2"></i>Xem chi tiết
                     </a>
                 </div>
@@ -522,10 +618,10 @@ $violations = [];
                     <h5 class="card-title fw-bold">Đơn xin nghỉ</h5>
                     <p class="text-muted small">Gửi đơn, upload minh chứng</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/parents/leave-requests/create.php" class="btn btn-danger btn-sm">
+                        <a href="/modules/parents/leave-requests/create.php?maHS=<?php echo htmlspecialchars($childInfo['student_id']); ?>" class="btn btn-danger btn-sm">
                             <i class="fa-solid fa-plus me-1"></i>Tạo đơn mới
                         </a>
-                        <a href="/modules/parents/leave-requests/list.php" class="btn btn-outline-danger btn-sm">
+                        <a href="/modules/parents/leave-requests/list.php?maHS=<?php echo htmlspecialchars($childInfo['student_id']); ?>" class="btn btn-outline-danger btn-sm">
                             <i class="fa-solid fa-list me-1"></i>Lịch sử đơn
                         </a>
                     </div>
@@ -542,7 +638,7 @@ $violations = [];
                     </div>
                     <h5 class="card-title fw-bold">Hạnh kiểm</h5>
                     <p class="text-muted small">Vi phạm, khen thưởng</p>
-                    <a href="/modules/parents/conduct.php" class="btn btn-success w-100 mt-3">
+                    <a href="/modules/parents/conduct.php?maHS=<?php echo htmlspecialchars($childInfo['student_id']); ?>" class="btn btn-success w-100 mt-3">
                         <i class="fa-solid fa-clipboard-check me-2"></i>Xem chi tiết
                     </a>
                 </div>
@@ -588,7 +684,7 @@ $violations = [];
     </div>
 
     <div class="row g-4">
-        <!-- Recent Grades -->
+        <!-- Recent Grades - FIX: Hiển thị dữ liệu thực -->
         <div class="col-lg-4">
             <div class="card feature-card">
                 <div class="card-body">
@@ -596,28 +692,36 @@ $violations = [];
                         <i class="fa-solid fa-star text-warning me-2"></i>
                         Điểm số mới nhất
                     </h5>
-                    <?php foreach ($recentGrades as $grade): ?>
-                    <div class="grade-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="fw-bold"><?php echo htmlspecialchars($grade['subject']); ?></div>
-                                <div class="small text-muted">
-                                    <i class="fa-solid fa-calendar me-1"></i><?php echo $grade['date']; ?>
+                    <?php if (empty($recentGrades)): ?>
+                        <div class="text-center text-muted py-4">
+                            <i class="fa-solid fa-chart-simple fa-3x mb-3 d-block"></i>
+                            <p>Chưa có điểm nào</p>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($recentGrades as $grade): ?>
+                        <div class="grade-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="fw-bold"><?php echo htmlspecialchars($grade['subject']); ?></div>
+                                    <div class="small text-muted">
+                                        <i class="fa-solid fa-calendar me-1"></i><?php echo htmlspecialchars($grade['date']); ?>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="text-end">
-                                <div class="grade-badge <?php 
-                                    echo $grade['score'] >= 8 ? 'grade-excellent' : 
-                                        ($grade['score'] >= 6.5 ? 'grade-good' : 'grade-average'); 
-                                ?>">
-                                    <?php echo $grade['score']; ?>
+                                <div class="text-end">
+                                    <div class="grade-badge <?php 
+                                        $score = floatval($grade['score']);
+                                        echo $score >= 8 ? 'grade-excellent' : 
+                                            ($score >= 6.5 ? 'grade-good' : 'grade-average'); 
+                                    ?>">
+                                        <?php echo number_format($score, 1); ?>
+                                    </div>
+                                    <div class="small text-muted mt-1"><?php echo htmlspecialchars($grade['type']); ?></div>
                                 </div>
-                                <div class="small text-muted mt-1"><?php echo $grade['type']; ?></div>
                             </div>
                         </div>
-                    </div>
-                    <?php endforeach; ?>
-                    <a href="/modules/parents/grades.php" class="btn btn-outline-warning w-100 mt-3">
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                    <a href="/public/index.php?action=ph-xem-diem" class="btn btn-outline-warning w-100 mt-3">
                         <i class="fa-solid fa-chart-line me-2"></i>Xem tất cả điểm
                     </a>
                 </div>
@@ -724,7 +828,7 @@ $violations = [];
                         <i class="fa-solid fa-calendar-days text-primary me-2"></i>Thời khóa biểu con
                     </h6>
                     <p class="text-muted small mb-3">Xem lịch học trong tuần của con em</p>
-                    <a href="?action=xem_tkb" class="btn btn-outline-primary w-100">
+                    <a href="/public/index.php?action=ph-xem-tkb&maHS=<?php echo htmlspecialchars($childInfo['student_id']); ?>" class="btn btn-outline-primary w-100">
                         <i class="fa-solid fa-eye me-2"></i>Xem TKB
                     </a>
                 </div>
@@ -738,7 +842,7 @@ $violations = [];
                         <i class="fa-solid fa-messages text-success me-2"></i>Tin nhắn với GVCN
                     </h6>
                     <p class="text-muted small mb-3">Trao đổi trực tiếp với giáo viên chủ nhiệm</p>
-                    <a href="/modules/parents/messages.php" class="btn btn-outline-success w-100">
+                    <a href="/modules/parents/messages.php?maHS=<?php echo htmlspecialchars($childInfo['student_id']); ?>" class="btn btn-outline-success w-100">
                         <i class="fa-solid fa-envelope me-2"></i>Tin nhắn
                     </a>
                 </div>
@@ -752,7 +856,7 @@ $violations = [];
                         <i class="fa-solid fa-money-bill text-warning me-2"></i>Học phí
                     </h6>
                     <p class="text-muted small mb-3">Tra cứu và thanh toán học phí</p>
-                    <a href="/modules/parents/tuition.php" class="btn btn-outline-warning w-100">
+                    <a href="/modules/parents/tuition.php?maHS=<?php echo htmlspecialchars($childInfo['student_id']); ?>" class="btn btn-outline-warning w-100">
                         <i class="fa-solid fa-receipt me-2"></i>Xem chi tiết
                     </a>
                 </div>

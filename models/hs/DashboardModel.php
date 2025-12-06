@@ -107,7 +107,7 @@ class DashboardModel {
     }
 
     /**
-     * Lấy điểm gần đây - FIX: Sai cú pháp LIMIT với PDO
+     * Lấy điểm gần đây - FIX: Lấy từ bảng bangdiem thực tế
      */
     public function getDiemGanDay($maHS, $limit = 3) {
         try {
@@ -118,16 +118,27 @@ class DashboardModel {
                         CONCAT(bd.hocKy, ' - ', bd.namHoc) as date
                     FROM bangdiem bd
                     INNER JOIN monhoc mh ON bd.maMonHoc = mh.maMonHoc
-                    WHERE bd.maHS = ?
-                    ORDER BY bd.namHoc DESC, bd.hocKy DESC
+                    WHERE bd.maHS = ? AND bd.diemCuoiKy IS NOT NULL
+                    ORDER BY bd.namHoc DESC, 
+                             CASE bd.hocKy 
+                                 WHEN 'HK2' THEN 2
+                                 WHEN 'HK1' THEN 1
+                                 ELSE 0
+                             END DESC
                     LIMIT ?";
             
             $stmt = $this->db->prepare($sql);
-            // FIX: LIMIT phải bind như kiểu INT
             $stmt->bindValue(1, $maHS, PDO::PARAM_STR);
             $stmt->bindValue(2, $limit, PDO::PARAM_INT);
             $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // DEBUG
+            error_log("=== getDiemGanDay ===");
+            error_log("maHS: $maHS | limit: $limit");
+            error_log("Rows: " . count($result));
+            
+            return $result;
             
         } catch (PDOException $e) {
             error_log("Error getDiemGanDay: " . $e->getMessage());
@@ -136,30 +147,55 @@ class DashboardModel {
     }
 
     /**
-     * Lấy lịch học hôm nay - FIX: Bỏ JOIN với giaovienbomon vì không có maGV
+     * Lấy lịch học hôm nay - FIX: Lấy từ bảng thoikhoabieu thực tế
      */
     public function getLichHocHomNay($maLop) {
         try {
             $today = date('Y-m-d');
+            $dayOfWeek = date('N'); // 1=T2, 2=T3,..., 7=CN
+            
+            // Chuyển đổi: MySQL DAYOFWEEK: 1=CN, 2=T2,..., 7=T7
+            $mysqlDayOfWeek = ($dayOfWeek == 7) ? 1 : $dayOfWeek + 1;
             
             $sql = "SELECT 
                         tkb.tiet as period,
                         mh.tenMon as subject,
-                        NULL as teacher,
+                        gv.hoTen as teacher,
                         ph.tenPhong as room
                     FROM thoikhoabieu tkb
                     INNER JOIN monhoc mh ON tkb.maMonHoc = mh.maMonHoc
                     LEFT JOIN phonghoc ph ON tkb.maPhong = ph.maPhong
-                    WHERE tkb.maLop = ? AND tkb.ngayHoc = ?
-                    ORDER BY tkb.tiet";
+                    LEFT JOIN phanconggiangday pc ON pc.maLop = tkb.maLop 
+                        AND pc.maMonHoc = tkb.maMonHoc
+                    LEFT JOIN giaovienbomon gv ON pc.maGV = gv.maGV
+                    WHERE tkb.maLop = ? 
+                      AND DAYOFWEEK(tkb.ngayHoc) = ?
+                      AND tkb.ngayHoc BETWEEN DATE_SUB(CURDATE(), INTERVAL 7 DAY) 
+                                          AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+                    ORDER BY tkb.tiet
+                    LIMIT 5";
             
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$maLop, $today]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt->execute([$maLop, $mysqlDayOfWeek]);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // DEBUG
+            error_log("=== getLichHocHomNay ===");
+            error_log("maLop: $maLop | dayOfWeek: $mysqlDayOfWeek | today: $today");
+            error_log("Rows: " . count($result));
+            
+            return $result;
             
         } catch (PDOException $e) {
             error_log("Error getLichHocHomNay: " . $e->getMessage());
             return [];
         }
+    }
+
+    /**
+     * Lấy điểm gần đây cho phụ huynh - Giống getDiemGanDay nhưng có thể dùng chung
+     */
+    public function getDiemGanDayPhuHuynh($maHS, $limit = 3) {
+        return $this->getDiemGanDay($maHS, $limit);
     }
 }

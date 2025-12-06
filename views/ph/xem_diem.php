@@ -6,7 +6,7 @@
  */
 
 // Kiểm tra dữ liệu từ Controller
-if (!isset($danhSachCon)) {
+if (!isset($maHS) || !isset($bangDiem)) {
     die('Lỗi: View được gọi trực tiếp mà không qua Controller');
 }
 
@@ -166,254 +166,68 @@ require_once __DIR__ . '/../layouts/header.php';
 }
 </style>
 
-<div class="grades-container">
-    <!-- Header -->
-    <div class="grades-header">
-        <h2>
-            <i class="fa-solid fa-chart-bar me-2"></i>
-            Xem điểm con
-        </h2>
-        <p class="mb-0 mt-2">
-            <i class="fa-solid fa-user-group me-2"></i>
-            Phụ huynh - Quản lý kết quả học tập
-        </p>
-    </div>
+<div class="container my-4">
+    <h2 class="mb-4">
+        <i class="fa-solid fa-chart-bar me-2"></i>
+        Bảng điểm con em: <?php echo htmlspecialchars($thongTinHS['hoTen']); ?>
+    </h2>
 
-    <!-- Alert thông tin -->
-    <div class="alert-info-custom">
-        <i class="fa-solid fa-info-circle me-2"></i>
-        <strong>Lưu ý:</strong> Bạn chỉ có thể xem điểm của con em đã được liên kết trong hệ thống. 
-        Nếu môn học chưa có điểm, cột điểm sẽ hiển thị "Chưa có". 
-        Điểm trung bình được tính theo công thức: (ĐTX + ĐGK + ĐCK×2) / 4
-    </div>
-
-    <!-- Bộ lọc -->
-    <div class="filter-card">
-        <form method="GET" action="/public/index.php" class="row g-3 align-items-end">
-            <input type="hidden" name="page" value="ph-xem-diem">
-            <!-- Chọn con -->
-            <div class="col-md-3">
-                <label class="form-label fw-bold">
-                    <i class="fa-solid fa-child me-2"></i>Chọn con
-                </label>
-                <select name="maHS" class="form-select" required onchange="this.form.submit()">
-                    <option value="">-- Chọn học sinh --</option>
-                    <?php 
-                    // Reset pointer
-                    $danhSachCon->execute();
-                    while ($con = $danhSachCon->fetch()): 
-                    ?>
-                        <option value="<?php echo htmlspecialchars($con['maHS']); ?>"
-                            <?php echo ($con['maHS'] == $maHS) ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars($con['hoTen']); ?> 
-                            <?php if (!empty($con['tenLop'])): ?>
-                                (Lớp <?php echo htmlspecialchars($con['tenLop']); ?>)
-                            <?php endif; ?>
-                        </option>
-                    <?php endwhile; ?>
-                </select>
-            </div>
-
-            <!-- Năm học -->
-            <div class="col-md-3">
-                <label class="form-label fw-bold">
-                    <i class="fa-solid fa-calendar me-2"></i>Năm học
-                </label>
-                <select name="namHoc" class="form-select" required>
-                    <?php 
-                    // Reset pointer
-                    $danhSachNamHoc->execute();
-                    while ($nh = $danhSachNamHoc->fetch()): 
-                    ?>
-                        <option value="<?php echo htmlspecialchars($nh['namHoc']); ?>"
-                            <?php echo ($nh['namHoc'] == $namHoc) ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars($nh['namHoc']); ?>
-                        </option>
-                    <?php endwhile; ?>
-                </select>
-            </div>
-            
-            <!-- Học kỳ -->
-            <div class="col-md-3">
-                <label class="form-label fw-bold">
-                    <i class="fa-solid fa-book me-2"></i>Học kỳ
-                </label>
-                <select name="hocKy" class="form-select" required>
-                    <?php foreach ($validHocKy as $hk): ?>
-                        <option value="<?php echo htmlspecialchars($hk); ?>"
-                            <?php echo ($hk == $hocKy) ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars($hk); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            
-            <!-- Nút xem -->
-            <div class="col-md-3">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fa-solid fa-filter me-2"></i>Xem điểm
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <?php if ($maHS && $thongTinHS): ?>
-    <!-- Thông tin học sinh đang xem -->
-    <div class="child-selector">
-        <h6 class="mb-2">
-            <i class="fa-solid fa-user-graduate me-2"></i>
-            Đang xem điểm của: <strong><?php echo htmlspecialchars($thongTinHS['hoTen']); ?></strong>
-        </h6>
-        <p class="mb-0 small">
-            <i class="fa-solid fa-id-card me-2"></i>Mã HS: <?php echo htmlspecialchars($thongTinHS['maHS']); ?>
-            <?php if (!empty($thongTinHS['tenLop'])): ?>
-            <span class="mx-2">|</span>
-            <i class="fa-solid fa-users me-2"></i>Lớp: <?php echo htmlspecialchars($thongTinHS['tenLop']); ?>
-            <?php endif; ?>
-        </p>
-    </div>
-
-    <!-- Điểm trung bình chung -->
-    <?php if ($diemTBC !== null): ?>
-    <div class="row mb-4">
-        <div class="col-md-4 mx-auto">
-            <div class="summary-card">
-                <p><i class="fa-solid fa-trophy me-2"></i>Điểm trung bình chung</p>
-                <h3><?php echo number_format($diemTBC, 2); ?></h3>
-                <p>
-                    <?php 
-                    if ($diemTBC >= 8.0) echo '<i class="fa-solid fa-star"></i> Giỏi';
-                    elseif ($diemTBC >= 6.5) echo '<i class="fa-solid fa-circle-check"></i> Khá';
-                    elseif ($diemTBC >= 5.0) echo '<i class="fa-solid fa-circle-minus"></i> Trung bình';
-                    else echo '<i class="fa-solid fa-circle-xmark"></i> Yếu';
-                    ?>
-                </p>
-            </div>
-        </div>
+    <?php if (!empty($danhSachCon) && count($danhSachCon) > 1): ?>
+    <!-- Chọn con -->
+    <div class="mb-3">
+        <label>Chọn con:</label>
+        <select class="form-select" onchange="location.href='?action=ph-xem-diem&maHS=' + this.value">
+            <?php foreach ($danhSachCon as $con): ?>
+            <option value="<?= $con['maHS'] ?>" <?= $con['maHS'] == $maHS ? 'selected' : '' ?>>
+                <?= htmlspecialchars($con['hoTen']) ?> - Lớp <?= htmlspecialchars($con['tenLop']) ?>
+            </option>
+            <?php endforeach; ?>
+        </select>
     </div>
     <?php endif; ?>
 
+    <!-- Chọn học kỳ -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <select class="form-select" onchange="location.href='?action=ph-xem-diem&maHS=<?= $maHS ?>&hocKy=' + this.value + '&namHoc=<?= $namHoc ?>'">
+                <option value="HK1" <?= $hocKy == 'HK1' ? 'selected' : '' ?>>Học kỳ 1</option>
+                <option value="HK2" <?= $hocKy == 'HK2' ? 'selected' : '' ?>>Học kỳ 2</option>
+            </select>
+        </div>
+    </div>
+
     <!-- Bảng điểm -->
-    <div class="grades-table-container">
-        <h5 class="mb-3">
-            <i class="fa-solid fa-table me-2"></i>
-            Chi tiết điểm - <?php echo htmlspecialchars($namHoc); ?> - <?php echo htmlspecialchars($hocKy); ?>
-        </h5>
-        
-        <table class="grades-table">
-            <thead>
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead class="table-primary">
                 <tr>
-                    <th>STT</th>
                     <th>Môn học</th>
-                    <th>Điểm TX</th>
-                    <th>Điểm giữa kỳ</th>
-                    <th>Điểm cuối kỳ</th>
-                    <th>Điểm TB</th>
-                    <th>Giáo viên</th>
+                    <th>Thường xuyên</th>
+                    <th>Giữa kỳ</th>
+                    <th>Cuối kỳ</th>
+                    <th>Trung bình</th>
                 </tr>
             </thead>
             <tbody>
-                <?php 
-                $stt = 1;
-                $hasData = false;
-                while ($diem = $danhSachDiem->fetch()): 
-                    $hasData = true;
-                    
-                    // Xác định class màu điểm TB
-                    $tbClass = 'score-empty';
-                    if ($diem['diemTrungBinh'] !== null) {
-                        if ($diem['diemTrungBinh'] >= 8.0) $tbClass = 'score-excellent';
-                        elseif ($diem['diemTrungBinh'] >= 6.5) $tbClass = 'score-good';
-                        elseif ($diem['diemTrungBinh'] >= 5.0) $tbClass = 'score-average';
-                        else $tbClass = 'score-weak';
-                    }
-                    
-                    // Kiểm tra có điểm nào không
-                    $coDiem = ($diem['diemThuongXuyen'] !== null || 
-                               $diem['diemGiuaKy'] !== null || 
-                               $diem['diemCuoiKy'] !== null);
-                ?>
-                <tr <?php echo !$coDiem ? 'class="no-data"' : ''; ?>>
-                    <td><?php echo $stt++; ?></td>
-                    <td class="subject-name">
-                        <i class="fa-solid fa-book-open me-2"></i>
-                        <?php echo htmlspecialchars($diem['tenMonHoc']); ?>
-                    </td>
-                    <td class="score-cell">
-                        <?php echo $diem['diemThuongXuyen'] !== null 
-                            ? number_format($diem['diemThuongXuyen'], 1) 
-                            : '<span class="score-empty">Chưa có</span>'; ?>
-                    </td>
-                    <td class="score-cell">
-                        <?php echo $diem['diemGiuaKy'] !== null 
-                            ? number_format($diem['diemGiuaKy'], 1) 
-                            : '<span class="score-empty">Chưa có</span>'; ?>
-                    </td>
-                    <td class="score-cell">
-                        <?php echo $diem['diemCuoiKy'] !== null 
-                            ? number_format($diem['diemCuoiKy'], 1) 
-                            : '<span class="score-empty">Chưa có</span>'; ?>
-                    </td>
-                    <td class="score-cell <?php echo $tbClass; ?>">
-                        <?php echo $diem['diemTrungBinh'] !== null 
-                            ? number_format($diem['diemTrungBinh'], 2) 
-                            : '<span class="score-empty">Chưa có</span>'; ?>
-                    </td>
-                    <td>
-                        <?php if (!empty($diem['tenGiaoVien'])): ?>
-                            <i class="fa-solid fa-chalkboard-user me-1"></i>
-                            <?php echo htmlspecialchars($diem['tenGiaoVien']); ?>
-                        <?php else: ?>
-                            <span class="text-muted">Chưa phân công</span>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-                <?php endwhile; ?>
-                
-                <?php if (!$hasData): ?>
+                <?php foreach ($bangDiem as $mon): ?>
                 <tr>
-                    <td colspan="7" class="text-center text-muted py-4">
-                        <i class="fa-solid fa-inbox fa-3x mb-3 d-block"></i>
-                        Chưa có dữ liệu điểm cho năm học và học kỳ này
+                    <td><?= htmlspecialchars($mon['tenMon']) ?></td>
+                    <td><?= $mon['diemThuongXuyen'] ?></td>
+                    <td><?= $mon['diemGiuaKy'] ?></td>
+                    <td><?= $mon['diemCuoiKy'] ?></td>
+                    <td class="fw-bold">
+                        <?= round(($mon['diemThuongXuyen'] + $mon['diemGiuaKy'] + $mon['diemCuoiKy'] * 2) / 4, 2) ?>
                     </td>
                 </tr>
-                <?php endif; ?>
+                <?php endforeach; ?>
             </tbody>
+            <tfoot class="table-info">
+                <tr>
+                    <td colspan="4" class="text-end fw-bold">Điểm trung bình:</td>
+                    <td class="fw-bold"><?= $diemTB ?></td>
+                </tr>
+            </tfoot>
         </table>
-
-        <!-- Chú thích -->
-        <div class="legend">
-            <div class="legend-item">
-                <div class="legend-color" style="background-color: #22c55e;"></div>
-                <span>Giỏi (≥ 8.0)</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background-color: #3b82f6;"></div>
-                <span>Khá (6.5 - 7.9)</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background-color: #f59e0b;"></div>
-                <span>Trung bình (5.0 - 6.4)</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background-color: #ef4444;"></div>
-                <span>Yếu (&lt; 5.0)</span>
-            </div>
-        </div>
-    </div>
-    <?php else: ?>
-    <!-- Chưa chọn con -->
-    <div class="alert alert-warning">
-        <i class="fa-solid fa-exclamation-triangle me-2"></i>
-        Vui lòng chọn con em để xem điểm
-    </div>
-    <?php endif; ?>
-
-    <!-- Nút quay lại -->
-    <div class="text-center mt-4">
-        <a href="/views/ph/dashboard.php" class="btn btn-secondary">
-            <i class="fa-solid fa-arrow-left me-2"></i>Quay lại Dashboard
-        </a>
     </div>
 </div>
 

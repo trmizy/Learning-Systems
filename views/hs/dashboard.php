@@ -3,11 +3,14 @@
 
 // Bảo vệ & kiểm tra quyền
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
-require_role(['hs']);
+require_role(['hs']); // ⚠️ THAY ĐỔI: 'hocsinh' → 'hs'
 
 // Lấy thông tin học sinh từ database
 require_once __DIR__ . '/../../models/DiemModel.php';
+require_once __DIR__ . '/../../models/hs/DashboardModel.php';
+
 $diemModel = new DiemModel();
+$dashboardModel = new DashboardModel();
 
 // Lấy thông tin user từ session
 $user = $_SESSION['auth'] ?? [];
@@ -18,8 +21,10 @@ if ($user && isset($user['username'])) {
 
 // Lấy thông tin chi tiết học sinh
 $thongTinHS = null;
+$maLop = null;
 if ($maHS) {
     $thongTinHS = $diemModel->getThongTinHocSinh($maHS);
+    $maLop = $thongTinHS['maLop'] ?? null;
 }
 
 // Gán giá trị cho hiển thị
@@ -31,32 +36,34 @@ $className = $thongTinHS ? $thongTinHS['tenLop'] : 'Chưa có lớp';
 $pageTitle = 'Trang học sinh - THPT';
 require_once __DIR__ . '/../layouts/header.php';
 
-// Số liệu demo (thay bằng truy vấn thật)
+// ⚠️ FIX: Lấy dữ liệu THỰC TẾ từ database
 $stats = [
-    'attendance_rate' => 95.5,
-    'gpa_semester' => $dashboardModel->getDiemTrungBinhHocKy($maHS, $hocKy, $namHoc),
-    'conduct_rating' => $dashboardModel->getHanhKiem($maHS, $hocKy, $namHoc),
-    'pending_requests' => $dashboardModel->demDonChoPheDuyet($maHS),
-    'unread_notifications' => 5,
+    'attendance_rate' => 95.5, // TODO: Tính từ bảng diemdanh khi có
+    'gpa_semester' => $maHS ? $dashboardModel->getDiemTrungBinhHocKy($maHS, 'HK1', '2024-2025') : 0,
+    'conduct_rating' => $maHS ? $dashboardModel->getHanhKiem($maHS, 'HK1', '2024-2025') : 'Tốt',
+    'pending_requests' => $maHS ? $dashboardModel->demDonChoPheDuyet($maHS) : 0,
+    'unread_notifications' => 5, // TODO: Đếm từ bảng thongbao khi có
 ];
 
-// Lấy dữ liệu THẬT
-$recentGrades = $dashboardModel->getDiemGanDay($maHS, 3);
-
-// Lấy lịch học hôm nay - XỬ LÝ TRƯỜNG HỢP CHƯA CÓ DỮ LIỆU
+// ⚠️ FIX: Lấy dữ liệu THỰC TẾ thay vì demo
+$recentGrades = [];
 $todaySchedule = [];
-if ($maLop) {
-    $todaySchedule = $dashboardModel->getLichHocHomNay($maLop);
-    
-    // DEBUG: Kiểm tra dữ liệu TKB
-    error_log("Dashboard: maLop=$maLop, todaySchedule count=" . count($todaySchedule));
+
+if ($maHS) {
+    // Lấy điểm gần đây THỰC TẾ
+    $recentGrades = $dashboardModel->getDiemGanDay($maHS, 3);
 }
 
-// Thông báo - GIỮ NGUYÊN DEMO (chưa có bảng Thông báo)
+if ($maLop) {
+    // Lấy lịch học hôm nay THỰC TẾ
+    $todaySchedule = $dashboardModel->getLichHocHomNay($maLop);
+}
+
+// Thông báo (giữ demo vì chưa có bảng thongbao)
 $notifications = [
-    ['title' => 'Thông báo nghỉ Tết Nguyên đán', 'type' => 'BGH', 'date' => date('Y-m-d'), 'unread' => true],
-    ['title' => 'Họp phụ huynh học kỳ 2', 'type' => 'GVCN', 'date' => date('Y-m-d', strtotime('-1 day')), 'unread' => true],
-    ['title' => 'Nộp học phí tháng 3', 'type' => 'Kế toán', 'date' => date('Y-m-d', strtotime('-5 days')), 'unread' => false],
+    ['title' => 'Thông báo nghỉ Tết Nguyên đán', 'type' => 'BGH', 'date' => '2024-03-15', 'unread' => true],
+    ['title' => 'Họp phụ huynh học kỳ 2', 'type' => 'GVCN', 'date' => '2024-03-14', 'unread' => true],
+    ['title' => 'Nộp học phí tháng 3', 'type' => 'Kế toán', 'date' => '2024-03-10', 'unread' => false],
 ];
 ?>
 
@@ -385,7 +392,7 @@ $notifications = [
                     </div>
                     <h5 class="card-title fw-bold">Bảng điểm</h5>
                     <p class="text-muted small">Xem điểm chi tiết theo môn, kỳ học</p>
-                    <a href="/public/index.php?page=hs-xem-diem" class="btn btn-primary w-100 mt-3">
+                    <a href="/public/index.php?action=hs-xem-diem" class="btn btn-primary w-100 mt-3">
                         <i class="fa-solid fa-eye me-2"></i>Xem điểm
                     </a>
                 </div>
@@ -401,7 +408,7 @@ $notifications = [
                     </div>
                     <h5 class="card-title fw-bold">Thời khóa biểu</h5>
                     <p class="text-muted small">Lịch học trong tuần, phòng học</p>
-                    <a href="index.php?action=xem_tkb" class="btn btn-success w-100 mt-3">
+                    <a href="/public/index.php?action=hs-xem-tkb" class="btn btn-success w-100 mt-3">
                         <i class="fa-solid fa-calendar me-2"></i>Xem TKB
                     </a>
                 </div>
@@ -447,7 +454,7 @@ $notifications = [
     </div>
 
     <div class="row g-4">
-        <!-- Today's Schedule -->
+        <!-- Today's Schedule - FIX: Hiển thị dữ liệu thực -->
         <div class="col-lg-4">
             <div class="card feature-card">
                 <div class="card-body">
@@ -456,35 +463,40 @@ $notifications = [
                         Lịch học hôm nay
                     </h5>
                     <?php if (empty($todaySchedule)): ?>
-                    <div class="alert alert-info">
-                        <i class="fa-solid fa-info-circle me-2"></i>
-                        Chưa có lịch học hôm nay hoặc đã hết giờ học.
-                    </div>
+                        <div class="text-center text-muted py-4">
+                            <i class="fa-solid fa-calendar-xmark fa-3x mb-3 d-block"></i>
+                            <p>Hôm nay không có lịch học</p>
+                        </div>
                     <?php else: ?>
                         <?php foreach ($todaySchedule as $lesson): ?>
                         <div class="schedule-item">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <div class="fw-bold text-primary">Tiết <?php echo $lesson['period']; ?>: <?php echo htmlspecialchars($lesson['subject']); ?></div>
+                                    <div class="fw-bold text-primary">
+                                        Tiết <?php echo htmlspecialchars($lesson['period']); ?>: 
+                                        <?php echo htmlspecialchars($lesson['subject']); ?>
+                                    </div>
                                     <div class="small text-muted">
-                                        <i class="fa-solid fa-chalkboard-user me-1"></i><?php echo htmlspecialchars($lesson['teacher'] ?? 'Chưa phân công'); ?>
+                                        <i class="fa-solid fa-chalkboard-user me-1"></i>
+                                        <?php echo htmlspecialchars($lesson['teacher'] ?? 'Chưa phân công'); ?>
                                     </div>
                                 </div>
                                 <span class="badge bg-light text-dark">
-                                    <i class="fa-solid fa-door-open me-1"></i><?php echo htmlspecialchars($lesson['room'] ?? 'TBA'); ?>
+                                    <i class="fa-solid fa-door-open me-1"></i>
+                                    <?php echo htmlspecialchars($lesson['room'] ?? 'N/A'); ?>
                                 </span>
                             </div>
                         </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
-                    <a href="index.php?action=xem_tkb" class="btn btn-outline-primary w-100 mt-3">
+                    <a href="/public/index.php?action=hs-xem-tkb" class="btn btn-outline-primary w-100 mt-3">
                         <i class="fa-solid fa-calendar-week me-2"></i>Xem lịch tuần
                     </a>
                 </div>
             </div>
         </div>
 
-        <!-- Recent Grades -->
+        <!-- Recent Grades - FIX: Hiển thị dữ liệu thực -->
         <div class="col-lg-4">
             <div class="card feature-card">
                 <div class="card-body">
@@ -492,26 +504,35 @@ $notifications = [
                         <i class="fa-solid fa-award text-warning me-2"></i>
                         Điểm số gần đây
                     </h5>
-                    <?php foreach ($recentGrades as $grade): ?>
-                    <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded">
-                        <div>
-                            <div class="fw-bold"><?php echo htmlspecialchars($grade['subject']); ?></div>
-                            <div class="small text-muted">
-                                <i class="fa-solid fa-calendar me-1"></i><?php echo $grade['date']; ?>
+                    <?php if (empty($recentGrades)): ?>
+                        <div class="text-center text-muted py-4">
+                            <i class="fa-solid fa-chart-simple fa-3x mb-3 d-block"></i>
+                            <p>Chưa có điểm nào</p>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($recentGrades as $grade): ?>
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded">
+                            <div>
+                                <div class="fw-bold"><?php echo htmlspecialchars($grade['subject']); ?></div>
+                                <div class="small text-muted">
+                                    <i class="fa-solid fa-calendar me-1"></i>
+                                    <?php echo htmlspecialchars($grade['date']); ?>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="grade-badge <?php 
+                                    $score = floatval($grade['score']);
+                                    echo $score >= 8 ? 'grade-excellent' : 
+                                        ($score >= 6.5 ? 'grade-good' : 'grade-average'); 
+                                ?>">
+                                    <?php echo number_format($score, 1); ?>
+                                </div>
+                                <div class="small text-muted mt-1"><?php echo htmlspecialchars($grade['type']); ?></div>
                             </div>
                         </div>
-                        <div class="text-end">
-                            <div class="grade-badge <?php 
-                                echo $grade['score'] >= 8 ? 'grade-excellent' : 
-                                    ($grade['score'] >= 6.5 ? 'grade-good' : 'grade-average'); 
-                            ?>">
-                                <?php echo $grade['score']; ?>
-                            </div>
-                            <div class="small text-muted mt-1"><?php echo $grade['type']; ?></div>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                    <a href="/public/index.php?page=hs-xem-diem" class="btn btn-outline-warning w-100 mt-3">
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                    <a href="/public/index.php?action=hs-xem-diem" class="btn btn-outline-warning w-100 mt-3">
                         <i class="fa-solid fa-chart-line me-2"></i>Xem tất cả điểm
                     </a>
                 </div>

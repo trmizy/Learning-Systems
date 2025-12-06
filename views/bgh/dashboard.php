@@ -775,7 +775,7 @@ try {
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-users-gear text-primary me-2"></i>Quản lý nhân sự
                     </h6>
-                    <a href="/modules/bgh/staff/index.php" class="btn btn-outline-primary w-100">
+                    <a href="/public/index.php?page=bgh-quan-ly-giao-vien" class="btn btn-outline-primary w-100">
                         <i class="fa-solid fa-user-tie me-2"></i>Xem danh sách
                     </a>
                 </div>

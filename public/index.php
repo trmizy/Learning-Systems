@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 session_start();
+require_once __DIR__ . '/../middlewares/AuthGuard.php';
 
 // Bật hiển thị lỗi để gỡ lỗi (bạn có thể xóa 3 dòng này khi deploy)
 ini_set('display_errors', '1');
@@ -115,6 +116,61 @@ if (isset($_GET['action'])) {
             $controller = new BaoCaoController();
             $controller->showBaoCaoPage();
             exit;
+
+    // === HỌC SINH ROUTES ===
+    case 'hs-dashboard':
+        require_role(['hs']);
+        require_once __DIR__ . '/../views/hs/dashboard.php';
+        break;
+
+    case 'hs-xem-diem':
+        require_role(['hs']);
+        require_once __DIR__ . '/../controllers/hs/DiemController.php';
+        $controller = new DiemController();
+        $controller->xemDiem();
+        break;
+    
+    case 'hs-xem-tkb':
+        require_role(['hs']);
+        require_once __DIR__ . '/../controllers/hs/ThoiKhoaBieuController.php';
+        $controller = new ThoiKhoaBieuController();
+        $controller->indexHocSinh();
+        break;
+
+    // === PHỤ HUYNH ROUTES ===
+    case 'ph-dashboard':
+        require_role(['ph']);
+        require_once __DIR__ . '/../views/ph/dashboard.php';
+        break;
+
+    case 'ph-xem-diem':
+        require_role(['ph']);
+        require_once __DIR__ . '/../controllers/ph/DiemController.php';
+        $controller = new DiemController();
+        $controller->xemDiemPhuHuynh();
+        break;
+    
+    case 'ph-xem-tkb':
+        require_role(['ph']);
+        require_once __DIR__ . '/../controllers/ph/ThoiKhoaBieuController.php';
+        $controller = new ThoiKhoaBieuController();
+        $controller->indexPhuHuynh();
+        break;
+
+    // ⚠️ THÊM ROUTE MỚI
+    case 'ph-family-profile':
+        require_once __DIR__ . '/../controllers/ph/FamilyController.php';
+        break;
+
+    // ⚠️ THÊM ROUTE MỚI - Quản lý hồ sơ giáo viên
+    case 'bgh-quan-ly-giao-vien':
+        require_once __DIR__ . '/../controllers/bgh/quanLyHoSoGiaoVien/QuanLyGiaoVienController.php';
+        break;
+
+    default:
+        http_response_code(404);
+        require_once __DIR__ . '/../views/errors/404.php';
+        break;
     }
 }
 
