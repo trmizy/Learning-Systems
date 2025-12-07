@@ -65,11 +65,10 @@ require_once __DIR__ . '/../../layouts/header.php';
                                id="namVao" 
                                name="namVao" 
                                required
-                               min="2000"
-                               max="2030"
+                    
                                value="<?php echo htmlspecialchars($data['namVao'] ?? date('Y')); ?>"
                                placeholder="VD: 2022">
-                        <small class="text-muted">Năm từ 2000-2030</small>
+                        <small class="text-muted"></small>
                     </div>
 
                     <!-- Họ và tên -->

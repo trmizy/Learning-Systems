@@ -1,0 +1,221 @@
+/* Phân công giảng dạy và phòng học - Styles */
+
+:root {
+    --primary-color: #5B8FB9;
+    --primary-dark: #4A7BA7;
+    --secondary-color: #86A7BC;
+    --success-color: #6BB6A5;
+    --info-color: #7EB2D5;
+    --warning-color: #E6A85F;
+    --danger-color: #D97B7B;
+    --light-bg: #F8FAFB;
+    --border-color: #D4E1E8;
+}
+
+.assignment-container {
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card-assignment {
+    border: 0;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(91, 143, 185, 0.1);
+    transition: all 0.3s ease;
+    background: white;
+    margin-bottom: 1.5rem;
+}
+
+.card-assignment:hover {
+    box-shadow: 0 4px 20px rgba(91, 143, 185, 0.15);
+    transform: translateY(-2px);
+}
+
+.table-assignment {
+    margin-bottom: 0;
+}
+
+.table-assignment thead {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: white;
+}
+
+.table-assignment thead th {
+    border: none;
+    padding: 1rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.table-assignment tbody tr {
+    transition: all 0.2s ease;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table-assignment tbody tr:hover {
+    background-color: rgba(91, 143, 185, 0.05);
+}
+
+.table-assignment tbody td {
+    padding: 0.9rem;
+    vertical-align: middle;
+}
+
+.badge-status {
+    padding: 0.4rem 0.9rem;
+    border-radius: 20px;
+    font-weight: 500;
+    font-size: 0.85rem;
+    letter-spacing: 0.3px;
+}
+
+.badge-assigned {
+    background: linear-gradient(135deg, var(--success-color), #58A999);
+    color: white;
+}
+
+.badge-unassigned {
+    background: linear-gradient(135deg, var(--warning-color), #D99A52);
+    color: white;
+}
+
+.btn-action {
+    padding: 0.4rem 0.9rem;
+    font-size: 0.875rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.btn-action:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+}
+
+.btn-info {
+    background: linear-gradient(135deg, var(--info-color), #6CA3C9);
+    color: white;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--success-color), #5BA592);
+    color: white;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, var(--danger-color), #C96B6B);
+    color: white;
+}
+
+.modal-content {
+    border: 0;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(91, 143, 185, 0.2);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    border-radius: 16px 16px 0 0;
+    border: none;
+    padding: 1.5rem;
+}
+
+.modal-header .modal-title {
+    font-weight: 600;
+    font-size: 1.2rem;
+}
+
+.modal-header .btn-close {
+    filter: brightness(0) invert(1);
+    opacity: 0.8;
+}
+
+.modal-header .btn-close:hover {
+    opacity: 1;
+}
+
+.form-select, .form-control {
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
+    padding: 0.65rem 1rem;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(91, 143, 185, 0.15);
+    outline: none;
+}
+
+.form-label {
+    color: #4A5568;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.info-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1.1rem;
+    background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+    border-radius: 10px;
+    border-left: 4px solid var(--info-color);
+}
+
+.info-badge i {
+    font-size: 1.4rem;
+    color: var(--info-color);
+}
+
+.alert {
+    border-radius: 10px;
+    border: none;
+    padding: 1rem 1.2rem;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #E8F5E9, #C8E6C9);
+    color: #2E7D32;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #FFEBEE, #FFCDD2);
+    color: #C62828;
+}
+
+.text-muted {
+    color: #718096 !important;
+    font-size: 0.85rem;
+}
+
+/* Custom scrollbar */
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: var(--light-bg);
+    border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: var(--secondary-color);
+    border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
+}
