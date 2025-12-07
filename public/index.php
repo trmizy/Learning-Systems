@@ -230,7 +230,47 @@ if (isset($_GET['action'])) {
     }
 }
 
-// Display flash messages if they exist (Cải tiến giao diện)
+// Handle page routing
+if (isset($_GET['page']) && isset($_SESSION['auth'])) {
+    $page = $_GET['page'];
+    
+    // BGH pages
+    if ($_SESSION['auth']['role'] === 'bgh') {
+        switch ($page) {
+            case 'bgh-phan-cong':
+                require_once __DIR__ . '/../controllers/bgh/phanCongGiangDayVaPhongHoc/QuanLyPhanCongController.php';
+                exit;
+                
+            case 'bgh-phan-cong-mon-hoc':
+                require_once __DIR__ . '/../controllers/bgh/phanCongGiangDayVaPhongHoc/PhanCongMonHocController.php';
+                exit;
+                
+            case 'bgh-quan-ly-giao-vien':
+                require_once __DIR__ . '/../controllers/bgh/quanLyHoSoGiaoVien/QuanLyGiaoVienController.php';
+                exit;
+        }
+    }
+    
+    // HS pages
+    if ($_SESSION['auth']['role'] === 'hs') {
+        switch ($page) {
+            case 'hs-xem-diem':
+                require_once __DIR__ . '/../controllers/hs/XemDiemController.php';
+                exit;
+        }
+    }
+    
+    // PH pages
+    if ($_SESSION['auth']['role'] === 'ph') {
+        switch ($page) {
+            case 'ph-xem-diem':
+                require_once __DIR__ . '/../controllers/ph/XemDiemController.php';
+                exit;
+        }
+    }
+}
+
+// Display flash messages if they exist
 if ($flash_success || $flash_error || $flash_info): ?>
     <div style="position: fixed; top: 20px; right: 20px; z-index: 1050; min-width: 300px;">
         <?php if ($flash_success): ?>

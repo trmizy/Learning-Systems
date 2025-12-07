@@ -21,11 +21,66 @@ require_once __DIR__ . '/../../layouts/header.php';
                 </a>
             </div>
 
-            <!-- Flash Messages -->
-            <?php if (isset($message)): ?>
-                <div class="alert alert-<?php echo $messageType; ?> alert-dismissible fade show">
-                    <?php echo htmlspecialchars($message); ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <!-- Alert Messages -->
+    <?php if (isset($message) && $message): ?>
+    <div class="alert alert-<?php echo isset($messageType) ? $messageType : 'info'; ?> alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-<?php echo (isset($messageType) && $messageType === 'success') ? 'check-circle' : 'exclamation-triangle'; ?> me-2"></i>
+        <?php echo htmlspecialchars($message); ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <?php endif; ?>
+
+    <!-- Form -->
+    <div class="card card-assignment">
+        <div class="card-body">
+            <form method="POST" action="/public/index.php?page=bgh-quan-ly-giao-vien&action=create">
+                <div class="row">
+                    <!-- Mã trường -->
+                    <div class="col-md-4 mb-3">
+                        <label for="maTruong" class="form-label">
+                            Mã trường <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="maTruong" 
+                               name="maTruong" 
+                               required
+                               pattern="[A-Z0-9]{3,10}"
+                               value="<?php echo htmlspecialchars($data['maTruong'] ?? 'TR001'); ?>"
+                               placeholder="VD: TR001">
+                        <small class="text-muted">TRXXX</small>
+                    </div>
+
+                    <!-- Năm vào trường -->
+                    <div class="col-md-4 mb-3">
+                        <label for="namVao" class="form-label">
+                            Năm vào trường <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" 
+                               class="form-control" 
+                               id="namVao" 
+                               name="namVao" 
+                               required
+                    
+                               value="<?php echo htmlspecialchars($data['namVao'] ?? date('Y')); ?>"
+                               placeholder="VD: 2022">
+                        <small class="text-muted"></small>
+                    </div>
+
+                    <!-- Họ và tên -->
+                    <div class="col-md-4 mb-3">
+                        <label for="hoTen" class="form-label">
+                            Họ và tên <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="hoTen" 
+                               name="hoTen" 
+                               required
+                               minlength="3"
+                               value="<?php echo htmlspecialchars($data['hoTen'] ?? ''); ?>"
+                               placeholder="VD: Nguyen Van A">
+                    </div>
                 </div>
             <?php endif; ?>
 

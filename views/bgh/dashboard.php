@@ -454,6 +454,14 @@ try {
     .timeline-item.inspection::before {
         border-color: #ffc107;
     }
+    
+    /* Custom 5 columns grid for xl screens */
+    @media (min-width: 1200px) {
+        .col-xl-2-4 {
+            flex: 0 0 auto;
+            width: 20%;
+        }
+    }
 </style>
 
 <div class="bgh-dashboard">
@@ -541,7 +549,7 @@ try {
     <!-- Main Functions Grid -->
     <div class="row g-4 mb-4">
         <!-- Duyệt phiếu sửa điểm -->
-        <div class="col-md-6 col-xl-3">
+        <div class="col-md-6 col-xl-2-4">
             <div class="card feature-card h-100">
                 <div class="card-body text-center">
                     <div class="feature-icon mx-auto">
@@ -562,7 +570,7 @@ try {
         </div>
 
         <!-- Duyệt hạnh kiểm -->
-        <div class="col-md-6 col-xl-3">
+        <div class="col-md-6 col-xl-2-4">
             <div class="card feature-card h-100">
                 <div class="card-body text-center">
                     <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
@@ -583,7 +591,7 @@ try {
         </div>
 
         <!-- Duyệt đề thi -->
-        <div class="col-md-6 col-xl-3">
+        <div class="col-md-6 col-xl-2-4">
             <div class="card feature-card h-100">
                 <div class="card-body text-center">
                     <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
@@ -604,20 +612,35 @@ try {
         </div>
 
         <!-- Phân công giảng dạy -->
-        <div class="col-md-6 col-xl-3">
+        <div class="col-md-6 col-xl-2-4">
             <div class="card feature-card h-100">
                 <div class="card-body text-center">
                     <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
                         <i class="fa-solid fa-user-gear"></i>
                     </div>
                     <h5 class="card-title fw-bold">Phân công</h5>
-                    <p class="text-muted small">Duyệt phân công giảng dạy</p>
+                    <p class="text-muted small">Phân công giảng dạy và phòng học</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/public/bgh/assignments/pending.php" class="btn btn-info btn-sm">
-                            <i class="fa-solid fa-clock me-1"></i>Chờ duyệt (<?php echo $stats['teaching_assignments']; ?>)
-                        </a>
-                        <a href="/public/bgh/assignments/manage.php" class="btn btn-outline-info btn-sm">
+                        <a href="/public/index.php?page=bgh-phan-cong" class="btn btn-info btn-sm">
                             <i class="fa-solid fa-cog me-1"></i>Quản lý
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quản lý hồ sơ giáo viên -->
+        <div class="col-md-6 col-xl-2-4">
+            <div class="card feature-card h-100">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Hồ sơ giáo viên</h5>
+                    <p class="text-muted small">Quản lý hồ sơ giáo viên</p>
+                    <div class="d-grid gap-2 mt-3">
+                        <a href="/public/index.php?page=bgh-quan-ly-giao-vien" class="btn btn-primary btn-sm">
+                            <i class="fa-solid fa-user-tie me-1"></i>Quản lý
                         </a>
                     </div>
                 </div>
