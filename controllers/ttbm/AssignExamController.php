@@ -7,138 +7,98 @@ class AssignExamController {
     private AssignExamModel $model;
 
     public function __construct() {
-        // Kiểm tra quyền tổ trưởng bộ môn
-        require_role(['ttbm']);
-        
         $this->model = new AssignExamModel();
-        if (session_status() === PHP_SESSION_NONE) session_start();
     }
 
     public function index(): void {
+        require_role(['ttbm']);
 
-        // Lấy mã tài khoản trong session
-        $maTaiKhoan = $_SESSION['auth']['maTaiKhoan'] ?? '';
-
-        // Lấy mã GV của tổ trưởng
-        $maGV = $this->model->layMaGVTheoTaiKhoan($maTaiKhoan);
-
-        // Lấy môn
-        $monPhuTrach = $this->model->layMonCuaToTruong($maGV);
-
-        if (!$monPhuTrach) {
-            $_SESSION['flash_error'] = "Không tìm thấy thông tin tổ trưởng bộ môn.";
-            header('Location: index.php');
+        $user = current_user();
+        if (!$user) {
+            $_SESSION['flash_error'] = 'Không xác định được người dùng.';
+            header('Location: /public/index.php');
             exit;
         }
 
-        // Lấy dữ liệu render
-        $khoi     = $this->model->getDanhSachKhoi();
-        $listGV   = $this->model->getGiaoVienTheoToTruong($monPhuTrach);
-        $phanCong = $this->model->getDanhSachPhanCong($monPhuTrach);
-
-        include __DIR__ . '/../../views/ttbm/assign_exam.php';
-    }
-
-    public function store(): void {
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: index.php?action=assign_exam');
+        // Lấy mã TTBM từ username
+        $maTTBM = $this->model->getMaTTBMByUsername($user['username']);
+        
+        if (!$maTTBM) {
+            $_SESSION['flash_error'] = 'Không tìm thấy thông tin trưởng tổ môn học.';
+            header('Location: /public/index.php');
             exit;
         }
 
-        // Lấy form
-        $khoi      = trim($_POST['khoi'] ?? '');
-        $hocKy     = trim($_POST['hocKy'] ?? '');
-        $kyThi     = trim($_POST['kyThi'] ?? '');
-        $soLuongDe = (int)($_POST['soLuongDe'] ?? 0);
-        $thoiHan   = trim($_POST['thoiHan'] ?? '');
-        $ghiChu    = trim($_POST['ghiChu'] ?? '');
-        $listGV    = $_POST['listGV'] ?? [];
-
-        // Validate
-        if ($khoi === '') {
-            $_SESSION['flash_error'] = "Vui lòng chọn khối.";
-            header('Location: index.php?action=assign_exam');
-            exit;
+        // Lấy danh sách môn của tổ trưởng
+        $monList = $this->model->layMonCuaToTruong($maTTBM);
+        
+        // DEBUG
+        error_log("=== AssignExamController::index ===");
+        error_log("maTTBM: $maTTBM");
+        error_log("Số môn: " . count($monList));
+        
+        // ⚠️ FIX: Lấy môn được chọn hoặc môn đầu tiên
+        $selectedMon = null;
+        $listGV = [];
+        
+        if (!empty($monList)) {
+            // Lấy môn từ GET hoặc mặc định môn đầu tiên
+            $selectedMon = $_GET['mon'] ?? $monList[0]['maMonHoc'];
+            
+            // Lấy danh sách giáo viên theo môn
+            $listGV = $this->model->layGiaoVienTheoMon($selectedMon);
+            
+            // DEBUG
+            error_log("selectedMon: $selectedMon");
+            error_log("Số giáo viên: " . count($listGV));
         }
 
-        if ($hocKy === '' || $kyThi === '') {
-            $_SESSION['flash_error'] = "Vui lòng chọn Học kỳ và Kỳ thi.";
-            header('Location: index.php?action=assign_exam');
-            exit;
-        }
+        // Lấy danh sách khối
+        $khoi = $this->model->layDanhSachKhoi();
 
-        if ($soLuongDe <= 0) {
-            $_SESSION['flash_error'] = "Số lượng đề không hợp lệ.";
-            header('Location: index.php?action=assign_exam');
-            exit;
-        }
+        // Lấy danh sách phân công hiện có
+        $phanCong = $this->model->layDanhSachPhanCong();
 
-        if ($thoiHan === '' || strtotime($thoiHan) < time()) {
-            $_SESSION['flash_error'] = "Thời hạn không hợp lệ.";
-            header('Location: index.php?action=assign_exam');
-            exit;
-        }
-
-        if (empty($listGV)) {
-            $_SESSION['flash_error'] = "Vui lòng chọn giáo viên.";
-            header('Location: index.php?action=assign_exam');
-            exit;
-        }
-
-        // Lưu
-        $ok = $this->model->luuPhanCongNhieuGV(
-            $listGV,
-            $khoi,
-            $hocKy,
-            $kyThi,
-            $soLuongDe,
-            $thoiHan,
-            $ghiChu
-        );
-
-        $_SESSION['flash_' . ($ok ? 'success' : 'error')] =
-            $ok ? "Phân công thành công." : "Không thể lưu phân công.";
-
-        header('Location: index.php?action=assign_exam');
-        exit;
+        // Render view
+        require_once __DIR__ . '/../../views/ttbm/assign_exam.php';
     }
 
     /**
-     * Helper: Lấy mã giáo viên từ username
+     * Xử lý lưu phân công
      */
-    private function getGiaoVienByUsername(string $username): ?string {
-        try {
-            $db = Database::getInstance();
-            $conn = $db->getConnection();
-            
-            $stmt = $conn->prepare("
-                SELECT maTaiKhoan 
-                FROM TaiKhoan 
-                WHERE tenDangNhap = ? AND trangThai = 'ACTIVE'
-                LIMIT 1
-            ");
-            $stmt->execute([$username]);
-            $taiKhoan = $stmt->fetch();
-            
-            if (!$taiKhoan) {
-                return null;
-            }
-            
-            $stmt2 = $conn->prepare("
-                SELECT maGV 
-                FROM GiaoVienBoMon 
-                WHERE maTaiKhoan = ?
-                LIMIT 1
-            ");
-            $stmt2->execute([$taiKhoan['maTaiKhoan']]);
-            $gv = $stmt2->fetch();
-            
-            return $gv ? $gv['maGV'] : null;
-            
-        } catch (PDOException $e) {
-            error_log("Error getGiaoVienByUsername: " . $e->getMessage());
-            return null;
+    public function store(): void {
+        require_role(['ttbm']);
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /public/index.php?action=assign_exam');
+            exit;
         }
+
+        $data = [
+            'khoi' => $_POST['khoi'] ?? '',
+            'listGV' => $_POST['listGV'] ?? [],
+            'hocKy' => $_POST['hocKy'] ?? '',
+            'kyThi' => $_POST['kyThi'] ?? '',
+            'soLuongDe' => $_POST['soLuongDe'] ?? 1,
+            'thoiHan' => $_POST['thoiHan'] ?? '',
+            'ghiChu' => $_POST['ghiChu'] ?? ''
+        ];
+
+        // Validate
+        if (empty($data['khoi']) || empty($data['listGV']) || empty($data['hocKy']) || empty($data['kyThi'])) {
+            $_SESSION['flash_error'] = 'Vui lòng điền đầy đủ thông tin bắt buộc.';
+            header('Location: /public/index.php?action=assign_exam');
+            exit;
+        }
+
+        // Lưu vào database
+        if ($this->model->luuPhanCong($data)) {
+            $_SESSION['flash_success'] = 'Phân công ra đề thành công!';
+        } else {
+            $_SESSION['flash_error'] = 'Có lỗi xảy ra. Vui lòng thử lại.';
+        }
+
+        header('Location: /public/index.php?action=assign_exam');
+        exit;
     }
 }

@@ -191,6 +191,38 @@ if (isset($_GET['action'])) {
         require_once __DIR__ . '/../controllers/bgh/quanLyHoSoGiaoVien/QuanLyGiaoVienController.php';
         break;
 
+    // ⚠️ THÊM ROUTE MỚI - Lớp giảng dạy (GVBM, GVCN, TTBM)
+    case 'lop_giang_day':
+        require_once __DIR__ . '/../controllers/gvbm/LopGiangDayController.php';
+        $controller = new LopGiangDayController();
+        $controller->index();
+        break;
+
+    case 'chi_tiet_lop':
+        require_once __DIR__ . '/../controllers/gvbm/LopGiangDayController.php';
+        $controller = new LopGiangDayController();
+        $controller->chiTietLop();
+        break;
+
+    case 'chi_tiet_hoc_sinh':
+        require_once __DIR__ . '/../controllers/gvbm/LopGiangDayController.php';
+        $controller = new LopGiangDayController();
+        $controller->chiTietHocSinh();
+        break;
+
+    // Thêm route mới cho phân công giảng dạy
+    case 'assign_exam':
+        require_once __DIR__ . '/../controllers/ttbm/AssignExamController.php';
+        $controller = new AssignExamController();
+        $controller->index();
+        break;
+
+    case 'store_assign_exam':
+        require_once __DIR__ . '/../controllers/ttbm/AssignExamController.php';
+        $controller = new AssignExamController();
+        $controller->store();
+        break;
+
     default:
         http_response_code(404);
         require_once __DIR__ . '/../views/errors/404.php';

@@ -526,7 +526,7 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
         </div>
 
         <!-- Lớp chủ nhiệm hoặc Thời khóa biểu -->
-        <?php if ($currentRole === 'gvcn' || $currentRole === 'ttbm'): ?>
+        <?php if ($currentRole === 'gvcn' ): ?>
         <div class="col-md-6 col-xl-3">
             <div class="card feature-card h-100">
                 <div class="card-body text-center">

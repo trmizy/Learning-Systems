@@ -31,29 +31,92 @@ class AssignExamModel {
         return $stmt->fetchColumn() ?: null;
     }
 
-    /** Lấy môn của tổ trưởng */
-    public function layMonCuaToTruong(string $maGV): ?string {
-        $sql = "SELECT monPhuTrach 
-                FROM totruongbomon 
-                WHERE maGV = :gv 
-                LIMIT 1";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute([':gv' => $maGV]);
-        return $stmt->fetchColumn() ?: null;
+    /**
+     * ⚠️ FIX: Lấy mã trưởng tổ từ username - JOIN QUA giaovienbomon
+     */
+    public function getMaTTBMByUsername($username) {
+        try {
+            // ⚠️ FIX: totruongbomon chỉ có maGV, phải join qua giaovienbomon
+            $sql = "SELECT ttbm.maGV
+                    FROM taikhoan tk
+                    INNER JOIN giaovienbomon gv ON tk.maTaiKhoan = gv.maTaiKhoan
+                    INNER JOIN totruongbomon ttbm ON gv.maGV = ttbm.maGV
+                    WHERE tk.tenDangNhap = ? AND tk.trangThai = 'ACTIVE'
+                    LIMIT 1";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$username]);
+            $result = $stmt->fetch();
+            
+            // DEBUG
+            error_log("=== getMaTTBMByUsername ===");
+            error_log("Username: $username");
+            error_log("maGV: " . ($result ? $result['maGV'] : 'NULL'));
+            
+            return $result ? $result['maGV'] : null;
+            
+        } catch (PDOException $e) {
+            error_log("Error getMaTTBMByUsername: " . $e->getMessage());
+            return null;
+        }
     }
 
-    /** Lấy danh sách GVBM cùng môn */
-    public function getGiaoVienTheoToTruong(string $monPhuTrach): array {
-        $sql = "
-            SELECT maGV, hoTen, monHocPhuTrach
-            FROM giaovienbomon
-            WHERE chucVu = 'Giao vien bo mon'
-              AND monHocPhuTrach = :mon
-            ORDER BY hoTen ASC
-        ";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute([':mon' => $monPhuTrach]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    /**
+     * ⚠️ FIX: Lấy môn từ trưởng tổ - DỰA VÀO CỘT monPhuTrach
+     */
+    public function layMonCuaToTruong(string $maGV) {
+        try {
+            // ⚠️ FIX: totruongbomon có cột monPhuTrach (VARCHAR) chứa TÊN MÔN
+            $sql = "SELECT DISTINCT 
+                        mh.maMonHoc, 
+                        mh.tenMon
+                    FROM totruongbomon ttbm
+                    INNER JOIN monhoc mh ON ttbm.monPhuTrach = mh.tenMon
+                    WHERE ttbm.maGV = ?";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$maGV]);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // DEBUG
+            error_log("=== layMonCuaToTruong ===");
+            error_log("maGV: $maGV");
+            error_log("Rows: " . count($result));
+            if (count($result) > 0) {
+                error_log("First row: " . print_r($result[0], true));
+            }
+            
+            return $result;
+            
+        } catch (PDOException $e) {
+            error_log("Error layMonCuaToTruong: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Lấy giáo viên theo môn
+     */
+    public function layGiaoVienTheoMon($maMonHoc) {
+        try {
+            $sql = "SELECT 
+                        gv.maGV,
+                        gv.hoTen,
+                        gv.monHocPhuTrach
+                    FROM giaovienbomon gv
+                    WHERE gv.monHocPhuTrach = ?
+                      AND gv.tinhTrangTaiKhoan = 'ACTIVE'
+                    ORDER BY gv.hoTen";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$maMonHoc]);
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            error_log("Error layGiaoVienTheoMon: " . $e->getMessage());
+            return [];
+        }
     }
 
     /** Lưu phân công nhiều GV */
@@ -130,5 +193,76 @@ class AssignExamModel {
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([':maGV' => $maGV]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Lấy danh sách phân công - SỬA THEO BẢNG bangphancongrade
+     */
+    public function layDanhSachPhanCong($filters = []) {
+        try {
+            $sql = "SELECT 
+                        pc.hocKy as khoi,
+                        pc.hocKy,
+                        pc.kyThi,
+                        pc.soLuongDe,
+                        pc.thoiHan,
+                        pc.ghiChu,
+                        gv.hoTen as giaoVien
+                    FROM bangphancongrade pc
+                    INNER JOIN giaovienbomon gv ON pc.maGV = gv.maGV
+                    WHERE 1=1";
+            
+            $params = [];
+            
+            // Filter theo học kỳ
+            if (!empty($filters['hocKy'])) {
+                $sql .= " AND pc.hocKy = ?";
+                $params[] = $filters['hocKy'];
+            }
+            
+            // Filter theo kỳ thi
+            if (!empty($filters['kyThi'])) {
+                $sql .= " AND pc.kyThi = ?";
+                $params[] = $filters['kyThi'];
+            }
+            
+            $sql .= " ORDER BY pc.thoiHan DESC";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute($params);
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            error_log("Error layDanhSachPhanCong: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * ⚠️ THÊM MỚI: Lấy danh sách khối từ bảng khoi
+     */
+    public function layDanhSachKhoi() {
+        try {
+            $sql = "SELECT DISTINCT 
+                        maKhoi as soKhoi,
+                        khoiLop as tenKhoi
+                    FROM khoi
+                    ORDER BY maKhoi ASC";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // DEBUG
+            error_log("=== layDanhSachKhoi ===");
+            error_log("Rows: " . count($result));
+            
+            return $result;
+            
+        } catch (PDOException $e) {
+            error_log("Error layDanhSachKhoi: " . $e->getMessage());
+            return [];
+        }
     }
 }

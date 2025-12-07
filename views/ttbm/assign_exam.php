@@ -1,4 +1,8 @@
 <?php
+// ⚠️ THÊM: Require header ở ĐẦU FILE
+$pageTitle = 'Phân công ra đề thi - TTBM';
+require_once __DIR__ . '/../layouts/header.php';
+
 $success = $_SESSION['flash_success'] ?? '';
 $error   = $_SESSION['flash_error'] ?? '';
 unset($_SESSION['flash_success'], $_SESSION['flash_error']);
@@ -20,6 +24,29 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
         <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
 
+    <!-- ⚠️ THÊM: Dropdown chọn môn học -->
+    <?php if (!empty($monList)): ?>
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">
+                <i class="fa-solid fa-book me-2"></i>Chọn môn học
+            </h5>
+            <form method="GET" class="row g-3">
+                <input type="hidden" name="action" value="assign_exam">
+                <div class="col-auto">
+                    <select name="mon" class="form-select" onchange="this.form.submit()">
+                        <?php foreach ($monList as $mon): ?>
+                            <option value="<?= htmlspecialchars($mon['maMonHoc']) ?>" 
+                                    <?= ($selectedMon == $mon['maMonHoc']) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($mon['tenMon']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <!-- FORM PHÂN CÔNG -->
     <form action="index.php?action=store_assign_exam" method="POST" class="row g-3 mb-4">
@@ -29,24 +56,32 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
             <label class="form-label fw-semibold">Khối</label>
             <select name="khoi" class="form-select" required>
                 <option value="">-- Chọn khối --</option>
-                <?php foreach ($khoi as $k): ?>
-                    <option value="<?= htmlspecialchars($k) ?>">Khối <?= htmlspecialchars($k) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-    </div>
-
-        <!-- GIÁO VIÊN BỘ MÔN -->
-        <div class="col-md-5">
-            <label class="form-label fw-semibold">Giáo viên bộ môn</label>
-            <select name="listGV[]" multiple class="form-select" size="5" required>
-                <?php foreach ($listGV as $gv): ?>
-                    <option value="<?= $gv['maGV'] ?>">
-                        <?= htmlspecialchars($gv['hoTen']) ?> (<?= htmlspecialchars($gv['monHocPhuTrach']) ?>)
+                <?php foreach ($khoi as $khoiItem): ?>
+                    <option value="<?= htmlspecialchars($khoiItem['soKhoi']) ?>">
+                        <?= htmlspecialchars($khoiItem['tenKhoi']) ?>
                     </option>
                 <?php endforeach; ?>
             </select>
-            <small class="text-muted">Giữ Ctrl để chọn nhiều giáo viên</small>
+        </div>
+
+        <!-- GIÁO VIÊN BỘ MÔN - FIX: Hiển thị thông báo nếu rỗng -->
+        <div class="col-md-5">
+            <label class="form-label fw-semibold">Giáo viên bộ môn</label>
+            <?php if (empty($listGV)): ?>
+                <div class="alert alert-warning">
+                    <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                    Không có giáo viên nào dạy môn này. Vui lòng chọn môn khác.
+                </div>
+            <?php else: ?>
+                <select name="listGV[]" multiple class="form-select" size="5" required>
+                    <?php foreach ($listGV as $gv): ?>
+                        <option value="<?= htmlspecialchars($gv['maGV']) ?>">
+                            <?= htmlspecialchars($gv['hoTen']) ?> (<?= htmlspecialchars($gv['monHocPhuTrach']) ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <small class="text-muted">Giữ Ctrl để chọn nhiều giáo viên</small>
+            <?php endif; ?>
         </div>
 
         <!-- HỌC KỲ -->
@@ -58,13 +93,6 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                 <option value="HK2">Học kỳ II</option>
             </select>
         </div>
-    <?php endif; ?>
-    
-    <?php if ($error): ?>
-        <div class="alert alert-danger alert-modern">
-            <i class="fa-solid fa-exclamation-circle me-2"></i><?= htmlspecialchars($error) ?>
-        </div>
-    <?php endif; ?>
 
         <!-- KỲ THI -->
         <div class="col-md-2">
@@ -145,3 +173,8 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
     </div>
 
 </div>
+
+<?php
+// ⚠️ THÊM: Require footer ở CUỐI FILE
+require_once __DIR__ . '/../layouts/footer.php';
+?>

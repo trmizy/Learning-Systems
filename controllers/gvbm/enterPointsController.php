@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../models/gvbm/enterPointsModel.php';
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
 
 // Kiểm tra đăng nhập và quyền giáo viên bộ môn
-require_role(['gvbm']);
+require_role(['gvbm' , 'gvcn', 'ttbm']);
 
 // Khởi tạo session messages nếu chưa có
 if (!isset($_SESSION['messages'])) {
