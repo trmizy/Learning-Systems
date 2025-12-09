@@ -265,4 +265,47 @@ class AssignExamModel {
             return [];
         }
     }
+
+    /**
+     * ⚠️ THÊM MỚI: Lưu phân công ra đề
+     */
+    public function luuPhanCong($data) {
+        try {
+            $this->conn->beginTransaction();
+            
+            // Lưu cho từng giáo viên trong danh sách
+            foreach ($data['listGV'] as $maGV) {
+                $sql = "INSERT INTO bangphancongrade 
+                        (hocKy, kyThi, soLuongDe, thoiHan, ghiChu, maGV) 
+                        VALUES (?, ?, ?, ?, ?, ?)";
+                
+                $stmt = $this->conn->prepare($sql);
+                $result = $stmt->execute([
+                    $data['hocKy'],
+                    $data['kyThi'],
+                    $data['soLuongDe'],
+                    $data['thoiHan'],
+                    $data['ghiChu'],
+                    $maGV
+                ]);
+                
+                if (!$result) {
+                    throw new Exception("Không thể lưu phân công cho giáo viên $maGV");
+                }
+            }
+            
+            $this->conn->commit();
+            
+            // DEBUG
+            error_log("=== luuPhanCong SUCCESS ===");
+            error_log("Số GV được phân công: " . count($data['listGV']));
+            
+            return true;
+            
+        } catch (Exception $e) {
+            $this->conn->rollBack();
+            error_log("Error luuPhanCong: " . $e->getMessage());
+            return false;
+        }
+    }
 }

@@ -167,19 +167,6 @@ if ($currentRole === 'gvcn') {
 }
 ?>
 
-<!-- Xem phân công ra đề-->
-<?php
-if (session_status() === PHP_SESSION_NONE) session_start();
-$currentRole = $_SESSION['auth']['role'] ?? '';
-
-if ($currentRole === 'gvbm' && ($_GET['action'] ?? '') === 'view_assign') {
-    require_once __DIR__ . '/../../controllers/gvbm/ViewAssignController.php';
-    $controller = new ViewAssignController();
-    $controller->index();
-    exit;
-}
-?>
-
 <style>
     .teacher-dashboard {
         animation: fadeIn 0.5s ease;

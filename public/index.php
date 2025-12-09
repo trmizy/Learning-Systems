@@ -223,6 +223,54 @@ if (isset($_GET['action'])) {
         $controller->store();
         break;
 
+    // ⚠️ THÊM: Routes cho duyệt sửa điểm BGH
+    case 'bgh-duyet-sua-diem':
+        require_once __DIR__ . '/../controllers/bgh/DuyetSuaDiemController.php';
+        $controller = new DuyetSuaDiemController();
+        $controller->index();
+        break;
+
+    case 'bgh-duyet-sua-diem-chi-tiet':
+        require_once __DIR__ . '/../controllers/bgh/DuyetSuaDiemController.php';
+        $controller = new DuyetSuaDiemController();
+        $controller->chiTiet();
+        break;
+
+    case 'bgh-duyet-sua-diem-duyet':
+        require_once __DIR__ . '/../controllers/bgh/DuyetSuaDiemController.php';
+        $controller = new DuyetSuaDiemController();
+        $controller->duyet();
+        break;
+
+    case 'bgh-duyet-sua-diem-tu-choi':
+        require_once __DIR__ . '/../controllers/bgh/DuyetSuaDiemController.php';
+        $controller = new DuyetSuaDiemController();
+        $controller->tuChoi();
+        break;
+
+    // ⚠️ THÊM: Route lịch sử duyệt sửa điểm
+    case 'bgh-duyet-sua-diem-lich-su':
+        require_once __DIR__ . '/../controllers/bgh/DuyetSuaDiemController.php';
+        $controller = new DuyetSuaDiemController();
+        $controller->lichSu();
+        break;
+
+    // ==================== GVBM - Giáo viên bộ môn ====================
+    case 'gvbm-dashboard':
+        require_once __DIR__ . '/../views/gvbm/dashboard.php';
+        break;
+
+    // ⚠️ FIX: Cho phép CẢ GVBM VÀ GVCN xem phân công
+    case 'view_assign':
+        // Kiểm tra quyền - CHO PHÉP CẢ 2 ROLE
+        require_role(['gvbm', 'gvcn']);
+        
+        // Nếu pass qua require_role thì mới load controller
+        require_once __DIR__ . '/../controllers/gvbm/ViewAssignController.php';
+        $controller = new ViewAssignController();
+        $controller->index();
+        break;
+
     default:
         http_response_code(404);
         require_once __DIR__ . '/../views/errors/404.php';

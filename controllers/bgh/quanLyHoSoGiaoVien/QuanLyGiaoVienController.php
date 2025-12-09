@@ -5,7 +5,8 @@
  * Chức năng: Xem, Tạo, Sửa, Xóa hồ sơ giáo viên
  */
 
-require_once __DIR__ . '/../../../models/GiaoVienModel.php';
+require_once __DIR__ . '/../../../middlewares/AuthGuard.php';
+require_once __DIR__ . '/../../../models/bgh/GiaoVienModel.php';
 
 // Kiểm tra quyền truy cập
 if (!isset($_SESSION['auth']) || $_SESSION['auth']['role'] !== 'bgh') {

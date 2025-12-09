@@ -24,16 +24,6 @@ $MENU_ITEMS = [
             ]
         ],
         [
-            'icon' => 'chart-line',
-            'text' => 'Theo dõi học tập',
-            'link' => '#',
-            'submenu' => [
-                ['icon' => 'square-poll-vertical', 'text' => 'Quản lý điểm', 'link' => '/modules/grades/list.php'],
-                ['icon' => 'calendar-check', 'text' => 'Điểm danh', 'link' => '/modules/attendance/list.php'],
-                ['icon' => 'chart-simple', 'text' => 'Báo cáo tổng hợp', 'link' => '/modules/reports/index.php'],
-            ]
-        ],
-        [
             'icon' => 'gears',
             'text' => 'Cấu hình hệ thống',
             'link' => '#',

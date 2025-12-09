@@ -61,44 +61,113 @@ try {
     $stmtApprovals->execute();
     $stats['pending_approvals'] = $stmtApprovals->fetchColumn();
 
+    // ⚠️ THÊM: Đếm yêu cầu sửa điểm CHỜ DUYỆT
+    $stmtScoreEdit = $db->prepare("
+        SELECT COUNT(*) as total FROM yeucausuadiem WHERE trangThai = 'CHO_DUYET'
+    ");
+    $stmtScoreEdit->execute();
+    $stats['score_edit_requests'] = $stmtScoreEdit->fetchColumn();
+
     // Nếu có bảng phieussuadiem, conduct, exam, assignment - cập nhật tương ứng
     // Tạm thời gán 0 hoặc truy vấn từ các bảng nếu chúng tồn tại
-    $stats['score_edit_requests'] = 0;
     $stats['conduct_approvals'] = 0;
     $stats['exam_approvals'] = 0;
     $stats['teaching_assignments'] = 0;
 
 } catch (Exception $e) {
     // Nếu có lỗi, giữ nguyên giá trị mặc định
+    error_log("Error loading dashboard stats: " . $e->getMessage());
 }
 
 // Yêu cầu chờ duyệt
 // Khởi tạo mảng chứa các mục chờ duyệt
 $pendingApprovals = [];
-// Thêm các yêu cầu từ "Chọn Tổ Hợp Môn" do admin tạo (trạng thái PENDING)
-require_once __DIR__ . '/../../models/bgh/chonToHopMonModel.php';
+
+// ⚠️ FIX: Load yêu cầu sửa điểm từ database
 try {
-    $chonModel = new chonToHopMonModel();
-    $pendingToHop = $chonModel->getDanhSachToHopMon('PENDING');
-    foreach ($pendingToHop as $t) {
+    $sqlYeuCauSuaDiem = "SELECT 
+                            yc.maYeuCau,
+                            yc.ngayYeuCau,
+                            yc.loaiDiem,
+                            yc.diemCu,
+                            yc.diemMoi,
+                            yc.lyDo,
+                            hs.hoTen as tenHocSinh,
+                            lh.tenLop,
+                            mh.tenMon,
+                            gv.hoTen as tenGiaoVien
+                        FROM yeucausuadiem yc
+                        INNER JOIN bangdiem bd ON yc.maBangDiem = bd.maBangDiem
+                        INNER JOIN hocsinh hs ON bd.maHS = hs.maHS
+                        INNER JOIN lophoc lh ON hs.maLop = lh.maLop
+                        INNER JOIN monhoc mh ON bd.maMonHoc = mh.maMonHoc
+                        INNER JOIN giaovienbomon gv ON yc.maGV = gv.maGV
+                        WHERE yc.trangThai = 'CHO_DUYET'
+                        ORDER BY yc.ngayYeuCau DESC
+                        LIMIT 10";
+    
+    $stmtYeuCau = $db->prepare($sqlYeuCauSuaDiem);
+    $stmtYeuCau->execute();
+    $yeuCauSuaDiem = $stmtYeuCau->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Thêm vào mảng pendingApprovals
+    foreach ($yeuCauSuaDiem as $yc) {
+        // Map tên loại điểm
+        $tenLoaiDiem = '';
+        if ($yc['loaiDiem'] == 'diemThuongXuyen') $tenLoaiDiem = 'TX';
+        elseif ($yc['loaiDiem'] == 'diemGiuaKy') $tenLoaiDiem = 'GK';
+        elseif ($yc['loaiDiem'] == 'diemCuoiKy') $tenLoaiDiem = 'CK';
+        
         $pendingApprovals[] = [
-            'type' => 'tohopmon',
-            'title' => 'Yêu cầu duyệt tổ hợp: ' . ($t['tenToHop'] ?? $t['maToHop']),
-            'submitter' => $t['nguoiTao'] ?? ($t['nguoiDuyet'] ?? 'Phòng Giáo Vụ'),
-            'date' => $t['ngayTao'] ?? date('Y-m-d'),
+            'type' => 'score_edit',
+            'title' => 'Sửa điểm ' . $tenLoaiDiem . ' - ' . $yc['tenMon'] . ' - ' . $yc['tenHocSinh'],
+            'submitter' => $yc['tenGiaoVien'],
+            'date' => date('d/m/Y H:i', strtotime($yc['ngayYeuCau'])),
             'priority' => 'high',
-            'maToHop' => $t['maToHop'] ?? null
+            'maYeuCau' => $yc['maYeuCau'],
+            'diemCu' => $yc['diemCu'],
+            'diemMoi' => $yc['diemMoi'],
+            'tenLop' => $yc['tenLop']
         ];
     }
+    
+    // DEBUG
+    error_log("=== Load yêu cầu sửa điểm ===");
+    error_log("Số yêu cầu sửa điểm: " . count($yeuCauSuaDiem));
+    
 } catch (Exception $e) {
-    // Nếu có lỗi kết nối DB, giữ nguyên các mục tĩnh
+    error_log("Error loading yeucausuadiem: " . $e->getMessage());
+}
+
+// ⚠️ FIX: Xử lý an toàn khi file model không tồn tại
+$modelPath = __DIR__ . '/../../models/bgh/chonToHopMonModel.php';
+if (file_exists($modelPath)) {
+    require_once $modelPath;
+    try {
+        $chonModel = new chonToHopMonModel();
+        $pendingToHop = $chonModel->getDanhSachToHopMon('PENDING');
+        foreach ($pendingToHop as $t) {
+            $pendingApprovals[] = [
+                'type' => 'tohopmon',
+                'title' => 'Yêu cầu duyệt tổ hợp: ' . ($t['tenToHop'] ?? $t['maToHop']),
+                'submitter' => $t['nguoiTao'] ?? ($t['nguoiDuyet'] ?? 'Phòng Giáo Vụ'),
+                'date' => $t['ngayTao'] ?? date('Y-m-d'),
+                'priority' => 'high',
+                'maToHop' => $t['maToHop'] ?? null
+            ];
+        }
+    } catch (Exception $e) {
+        error_log("Error loading chonToHopMonModel: " . $e->getMessage());
+    }
+} else {
+    error_log("Warning: chonToHopMonModel.php not found at $modelPath");
 }
 
 // Sắp xếp danh sách yêu cầu chờ duyệt theo ngày giảm dần (mới nhất lên đầu)
 usort($pendingApprovals, function($a, $b) {
     $dateA = strtotime($a['date'] ?? '1970-01-01');
     $dateB = strtotime($b['date'] ?? '1970-01-01');
-    return $dateB - $dateA; // Giảm dần: ngày mới nhất trước
+    return $dateB - $dateA;
 });
 
 // Thống kê theo khối
@@ -558,11 +627,11 @@ try {
                     <h5 class="card-title fw-bold">Sửa điểm</h5>
                     <p class="text-muted small">Duyệt đơn xin sửa điểm</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/bgh/score-edits/pending.php" class="btn btn-primary btn-sm">
+                        <a href="../public/index.php?action=bgh-duyet-sua-diem" class="btn btn-primary btn-sm">
                             <i class="fa-solid fa-clock me-1"></i>Chờ duyệt (<?php echo $stats['score_edit_requests']; ?>)
                         </a>
-                        <a href="/modules/bgh/score-edits/list.php" class="btn btn-outline-primary btn-sm">
-                            <i class="fa-solid fa-list me-1"></i>Lịch sử
+                        <a href="index.php?action=bgh-duyet-sua-diem-lich-su" class="btn btn-outline-primary btn-sm">
+                            <i class="fa-solid fa-history me-1"></i>Lịch sử
                         </a>
                     </div>
                 </div>
@@ -583,27 +652,6 @@ try {
                             <i class="fa-solid fa-clock me-1"></i>Chờ duyệt (<?php echo $stats['conduct_approvals']; ?>)
                         </a>
                         <a href="/modules/bgh/conduct/list.php" class="btn btn-outline-success btn-sm">
-                            <i class="fa-solid fa-list me-1"></i>Đã duyệt
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Duyệt đề thi -->
-        <div class="col-md-6 col-xl-2-4">
-            <div class="card feature-card h-100">
-                <div class="card-body text-center">
-                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                        <i class="fa-solid fa-file-lines"></i>
-                    </div>
-                    <h5 class="card-title fw-bold">Đề thi</h5>
-                    <p class="text-muted small">Duyệt đề thi, kiểm tra</p>
-                    <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/bgh/exams/pending.php" class="btn btn-danger btn-sm">
-                            <i class="fa-solid fa-clock me-1"></i>Chờ duyệt (<?php echo $stats['exam_approvals']; ?>)
-                        </a>
-                        <a href="/modules/bgh/exams/list.php" class="btn btn-outline-danger btn-sm">
                             <i class="fa-solid fa-list me-1"></i>Đã duyệt
                         </a>
                     </div>
@@ -657,50 +705,77 @@ try {
                         <i class="fa-solid fa-hourglass-half text-warning me-2"></i>
                         Yêu cầu chờ duyệt (<?php echo count($pendingApprovals); ?>)
                     </h5>
-                    <?php foreach ($pendingApprovals as $approval): ?>
-                    <div class="approval-item priority-<?php echo $approval['priority']; ?>">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div class="flex-grow-1">
-                                <div class="fw-bold mb-1"><?php echo htmlspecialchars($approval['title']); ?></div>
-                                <div class="small text-muted">
-                                    <i class="fa-solid fa-user me-1"></i><?php echo htmlspecialchars($approval['submitter']); ?>
-                                    <span class="mx-2">|</span>
-                                    <i class="fa-solid fa-calendar me-1"></i><?php echo $approval['date']; ?>
+                    <?php if (empty($pendingApprovals)): ?>
+                        <div class="text-center text-muted py-4">
+                            <i class="fa-solid fa-inbox fa-3x mb-3"></i>
+                            <p>Không có yêu cầu nào chờ duyệt</p>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($pendingApprovals as $approval): ?>
+                        <div class="approval-item priority-<?php echo $approval['priority']; ?>">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold mb-1"><?php echo htmlspecialchars($approval['title']); ?></div>
+                                    <div class="small text-muted">
+                                        <i class="fa-solid fa-user me-1"></i><?php echo htmlspecialchars($approval['submitter']); ?>
+                                        <span class="mx-2">|</span>
+                                        <i class="fa-solid fa-calendar me-1"></i><?php echo $approval['date']; ?>
+                                        
+                                        <!-- Hiển thị thêm info cho yêu cầu sửa điểm -->
+                                        <?php if ($approval['type'] === 'score_edit'): ?>
+                                            <br>
+                                            <span class="badge bg-light text-dark me-1">
+                                                <?php echo htmlspecialchars($approval['tenLop'] ?? ''); ?>
+                                            </span>
+                                            <span class="text-danger"><?php echo $approval['diemCu']; ?></span>
+                                            <i class="fa-solid fa-arrow-right mx-1"></i>
+                                            <span class="text-primary fw-bold"><?php echo $approval['diemMoi']; ?></span>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
+                                <span class="type-badge <?php echo $approval['type']; ?>">
+                                    <?php 
+                                        $typeNames = [
+                                            'score_edit' => 'Sửa điểm',
+                                            'conduct' => 'Hạnh kiểm',
+                                            'exam' => 'Đề thi',
+                                            'assignment' => 'Phân công',
+                                            'tohopmon' => 'Tổ hợp môn'
+                                        ];
+                                        echo $typeNames[$approval['type']];
+                                    ?>
+                                </span>
                             </div>
-                            <span class="type-badge <?php echo $approval['type']; ?>">
-                                <?php 
-                                    $typeNames = [
-                                        'score_edit' => 'Sửa điểm',
-                                        'conduct' => 'Hạnh kiểm',
-                                        'exam' => 'Đề thi',
-                                        'assignment' => 'Phân công',
-                                        'tohopmon' => 'Tổ hợp môn'
-                                    ];
-                                    echo $typeNames[$approval['type']];
-                                ?>
-                            </span>
+                            <div class="d-flex gap-2 mt-2">
+                                <?php if ($approval['type'] === 'score_edit'): ?>
+                                    <!-- Nút cho yêu cầu sửa điểm -->
+                                    <a href="index.php?action=bgh-duyet-sua-diem-chi-tiet&id=<?php echo urlencode($approval['maYeuCau']); ?>" 
+                                       class="btn btn-sm btn-primary flex-1">
+                                        <i class="fa-solid fa-eye me-1"></i>Chi tiết
+                                    </a>
+                                <?php elseif ($approval['type'] === 'tohopmon' && !empty($approval['maToHop'])): ?>
+                                    <!-- Nút cho tổ hợp môn -->
+                                    <a href="/modules/chonToHopMon/quanLyChonDetail.php?maToHop=<?php echo urlencode($approval['maToHop']); ?>" 
+                                       class="btn btn-sm btn-primary flex-1">
+                                        <i class="fa-solid fa-eye me-1"></i>Chi Tiết
+                                    </a>
+                                <?php else: ?>
+                                    <!-- Nút mặc định -->
+                                    <button class="btn btn-sm btn-success flex-1">
+                                        <i class="fa-solid fa-check me-1"></i>Duyệt
+                                    </button>
+                                    <button class="btn btn-sm btn-danger flex-1">
+                                        <i class="fa-solid fa-times me-1"></i>Từ chối
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </button>
+                                <?php endif; ?>
+                            </div>
                         </div>
-                        <div class="d-flex gap-2 mt-2">
-                            <?php if (isset($approval['type']) && $approval['type'] === 'tohopmon' && !empty($approval['maToHop'])): ?>
-                                <a href="/modules/chonToHopMon/quanLyChonDetail.php?maToHop=<?php echo urlencode($approval['maToHop']); ?>" class="btn btn-sm btn-primary flex-1">
-                                    <i class="fa-solid fa-eye me-1"></i>Chi Tiết
-                                </a>
-                            <?php else: ?>
-                                <button class="btn btn-sm btn-success flex-1">
-                                    <i class="fa-solid fa-check me-1"></i>Duyệt
-                                </button>
-                                <button class="btn btn-sm btn-danger flex-1">
-                                    <i class="fa-solid fa-times me-1"></i>Từ chối
-                                </button>
-                                <button class="btn btn-sm btn-outline-secondary">
-                                    <i class="fa-solid fa-eye"></i>
-                                </button>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                    <a href="/modules/bgh/approvals/allPending.php" class="btn btn-outline-primary w-100 mt-3">
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                    <a href="index.php?action=bgh-duyet-sua-diem" class="btn btn-outline-primary w-100 mt-3">
                         <i class="fa-solid fa-list me-2"></i>Xem tất cả
                     </a>
                 </div>

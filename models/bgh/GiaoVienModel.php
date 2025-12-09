@@ -4,7 +4,8 @@
  * Chức năng: CRUD giáo viên bộ môn
  */
 
-require_once __DIR__ . '/../config/database.php';
+// ⚠️ FIX: Sửa đường dẫn - Phải lên 2 cấp (models/bgh/ → Learning_System/)
+require_once __DIR__ . '/../../config/database.php';
 
 class GiaoVienModel {
     private $db;

@@ -82,7 +82,6 @@ require_once __DIR__ . '/../../layouts/header.php';
                                placeholder="VD: Nguyen Van A">
                     </div>
                 </div>
-            <?php endif; ?>
 
             <!-- Form -->
             <div class="card">
