@@ -271,6 +271,65 @@ if (isset($_GET['action'])) {
         $controller->index();
         break;
 
+    // ==================== Phụ huynh - Đơn xin nghỉ ====================
+    case 'ph-leave-create':
+        require_once __DIR__ . '/../controllers/ph/LeaveRequestController.php';
+        $controller = new LeaveRequestController();
+        $controller->create();
+        break;
+
+    case 'ph-leave-store':
+        require_once __DIR__ . '/../controllers/ph/LeaveRequestController.php';
+        $controller = new LeaveRequestController();
+        $controller->store();
+        break;
+
+    case 'ph-leave-list':
+        require_once __DIR__ . '/../controllers/ph/LeaveRequestController.php';
+        $controller = new LeaveRequestController();
+        $controller->index();
+        break;
+
+    case 'ph-leave-cancel':
+        require_once __DIR__ . '/../controllers/ph/LeaveRequestController.php';
+        $controller = new LeaveRequestController();
+        $controller->cancel();
+        break;
+
+    // ==================== GVCN - Dashboard ====================
+
+
+    // ==================== GVCN - Duyệt đơn xin nghỉ ====================
+    case 'gvcn-duyet-don-pending':
+        require_once __DIR__ . '/../controllers/gvcn/DuyetDonXinNghiController.php';
+        $controller = new DuyetDonXinNghiController();
+        $controller->pending();
+        break;
+
+    case 'gvcn-duyet-don-list':
+        require_once __DIR__ . '/../controllers/gvcn/DuyetDonXinNghiController.php';
+        $controller = new DuyetDonXinNghiController();
+        $controller->list();
+        break;
+
+    case 'gvcn-duyet-don-approve':
+        require_once __DIR__ . '/../controllers/gvcn/DuyetDonXinNghiController.php';
+        $controller = new DuyetDonXinNghiController();
+        $controller->approve();
+        break;
+
+    case 'gvcn-duyet-don-reject':
+        require_once __DIR__ . '/../controllers/gvcn/DuyetDonXinNghiController.php';
+        $controller = new DuyetDonXinNghiController();
+        $controller->reject();
+        break;
+
+    case 'gvcn-duyet-don-detail':
+        require_once __DIR__ . '/../controllers/gvcn/DuyetDonXinNghiController.php';
+        $controller = new DuyetDonXinNghiController();
+        $controller->detail();
+        break;
+
     default:
         http_response_code(404);
         require_once __DIR__ . '/../views/errors/404.php';

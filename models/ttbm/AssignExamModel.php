@@ -179,13 +179,13 @@ class AssignExamModel {
     public function getPhanCongTheoGiaoVien(string $maGV): array {
         $sql = "
             SELECT 
-                khoi,
                 hocKy,
                 kyThi,
                 soLuongDe,
                 thoiHan,
-                ghiChu
-            FROM BangPhanCongRaDe
+                ghiChu,
+                maGV
+            FROM bangphancongrade
             WHERE maGV = :maGV
             ORDER BY thoiHan ASC
         ";

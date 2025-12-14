@@ -148,10 +148,66 @@ if (!empty($teacherId)) {
     ]);
     $stats['pending_scores'] = (int) ($stmt->fetchColumn() ?? 0);
 
-    // 3.4 Thông báo – CSDL mẫu chưa có bảng thongbao → tạm để 0
+    // 3.4 Đếm số đơn chờ duyệt THỰC TẾ (chỉ cho GVCN)
+    if ($currentRole === 'gvcn') {
+        try {
+            // Lấy mã lớp chủ nhiệm
+            $stmtLopCN = $conn->prepare("
+                SELECT lop 
+                FROM giaovienchunhiem 
+                WHERE maGV = :maGV
+                LIMIT 1
+            ");
+            $stmtLopCN->execute(['maGV' => $teacherId]);
+            $lopChuNhiem = $stmtLopCN->fetch(PDO::FETCH_ASSOC);
+            
+            if ($lopChuNhiem) {
+                $maLopCN = $lopChuNhiem['lop'];
+                
+                // Đếm đơn chờ duyệt
+                $stmtDon = $conn->prepare("
+                    SELECT COUNT(*) as total
+                    FROM donxinphep dxp
+                    INNER JOIN hocsinh hs ON dxp.maHS = hs.maHS
+                    WHERE hs.maLop = :maLop 
+                      AND dxp.trangThai = 'Cho duyet'
+                ");
+                $stmtDon->execute(['maLop' => $maLopCN]);
+                $stats['pending_requests'] = (int) ($stmtDon->fetchColumn() ?? 0);
+                
+                // Lấy danh sách đơn chờ duyệt THỰC TẾ
+                $stmtDanhSach = $conn->prepare("
+                    SELECT 
+                        dxp.maDonXinPhep,
+                        hs.hoTen as student,
+                        dxp.lyDo as reason,
+                        DATE_FORMAT(dxp.ngay, '%Y-%m-%d') as date,
+                        'pending' as status
+                    FROM donxinphep dxp
+                    INNER JOIN hocsinh hs ON dxp.maHS = hs.maHS
+                    WHERE hs.maLop = :maLop 
+                      AND dxp.trangThai = 'Cho duyet'
+                    ORDER BY dxp.ngay DESC
+                    LIMIT 5
+                ");
+                $stmtDanhSach->execute(['maLop' => $maLopCN]);
+                $leaveRequests = $stmtDanhSach->fetchAll(PDO::FETCH_ASSOC);
+            } else {
+                $leaveRequests = [];
+            }
+        } catch (Exception $e) {
+            error_log("Error load leave requests: " . $e->getMessage());
+            $leaveRequests = [];
+        }
+    } else {
+        $leaveRequests = [];
+    }
+
+    // 3.5 Thông báo – CSDL mẫu chưa có bảng thongbao → tạm để 0
     $notifications = [];
 } else {
     $notifications = [];
+    $leaveRequests = [];
 }
 
 // Lịch dạy & đơn xin nghỉ mock
@@ -579,10 +635,11 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
                     <h5 class="card-title fw-bold">Duyệt đơn</h5>
                     <p class="text-muted small">Đơn xin nghỉ học sinh</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/teachers/requests/pending.php" class="btn btn-info btn-sm">
+                        <!-- ⚠️ FIX: Sửa đường link sang action đúng -->
+                        <a href="/public/index.php?action=gvcn-duyet-don-pending" class="btn btn-info btn-sm">
                             <i class="fa-solid fa-clock me-1"></i>Chờ duyệt (<?php echo $stats['pending_requests']; ?>)
                         </a>
-                        <a href="/modules/teachers/requests/list.php" class="btn btn-outline-info btn-sm">
+                        <a href="/public/index.php?action=gvcn-duyet-don-list" class="btn btn-outline-info btn-sm">
                             <i class="fa-solid fa-list me-1"></i>Tất cả
                         </a>
                     </div>
@@ -700,44 +757,79 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
                         <div class="request-item">
                             <div class="fw-bold"><?php echo htmlspecialchars($request['student']); ?></div>
                             <div class="small text-muted mb-2">
-                                <i class="fa-solid fa-calendar me-1"></i><?php echo $request['date']; ?>
+                                <i class="fa-solid fa-calendar me-1"></i><?php echo date('d/m/Y', strtotime($request['date'])); ?>
                             </div>
                             <div class="small mb-2">
                                 Lý do: <?php echo htmlspecialchars($request['reason']); ?>
                             </div>
                             <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-success flex-1">
-                                    <i class="fa-solid fa-check me-1"></i>Duyệt
-                                </button>
-                                <button class="btn btn-sm btn-danger flex-1">
+                                <!-- ⚠️ FIX: Thêm form xử lý nhanh -->
+                                <form action="/public/index.php?action=gvcn-duyet-don-approve" method="POST" style="flex: 1;" onsubmit="return confirm('Xác nhận phê duyệt đơn này?')">
+                                    <input type="hidden" name="maDonXinPhep" value="<?php echo htmlspecialchars($request['maDonXinPhep'] ?? ''); ?>">
+                                    <button type="submit" class="btn btn-sm btn-success w-100">
+                                        <i class="fa-solid fa-check me-1"></i>Duyệt
+                                    </button>
+                                </form>
+                                
+                                <button type="button" 
+                                        class="btn btn-sm btn-danger"
+                                        style="flex: 1;"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#rejectModalQuick<?php echo htmlspecialchars($request['maDonXinPhep'] ?? ''); ?>">
                                     <i class="fa-solid fa-times me-1"></i>Từ chối
                                 </button>
                             </div>
                         </div>
-                        <?php endforeach; ?>
-                        <a href="/modules/teachers/requests/pending.php" class="btn btn-outline-danger w-100 mt-3">
-                            <i class="fa-solid fa-list me-2"></i>Xem tất cả
-                        </a>
-                    <?php else: ?>
-                        <h5 class="card-title fw-bold mb-4">
-                            <i class="fa-solid fa-bell text-info me-2"></i>
-                            Thông báo mới
-                            <?php if ($stats['unread_notifications'] > 0): ?>
-                            <span class="badge bg-danger rounded-pill"><?php echo $stats['unread_notifications']; ?></span>
-                            <?php endif; ?>
-                        </h5>
-                        <?php foreach ($notifications as $notif): ?>
-                        <div class="notification-item <?php echo $notif['unread'] ? 'unread' : ''; ?>">
-                            <div class="fw-semibold mb-1"><?php echo htmlspecialchars($notif['title']); ?></div>
-                            <div class="small text-muted">
-                                <span class="badge bg-primary me-2"><?php echo htmlspecialchars($notif['type']); ?></span>
-                                <i class="fa-solid fa-clock me-1"></i><?php echo $notif['date']; ?>
+                        
+                        <!-- Modal từ chối nhanh -->
+                        <div class="modal fade" id="rejectModalQuick<?php echo htmlspecialchars($request['maDonXinPhep'] ?? ''); ?>" tabindex="-1">
+                            <div class="modal-dialog modal-sm">
+                                <div class="modal-content">
+                                    <form action="/public/index.php?action=gvcn-duyet-don-reject" method="POST">
+                                        <input type="hidden" name="maDonXinPhep" value="<?php echo htmlspecialchars($request['maDonXinPhep'] ?? ''); ?>">
+                                        
+                                        <div class="modal-header bg-danger text-white">
+                                            <h6 class="modal-title">Từ chối đơn</h6>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <label class="form-label small">Lý do từ chối <span class="text-danger">*</span></label>
+                                            <textarea class="form-control form-control-sm" 
+                                                      name="lyDoTuChoi" 
+                                                      rows="3" 
+                                                      placeholder="Nhập lý do..."
+                                                      required></textarea>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                <i class="fa-solid fa-ban me-1"></i>Từ chối
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
+                        
                         <?php endforeach; ?>
-                        <a href="/modules/teachers/notifications.php" class="btn btn-outline-info w-100 mt-3">
-                            <i class="fa-solid fa-envelope-open me-2"></i>Xem tất cả
+                        <a href="/public/index.php?action=gvcn-duyet-don-pending" class="btn btn-outline-danger w-100 mt-3">
+                            <i class="fa-solid fa-list me-2"></i>Xem tất cả
                         </a>
+                    <?php elseif ($currentRole === 'gvcn'): ?>
+                        <!-- Không có đơn chờ duyệt -->
+                        <h5 class="card-title fw-bold mb-4">
+                            <i class="fa-solid fa-file-lines text-success me-2"></i>
+                            Đơn xin nghỉ
+                        </h5>
+                        <div class="text-center text-muted py-4">
+                            <i class="fa-solid fa-check-double fa-3x mb-3 d-block"></i>
+                            <p>Không có đơn chờ duyệt</p>
+                        </div>
+                        <a href="/public/index.php?action=gvcn-duyet-don-list" class="btn btn-outline-primary w-100 mt-3">
+                            <i class="fa-solid fa-list me-2"></i>Xem tất cả đơn
+                        </a>
+                    <?php else: ?>
+                        <!-- ...existing code for notifications... -->
                     <?php endif; ?>
                 </div>
             </div>
@@ -852,12 +944,12 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
 
         <div class="col-md-4">
             <div class="card feature-card">
-                <div class="card-body">
+                <div class="card-body"></div>
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-book text-success me-2"></i>Tài liệu giảng dạy
                     </h6>
                     <p class="text-muted small mb-3">Quản lý tài liệu, bài giảng</p>
-                    <a href="/modules/teachers/materials.php" class="btn btn-outline-success w-100">
+                    <a href="/modules/teachers/materials.php" class="btn btn-outline-success w-100"></a>
                         <i class="fa-solid fa-folder me-2"></i>Tài liệu
                     </a>
                 </div>

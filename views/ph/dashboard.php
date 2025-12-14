@@ -618,10 +618,10 @@ $violations = [];
                     <h5 class="card-title fw-bold">Đơn xin nghỉ</h5>
                     <p class="text-muted small">Gửi đơn, upload minh chứng</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/parents/leave-requests/create.php?maHS=<?php echo htmlspecialchars($childInfo['student_id']); ?>" class="btn btn-danger btn-sm">
+                        <a href="/public/index.php?action=ph-leave-create&maHS=<?php echo htmlspecialchars($childInfo['student_id']); ?>" class="btn btn-danger btn-sm">
                             <i class="fa-solid fa-plus me-1"></i>Tạo đơn mới
                         </a>
-                        <a href="/modules/parents/leave-requests/list.php?maHS=<?php echo htmlspecialchars($childInfo['student_id']); ?>" class="btn btn-outline-danger btn-sm">
+                        <a href="/public/index.php?action=ph-leave-list&maHS=<?php echo htmlspecialchars($childInfo['student_id']); ?>" class="btn btn-outline-danger btn-sm">
                             <i class="fa-solid fa-list me-1"></i>Lịch sử đơn
                         </a>
                     </div>
