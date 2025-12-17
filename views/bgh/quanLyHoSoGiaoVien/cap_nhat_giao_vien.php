@@ -14,15 +14,22 @@ require_once __DIR__ . '/../../layouts/header.php';
                     <i class="fa-solid fa-pen-to-square text-warning me-2"></i>
                     Cập nhật giáo viên
                 </h2>
-                <a href="/public/index.php?page=bgh-quan-ly-giao-vien" class="btn btn-outline-secondary">
+                <a href="/public/index.php?action=bgh-giao-vien-list" class="btn btn-outline-secondary">
                     <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
                 </a>
             </div>
 
             <!-- Flash Messages -->
-            <?php if (isset($message)): ?>
-                <div class="alert alert-<?php echo $messageType; ?> alert-dismissible fade show">
-                    <?php echo htmlspecialchars($message); ?>
+            <?php if (isset($_SESSION['flash_success'])): ?>
+                <div class="alert alert-success alert-dismissible fade show">
+                    <?php echo htmlspecialchars($_SESSION['flash_success']); unset($_SESSION['flash_success']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (isset($_SESSION['flash_error'])): ?>
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <?php echo htmlspecialchars($_SESSION['flash_error']); unset($_SESSION['flash_error']); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
@@ -30,7 +37,7 @@ require_once __DIR__ . '/../../layouts/header.php';
             <!-- Form -->
             <div class="card">
                 <div class="card-body">
-                    <form method="POST" action="/public/index.php?action=bgh-sua-giao-vien&maGV=<?php echo urlencode($giaoVien['maGV']); ?>">
+                    <form method="POST" action="/public/index.php?action=bgh-giao-vien-edit&maGV=<?php echo urlencode($giaoVien['maGV']); ?>">
                         <!-- Mã giáo viên (chỉ hiển thị) -->
                         <div class="alert alert-info mb-3">
                             <strong>Mã giáo viên:</strong> <?php echo htmlspecialchars($giaoVien['maGV']); ?>
@@ -126,9 +133,9 @@ require_once __DIR__ . '/../../layouts/header.php';
                             </div>
                         </div>
 
-                        <!-- Buttons -->
+                        <!-- Buttons - BỎ NÚT XÓA -->
                         <div class="d-flex justify-content-end gap-2 mt-4">
-                            <a href="/public/index.php?page=bgh-quan-ly-giao-vien" class="btn btn-secondary">
+                            <a href="/public/index.php?action=bgh-giao-vien-list" class="btn btn-secondary">
                                 <i class="fa-solid fa-xmark me-2"></i>Hủy
                             </a>
                             <button type="submit" class="btn btn-warning text-white">

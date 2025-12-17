@@ -462,6 +462,39 @@ if (isset($_GET['action'])) {
         $controller->danhSachTheoKhoiVaLop();
         break;
 
+    // ===== QUẢN LÝ GIÁO VIÊN (BGH) =====
+    case 'bgh-giao-vien-list':
+        require_login();
+        require_role(['bgh']);
+        require_once __DIR__ . '/../controllers/bgh/QuanLyGiaoVienController.php';
+        $controller = new QuanLyGiaoVienController();
+        $controller->index();
+        break;
+
+    case 'bgh-giao-vien-create':
+        require_login();
+        require_role(['bgh']);
+        require_once __DIR__ . '/../controllers/bgh/QuanLyGiaoVienController.php';
+        $controller = new QuanLyGiaoVienController();
+        $controller->create();
+        break;
+
+    case 'bgh-giao-vien-edit':
+        require_login();
+        require_role(['bgh']);
+        require_once __DIR__ . '/../controllers/bgh/QuanLyGiaoVienController.php';
+        $controller = new QuanLyGiaoVienController();
+        $controller->edit();
+        break;
+
+    case 'bgh-giao-vien-view':
+        require_login();
+        require_role(['bgh']);
+        require_once __DIR__ . '/../controllers/bgh/QuanLyGiaoVienController.php';
+        $controller = new QuanLyGiaoVienController();
+        $controller->view();
+        break;
+
     default:
         http_response_code(404);
         require_once __DIR__ . '/../views/errors/404.php';

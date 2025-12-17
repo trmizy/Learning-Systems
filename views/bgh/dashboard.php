@@ -687,7 +687,7 @@ try {
                     <h5 class="card-title fw-bold">Hồ sơ giáo viên</h5>
                     <p class="text-muted small">Quản lý hồ sơ giáo viên</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/public/index.php?action=bgh-quan-ly-giao-vien" class="btn btn-primary btn-sm">
+                        <a href="/public/index.php?page=bgh-quan-ly-giao-vien" class="btn btn-primary btn-sm">
                             <i class="fa-solid fa-user-tie me-1"></i>Quản lý
                         </a>
                     </div>

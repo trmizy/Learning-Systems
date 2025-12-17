@@ -38,6 +38,11 @@ $MENU_ITEMS = [
         ['icon' => 'fa-user-graduate', 'text' => 'Học sinh', 'link' => '/modules/students/list.php'],
         ['icon' => 'fa-people-roof', 'text' => 'Lớp học', 'link' => '/modules/classes/list.php'],
         ['icon' => 'fa-calendar-check', 'text' => 'Điểm danh', 'link' => '/modules/attendance/list.php'],
+        [
+            'text' => 'Quản lý giáo viên',
+            'link' => '/public/index.php?action=bgh-giao-vien-list',
+            'icon' => 'fa-chalkboard-user'
+        ],
     ],
     'gvcn' => [
         ['icon' => 'fa-user-graduate', 'text' => 'Lớp chủ nhiệm', 'link' => '/modules/homeroom/index.php'],

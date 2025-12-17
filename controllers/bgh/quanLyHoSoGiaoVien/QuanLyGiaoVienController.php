@@ -1,9 +1,4 @@
 <?php
-/**
- * Controller: Quản lý hồ sơ giáo viên
- * Path: controllers/bgh/quanLyHoSoGiaoVien/QuanLyGiaoVienController.php
- * Chức năng: Xem, Tạo, Sửa, Xóa hồ sơ giáo viên
- */
 
 require_once __DIR__ . '/../../../middlewares/AuthGuard.php';
 require_once __DIR__ . '/../../../models/bgh/GiaoVienModel.php';
@@ -110,7 +105,7 @@ try {
 
                 $giaoVienModel->capNhatGiaoVien($maGV, $data);
                 $_SESSION['flash_success'] = 'Cập nhật thông tin giáo viên thành công';
-                header('Location: /public/index.php?action=bgh-quan-ly-giao-vien');
+                header('Location: /public/index.php?page=bgh-quan-ly-giao-vien');
                 exit;
             }
 

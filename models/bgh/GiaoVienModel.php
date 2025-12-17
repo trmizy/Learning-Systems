@@ -260,36 +260,6 @@ class GiaoVienModel {
     }
 
     /**
-     * Xóa giáo viên (kiểm tra ràng buộc trước)
-     * @param string $maGV
-     * @return bool
-     * @throws Exception
-     */
-    public function xoaGiaoVien($maGV) {
-        // Kiểm tra giáo viên có đang làm GVCN không
-        $stmtGVCN = $this->db->prepare("SELECT COUNT(*) FROM giaovienchunhiem WHERE maGV = ?");
-        $stmtGVCN->execute([$maGV]);
-        if ($stmtGVCN->fetchColumn() > 0) {
-            throw new Exception("Không thể xóa. Giáo viên đang làm chủ nhiệm lớp");
-        }
-
-        // Kiểm tra giáo viên có phân công giảng dạy không
-        $stmtPC = $this->db->prepare("SELECT COUNT(*) FROM phanconggiangday WHERE maGV = ?");
-        $stmtPC->execute([$maGV]);
-        if ($stmtPC->fetchColumn() > 0) {
-            throw new Exception("Không thể xóa. Giáo viên đang có phân công giảng dạy");
-        }
-
-        try {
-            $stmt = $this->db->prepare("DELETE FROM giaovienbomon WHERE maGV = ?");
-            return $stmt->execute([$maGV]);
-        } catch (PDOException $e) {
-            error_log("Lỗi xóa giáo viên: " . $e->getMessage());
-            throw new Exception("Không thể xóa giáo viên");
-        }
-    }
-
-    /**
      * Validate dữ liệu giáo viên
      * @param array $data
      * @param string|null $maGVHienTai
