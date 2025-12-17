@@ -45,7 +45,7 @@ require_once __DIR__ . '/../../layouts/header.php';
             </h2>
             <p class="text-muted mb-0">Xem, thêm, sửa, xóa thông tin giáo viên</p>
         </div>
-        <a href="/public/index.php?page=bgh-quan-ly-giao-vien&action=create" class="btn btn-primary">
+        <a href="/public/index.php?action=bgh-tao-giao-vien" class="btn btn-primary">
             <i class="fa-solid fa-plus me-2"></i>Thêm giáo viên mới
         </a>
     </div>
@@ -121,7 +121,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                                         </span>
                                     </td>
                                     <td class="text-center">
-                                        <a href="/public/index.php?page=bgh-quan-ly-giao-vien&action=edit&maGV=<?php echo urlencode($gv['maGV']); ?>" 
+                                        <a href="/public/index.php?action=bgh-sua-giao-vien&maGV=<?php echo urlencode($gv['maGV']); ?>" 
                                            class="btn btn-sm btn-warning" title="Sửa">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </a>
@@ -167,7 +167,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                 </p>
             </div>
             <div class="modal-footer">
-                <form method="POST" action="/public/index.php?page=bgh-quan-ly-giao-vien&action=delete">
+                <form method="POST" action="/public/index.php?action=bgh-xoa-giao-vien">
                     <input type="hidden" name="maGV" id="deleteMaGV">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
                     <button type="submit" class="btn btn-danger">

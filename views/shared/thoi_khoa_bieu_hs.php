@@ -5,6 +5,39 @@ require_once __DIR__ . '/../layouts/header.php';
 
 <link rel="stylesheet" href="/assets/css/assign_exam.css">
 
+<style>
+    /* ...existing code... */
+    
+    /* MỚI: Style buổi chiều */
+    .schedule-cell.afternoon {
+        background: linear-gradient(135deg, rgba(245, 166, 35, 0.1) 0%, rgba(248, 196, 113, 0.05) 100%);
+        border-left-color: #f5a623;
+    }
+    
+    .period-label.afternoon {
+        background: #f5a623;
+    }
+    
+    .session-divider {
+        background: linear-gradient(90deg, transparent, #e9ecef, transparent);
+        height: 8px;
+    }
+    
+    .session-badge {
+        background: white;
+        color: #667eea;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        display: inline-block;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .session-badge.afternoon {
+        color: #f5a623;
+    }
+</style>
+
 <div class="assign-container">
     <!-- Header -->
     <div class="assign-header">
@@ -120,41 +153,88 @@ require_once __DIR__ . '/../layouts/header.php';
                 </div>
             <?php else: ?>
                 <div class="table-responsive">
-                    <table class="table table-modern mb-0" style="min-width: 800px;">
+                    <table class="table schedule-table mb-0">
                         <thead>
                             <tr>
-                                <th style="width: 8%; vertical-align: middle;">Tiết</th>
+                                <th style="width: 80px;">Tiết</th>
                                 <?php foreach ($daysOfWeek as $day): ?>
-                                    <th style="width: 13%;">
-                                        <div><?= $day['name'] ?></div>
-                                        <small class="fw-normal"><?= $day['date'] ?></small>
-                                    </th>
+                                <th>
+                                    <?php echo $day['name']; ?><br>
+                                    <small><?php echo $day['date']; ?></small>
+                                </th>
                                 <?php endforeach; ?>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php for ($tiet = 1; $tiet <= 10; $tiet++): ?>
-                                <tr>
-                                    <td class="fw-bold text-center">Tiết <?= $tiet ?></td>
-                                    <?php for ($ngay = 1; $ngay <= 7; $ngay++): 
-                                        $tietHoc = $tkbGrid[$ngay][$tiet] ?? null;
+                            <!-- BUỔI SÁNG: Tiết 1-5 -->
+                            <tr class="table-light">
+                                <td colspan="8" class="text-center py-2">
+                                    <span class="session-badge">
+                                        <i class="fa-solid fa-sun me-2"></i>BUỔI SÁNG
+                                    </span>
+                                </td>
+                            </tr>
+                            <?php for ($tiet = 1; $tiet <= 5; $tiet++): ?>
+                            <tr>
+                                <td class="period-label">Tiết <?php echo $tiet; ?></td>
+                                <?php for ($ngay = 1; $ngay <= 7; $ngay++): ?>
+                                <td>
+                                    <?php if (isset($tkbGrid[$ngay][$tiet])): 
+                                        $cell = $tkbGrid[$ngay][$tiet];
                                     ?>
-                                        <td style="height: 60px; vertical-align: middle;">
-                                            <?php if ($tietHoc): ?>
-                                                <div class="p-2 bg-light rounded">
-                                                    <div class="fw-bold text-primary" style="font-size: 14px;">
-                                                        <?= htmlspecialchars($tietHoc['tenMon']) ?>
-                                                    </div>
-                                                    <small class="text-muted d-block" style="font-size: 11px;">
-                                                        📍 <?= htmlspecialchars($tietHoc['tenPhong']) ?>
-                                                    </small>
-                                                </div>
-                                            <?php else: ?>
-                                                <div class="text-center text-muted">-</div>
-                                            <?php endif; ?>
-                                        </td>
-                                    <?php endfor; ?>
-                                </tr>
+                                    <div class="schedule-cell">
+                                        <div class="fw-bold text-primary mb-1">
+                                            <?php echo htmlspecialchars($cell['tenMon']); ?>
+                                        </div>
+                                        <?php if (!empty($cell['tenPhong'])): ?>
+                                        <div class="small text-muted">
+                                            <i class="fa-solid fa-door-open me-1"></i>
+                                            <?php echo htmlspecialchars($cell['tenPhong']); ?>
+                                        </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php endif; ?>
+                                </td>
+                                <?php endfor; ?>
+                            </tr>
+                            <?php endfor; ?>
+
+                            <!-- PHÂN CÁCH -->
+                            <tr>
+                                <td colspan="8" class="session-divider"></td>
+                            </tr>
+
+                            <!-- BUỔI CHIỀU: Tiết 6-10 -->
+                            <tr class="table-light">
+                                <td colspan="8" class="text-center py-2">
+                                    <span class="session-badge afternoon">
+                                        <i class="fa-solid fa-cloud-sun me-2"></i>BUỔI CHIỀU
+                                    </span>
+                                </td>
+                            </tr>
+                            <?php for ($tiet = 6; $tiet <= 10; $tiet++): ?>
+                            <tr>
+                                <td class="period-label afternoon">Tiết <?php echo $tiet; ?></td>
+                                <?php for ($ngay = 1; $ngay <= 7; $ngay++): ?>
+                                <td>
+                                    <?php if (isset($tkbGrid[$ngay][$tiet])): 
+                                        $cell = $tkbGrid[$ngay][$tiet];
+                                    ?>
+                                    <div class="schedule-cell afternoon">
+                                        <div class="fw-bold mb-1" style="color: #f5a623;">
+                                            <?php echo htmlspecialchars($cell['tenMon']); ?>
+                                        </div>
+                                        <?php if (!empty($cell['tenPhong'])): ?>
+                                        <div class="small text-muted">
+                                            <i class="fa-solid fa-door-open me-1"></i>
+                                            <?php echo htmlspecialchars($cell['tenPhong']); ?>
+                                        </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php endif; ?>
+                                </td>
+                                <?php endfor; ?>
+                            </tr>
                             <?php endfor; ?>
                         </tbody>
                     </table>

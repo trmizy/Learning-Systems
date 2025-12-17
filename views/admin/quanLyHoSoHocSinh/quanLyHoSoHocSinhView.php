@@ -20,7 +20,7 @@ $q_khoi = $q_khoi ?? trim($_GET['khoi'] ?? '');
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="mb-0">Quản lý hồ sơ học sinh</h3>
         <div>
-            <a href="/modules/quanLyHoSoHocSinh/create.php" class="btn btn-primary btn-sm">
+            <a href="/public/index.php?action=admin-them-hoc-sinh" class="btn btn-primary btn-sm">
                 <i class="fa-solid fa-plus me-1"></i> Thêm học sinh
             </a>
         </div>
@@ -31,7 +31,8 @@ $q_khoi = $q_khoi ?? trim($_GET['khoi'] ?? '');
     <?php endif; ?>
 
     <!-- Form tìm kiếm -->
-    <form method="get" class="row g-2 mb-3">
+    <form method="get" action="/public/index.php" class="row g-2 mb-3">
+        <input type="hidden" name="action" value="admin-quan-ly-hoc-sinh" />
         <input type="hidden" name="search" value="1" />
         <div class="col-md-3">
             <input type="text" name="maHS" class="form-control" placeholder="Mã học sinh" value="<?php echo htmlspecialchars($q_maHS); ?>" />
@@ -85,8 +86,8 @@ $q_khoi = $q_khoi ?? trim($_GET['khoi'] ?? '');
                             <td><?php echo is_numeric($s['diemTrungBinhMon']) ? number_format($s['diemTrungBinhMon'],2) : '-'; ?></td>
                             <td style="max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?php echo htmlspecialchars($s['phuHuynh_info'] ?? '-'); ?></td>
                             <td>
-                                <a href="/modules/quanLyHoSoHocSinh/view.php?maHS=<?php echo urlencode($s['maHS']); ?>" class="btn btn-sm btn-outline-primary">Xem</a>
-                                <a href="/modules/quanLyHoSoHocSinh/edit.php?maHS=<?php echo urlencode($s['maHS']); ?>" class="btn btn-sm btn-outline-secondary">Sửa</a>
+                                <a href="/public/index.php?action=admin-xem-hs&maHS=<?php echo urlencode($s['maHS']); ?>" class="btn btn-sm btn-outline-primary">Xem</a>
+                                <a href="/public/index.php?action=admin-sua-hs&maHS=<?php echo urlencode($s['maHS']); ?>" class="btn btn-sm btn-outline-secondary">Sửa</a>
                             </td>
                         </tr>
                     <?php endforeach; ?>

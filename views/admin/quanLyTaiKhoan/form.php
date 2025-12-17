@@ -25,7 +25,7 @@ if ($action === 'edit' && isset($_GET['maTaiKhoan'])) {
     if (!$taiKhoan) {
         $_SESSION['message'] = 'Không tìm thấy tài khoản';
         $_SESSION['messageType'] = 'danger';
-        header('Location: /modules/admin/quanLyTaiKhoan.php?action=list');
+        header('Location: /models/admin/quanLyTaiKhoan.php?action=list');
         exit;
     }
 }
@@ -44,7 +44,7 @@ $danhSachTrangThai = $controller->getDanhSachTrangThai();
             <h2><?php echo $isEdit ? '<i class="fas fa-edit"></i> Chỉnh Sửa Tài Khoản' : '<i class="fas fa-plus"></i> Tạo Tài Khoản Mới'; ?></h2>
         </div>
         <div class="col-md-6 text-end">
-            <a href="/modules/admin/quanLyTaiKhoan.php?action=list" class="btn btn-secondary">
+            <a href="/models/admin/quanLyTaiKhoan.php?action=list" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Quay Lại
             </a>
         </div>
@@ -138,7 +138,7 @@ $danhSachTrangThai = $controller->getDanhSachTrangThai();
                         </div>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="/modules/admin/quanLyTaiKhoan.php?action=list" class="btn btn-secondary">Hủy</a>
+                            <a href="/models/admin/quanLyTaiKhoan.php?action=list" class="btn btn-secondary">Hủy</a>
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save"></i> <?php echo $isEdit ? 'Cập Nhật' : 'Tạo Tài Khoản'; ?>
                             </button>

@@ -1,8 +1,4 @@
 <?php
-// ⚠️ QUAN TRỌNG: Thêm header để tạo trang độc lập
-require_once __DIR__ . '/../../middlewares/AuthGuard.php';
-require_role(['gvbm', 'gvcn']);
-
 // Tiêu đề trang
 $pageTitle = 'Phân công ra đề - THPT';
 require_once __DIR__ . '/../layouts/header.php';
@@ -235,6 +231,5 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 </style>
 
 <?php
-// ⚠️ QUAN TRỌNG: Thêm footer
 require_once __DIR__ . '/../layouts/footer.php';
 ?>

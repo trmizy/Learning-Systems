@@ -1,82 +1,41 @@
 <?php
-declare(strict_types=1);
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
-require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../models/gvbm/ViewAssignModel.php';
 
 class ViewAssignController {
-    private $db;
+    private $model;
 
     public function __construct() {
-        $this->db = Database::getInstance()->getConnection();
+        $this->model = new ViewAssignModel();
     }
 
+    /**
+     * Hiển thị danh sách phân công của giáo viên - TRANG ĐỘC LẬP
+     */
     public function index() {
-        // ✅ CHO PHÉP CẢ GVBM VÀ GVCN
         require_role(['gvbm', 'gvcn']);
 
         $user = current_user();
         if (!$user) {
-            $_SESSION['flash_error'] = 'Không xác định được giáo viên đang đăng nhập.';
-            header('Location: /public/index.php');
+            $_SESSION['flash_error'] = 'Phiên đăng nhập hết hạn.';
+            header('Location: /public/index.php?action=login');
             exit;
         }
 
-        // Lấy mã giáo viên từ username
-        $maGV = $this->getMaGiaoVienByUsername($user['username']);
-
+        // Lấy mã GV từ Model
+        $maGV = $this->model->getMaGVByUsername($user['username']);
+        
         if (!$maGV) {
             $_SESSION['flash_error'] = 'Không tìm thấy thông tin giáo viên.';
-            header('Location: /public/index.php');
+            header('Location: /public/index.php?action=gvbm-dashboard');
             exit;
         }
 
-        // Lấy danh sách phân công
-        $phanCong = $this->getDanhSachPhanCong($maGV);
+        // Lấy danh sách phân công từ Model
+        $phanCong = $this->model->getPhanCongRaDe($maGV);
 
-        // ⚠️ QUAN TRỌNG: Load view (view này ĐÃ CÓ header và footer)
+        // Render view độc lập, KHÔNG include vào dashboard
         require_once __DIR__ . '/../../views/gvbm/view_assign.php';
-        // ⚠️ KHÔNG RETURN, KHÔNG ECHO gì thêm sau dòng này
-    }
-
-    private function getMaGiaoVienByUsername($username) {
-        try {
-            $stmt = $this->db->prepare("
-                SELECT gv.maGV
-                FROM taikhoan tk
-                INNER JOIN giaovienbomon gv ON tk.maTaiKhoan = gv.maTaiKhoan
-                WHERE tk.tenDangNhap = ? AND tk.trangThai = 'ACTIVE'
-                LIMIT 1
-            ");
-            $stmt->execute([$username]);
-            $result = $stmt->fetch();
-            
-            return $result ? $result['maGV'] : null;
-            
-        } catch (PDOException $e) {
-            error_log("Error getMaGiaoVienByUsername: " . $e->getMessage());
-            return null;
-        }
-    }
-
-    private function getDanhSachPhanCong($maGV) {
-        try {
-            $sql = "SELECT 
-                        hocKy,
-                        kyThi,
-                        soLuongDe,
-                        thoiHan,
-                        ghiChu
-                    FROM bangphancongrade
-                    WHERE maGV = ?
-                    ORDER BY thoiHan DESC";
-            
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([$maGV]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-        } catch (PDOException $e) {
-            error_log("Error getDanhSachPhanCong: " . $e->getMessage());
-            return [];
-        }
+        exit;
     }
 }

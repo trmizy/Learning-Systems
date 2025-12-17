@@ -141,24 +141,107 @@ if (isset($_GET['action'])) {
             $controller->showBaoCaoPage();
             exit;
 
-    // === HỌC SINH ROUTES ===
-    case 'hs-dashboard':
+    // ===== HỌC SINH ROUTES =====
+    case 'hs-profile':
+        require_login();
         require_role(['hs']);
-        require_once __DIR__ . '/../views/hs/dashboard.php';
+        // TODO: Tạo HoSoController cho học sinh
+        $_SESSION['flash_info'] = 'Chức năng đang phát triển';
+        header('Location: /public/index.php');
         break;
 
-    case 'hs-xem-diem':
+    case 'hs-don-create':
+        require_login();
         require_role(['hs']);
-        require_once __DIR__ . '/../controllers/hs/DiemController.php';
-        $controller = new DiemController();
-        $controller->xemDiem();
+        // TODO: Tạo DonXinPhepController->create()
+        $_SESSION['flash_info'] = 'Chức năng đang phát triển';
+        header('Location: /public/index.php');
         break;
-    
-    case 'hs-xem-tkb':
+
+    case 'hs-don-list':
+        require_login();
         require_role(['hs']);
-        require_once __DIR__ . '/../controllers/hs/ThoiKhoaBieuController.php';
-        $controller = new ThoiKhoaBieuController();
-        $controller->indexHocSinh();
+        // TODO: Tạo DonXinPhepController->list()
+        $_SESSION['flash_info'] = 'Chức năng đang phát triển';
+        header('Location: /public/index.php');
+        break;
+
+    case 'hs-thong-bao':
+        require_login();
+        require_role(['hs']);
+        // TODO: Tạo ThongBaoController cho học sinh
+        $_SESSION['flash_info'] = 'Chức năng đang phát triển';
+        header('Location: /public/index.php');
+        break;
+
+    case 'hs-tai-lieu':
+    case 'hs-de-thi':
+    case 'hs-thu-vien':
+    case 'hs-lien-he-gvcn':
+    case 'hs-gop-y':
+    case 'hs-faq':
+        require_login();
+        require_role(['hs']);
+        $_SESSION['flash_info'] = 'Chức năng đang phát triển';
+        header('Location: /public/index.php');
+        break;
+
+    // ===== GIÁO VIÊN ROUTES =====
+    case 'gvbm-profile':
+        require_login();
+        require_role(['gvbm', 'gvcn', 'ttbm']);
+        // TODO: Tạo ProfileController cho giáo viên
+        $_SESSION['flash_info'] = 'Chức năng đang phát triển';
+        header('Location: /public/index.php');
+        break;
+
+    case 'gvbm-thong-ke':
+        require_login();
+        require_role(['gvbm', 'gvcn', 'ttbm']);
+        // TODO: Tạo ThongKeController
+        $_SESSION['flash_info'] = 'Chức năng đang phát triển';
+        header('Location: /public/index.php');
+        break;
+
+    case 'gvbm-tai-lieu':
+        require_login();
+        require_role(['gvbm', 'gvcn', 'ttbm']);
+        // TODO: Tạo TaiLieuController
+        $_SESSION['flash_info'] = 'Chức năng đang phát triển';
+        header('Location: /public/index.php');
+        break;
+
+    case 'gvbm-thong-bao':
+        require_login();
+        require_role(['gvbm', 'gvcn', 'ttbm']);
+        // TODO: Tạo ThongBaoController cho giáo viên
+        $_SESSION['flash_info'] = 'Chức năng đang phát triển';
+        header('Location: /public/index.php');
+        break;
+
+    // ===== TỔ TRƯỞNG BỘ MÔN ROUTES =====
+    case 'ttbm-quan-ly-to':
+        require_login();
+        require_role(['ttbm']);
+        // TODO: Tạo QuanLyToController
+        $_SESSION['flash_info'] = 'Chức năng đang phát triển';
+        header('Location: /public/index.php');
+        break;
+
+    case 'ttbm-bao-cao':
+        require_login();
+        require_role(['ttbm']);
+        // TODO: Tạo BaoCaoController cho TTBM
+        $_SESSION['flash_info'] = 'Chức năng đang phát triển';
+        header('Location: /public/index.php');
+        break;
+
+    case 'ttbm-thong-bao':
+        require_login();
+        require_role(['ttbm']);
+        // TODO: Tạo ThongBaoController cho TTBM
+        $_SESSION['flash_info'] = 'Chức năng đang phát triển';
+        header('Location: /public/index.php');
         break;
 
     // === PHỤ HUYNH ROUTES ===
@@ -256,9 +339,7 @@ if (isset($_GET['action'])) {
         break;
 
     // ==================== GVBM - Giáo viên bộ môn ====================
-    case 'gvbm-dashboard':
-        require_once __DIR__ . '/../views/gvbm/dashboard.php';
-        break;
+
 
     // ⚠️ FIX: Cho phép CẢ GVBM VÀ GVCN xem phân công
     case 'view_assign':
@@ -328,6 +409,57 @@ if (isset($_GET['action'])) {
         require_once __DIR__ . '/../controllers/gvcn/DuyetDonXinNghiController.php';
         $controller = new DuyetDonXinNghiController();
         $controller->detail();
+        break;
+
+    // ==================== GVBM - Xem lịch dạy ====================
+    case 'gvbm-lich-day':
+    case 'gvcn-lich-day':
+    case 'ttbm-lich-day':
+        require_once __DIR__ . '/../controllers/gvbm/LichDayController.php';
+        $controller = new LichDayController();
+        $controller->index();
+        break;
+
+    // ===== QUẢN LÝ HỌC SINH =====
+    case 'admin-quan-ly-hoc-sinh':
+        require_login();
+        require_role(['admin']);
+        require_once __DIR__ . '/../controllers/admin/QuanLyHoSoHocSinhController.php';
+        $controller = new QuanLyHoSoHocSinhController();
+        $controller->index();
+        break;
+
+    case 'admin-xem-hs':
+        require_login();
+        require_role(['admin']);
+        require_once __DIR__ . '/../controllers/admin/QuanLyHoSoHocSinhController.php';
+        $controller = new QuanLyHoSoHocSinhController();
+        $controller->view();
+        break;
+
+    case 'admin-sua-hs':
+        require_login();
+        require_role(['admin']);
+        require_once __DIR__ . '/../controllers/admin/QuanLyHoSoHocSinhController.php';
+        $controller = new QuanLyHoSoHocSinhController();
+        $controller->edit();
+        break;
+
+    case 'admin-them-hoc-sinh':
+        require_login();
+        require_role(['admin']);
+        // TODO: Tạo controller thêm học sinh
+        $_SESSION['flash_info'] = 'Chức năng đang phát triển';
+        header('Location: /public/index.php?action=admin-quan-ly-hoc-sinh');
+        break;
+
+    // ===== QUẢN LÝ DANH SÁCH HỌC SINH =====
+    case 'admin-danh-sach-hoc-sinh':
+        require_login();
+        require_role(['admin', 'bgh']);
+        require_once __DIR__ . '/../controllers/admin/DanhSachHocSinhController.php';
+        $controller = new DanhSachHocSinhController();
+        $controller->danhSachTheoKhoiVaLop();
         break;
 
     default:

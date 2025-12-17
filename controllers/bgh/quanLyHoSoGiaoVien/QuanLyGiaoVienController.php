@@ -110,7 +110,7 @@ try {
 
                 $giaoVienModel->capNhatGiaoVien($maGV, $data);
                 $_SESSION['flash_success'] = 'Cập nhật thông tin giáo viên thành công';
-                header('Location: /public/index.php?page=bgh-quan-ly-giao-vien');
+                header('Location: /public/index.php?action=bgh-quan-ly-giao-vien');
                 exit;
             }
 

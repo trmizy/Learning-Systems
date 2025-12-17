@@ -30,7 +30,7 @@ require_once __DIR__ . '/../../layouts/header.php';
             <!-- Form -->
             <div class="card">
                 <div class="card-body">
-                    <form method="POST" action="/public/index.php?page=bgh-quan-ly-giao-vien&action=edit&maGV=<?php echo urlencode($giaoVien['maGV']); ?>">
+                    <form method="POST" action="/public/index.php?action=bgh-sua-giao-vien&maGV=<?php echo urlencode($giaoVien['maGV']); ?>">
                         <!-- Mã giáo viên (chỉ hiển thị) -->
                         <div class="alert alert-info mb-3">
                             <strong>Mã giáo viên:</strong> <?php echo htmlspecialchars($giaoVien['maGV']); ?>

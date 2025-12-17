@@ -4,12 +4,12 @@ $MENU_ITEMS = [
         [
             'icon' => 'user-graduate', 
             'text' => 'Quản lý học sinh',
-            'link' => '/modules/students/list.php',
+            'link' => '/public/index.php?action=admin-danh-sach-hoc-sinh',
             'submenu' => [
-                ['icon' => 'list', 'text' => 'Danh sách học sinh', 'link' => '/modules/students/list.php'],
-                ['icon' => 'plus', 'text' => 'Thêm học sinh', 'link' => '/modules/students/create.php'],
-                ['icon' => 'file-import', 'text' => 'Nhập từ Excel', 'link' => '/modules/students/import.php'],
-                ['icon' => 'exchange', 'text' => 'Chuyển lớp', 'link' => '/modules/students/transfer.php'],
+                ['icon' => 'list', 'text' => 'Danh sách học sinh', 'link' => '/public/index.php?action=admin-danh-sach-hoc-sinh'],
+                ['icon' => 'plus', 'text' => 'Thêm học sinh', 'link' => '/public/index.php?action=admin-them-hoc-sinh'],
+                ['icon' => 'file-import', 'text' => 'Nhập từ Excel', 'link' => '/public/index.php?action=admin-import-hoc-sinh'],
+                ['icon' => 'exchange', 'text' => 'Chuyển lớp', 'link' => '/public/index.php?action=admin-chuyen-lop'],
             ]
         ],
         [
@@ -17,7 +17,6 @@ $MENU_ITEMS = [
             'text' => 'Quản lý giảng dạy',
             'link' => '#',
             'submenu' => [
-                ['icon' => 'people-roof', 'text' => 'Quản lý lớp', 'link' => '/modules/classes/list.php'],
                 ['icon' => 'person-chalkboard', 'text' => 'Giáo viên', 'link' => '/modules/teachers/list.php'],
                 ['icon' => 'book', 'text' => 'Môn học', 'link' => '/modules/subjects/list.php'],
                 ['icon' => 'layer-group', 'text' => 'Tổ hợp môn', 'link' => '/controllers/admin/taoCacToHopMon_controller.php'],

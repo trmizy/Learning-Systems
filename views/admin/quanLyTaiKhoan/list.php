@@ -20,7 +20,7 @@ $taiKhoanList = $controller->getDanhSachTaiKhoan($search, $trangThai);
             <h2><i class="fas fa-users"></i> Quản Lý Tài Khoản</h2>
         </div>
         <div class="col-md-6 text-end">
-            <a href="/modules/admin/quanLyTaiKhoan.php?action=create" class="btn btn-primary">
+            <a href="/models/admin/quanLyTaiKhoan.php?action=create" class="btn btn-primary">
                 <i class="fas fa-plus"></i> Tạo Tài Khoản Mới
             </a>
         </div>
@@ -130,11 +130,11 @@ $taiKhoanList = $controller->getDanhSachTaiKhoan($search, $trangThai);
                                     <span class="badge bg-<?php echo $statusClass; ?>"><?php echo $statusLabel; ?></span>
                                 </td>
                                 <td>
-                                    <a href="/modules/admin/quanLyTaiKhoan.php?action=edit&maTaiKhoan=<?php echo urlencode($tk['maTaiKhoan']); ?>" 
+                                    <a href="/models/admin/quanLyTaiKhoan.php?action=edit&maTaiKhoan=<?php echo urlencode($tk['maTaiKhoan']); ?>" 
                                        class="btn btn-sm btn-warning" title="Chỉnh sửa">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <a href="/modules/admin/quanLyTaiKhoan.php?action=permissions&maTaiKhoan=<?php echo urlencode($tk['maTaiKhoan']); ?>" 
+                                    <a href="/models/admin/quanLyTaiKhoan.php?action=permissions&maTaiKhoan=<?php echo urlencode($tk['maTaiKhoan']); ?>" 
                                        class="btn btn-sm btn-info" title="Quản lý quyền">
                                         <i class="fas fa-lock"></i>
                                     </a>
@@ -187,7 +187,7 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', function()
         const form = document.createElement('form');
         form.method = 'POST';
         // Force posting to module root to avoid carrying over query params (e.g. trangThai filter)
-        form.action = '/modules/admin/quanLyTaiKhoan.php';
+        form.action = '/models/admin/quanLyTaiKhoan.php';
         form.innerHTML = `
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="maTaiKhoan" value="${currentAccount}">

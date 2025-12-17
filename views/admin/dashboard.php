@@ -270,11 +270,11 @@ $stats = [
                     <h5 class="card-title fw-bold">Quản lý học sinh</h5>
                     <p class="text-muted small">Hồ sơ, tiếp nhận, cập nhật thông tin</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/quanLyHoSoHocSinh/quanLyHoSoHocSinhView.php" class="btn btn-primary btn-sm">
+                        <a href="/public/index.php?action=admin-quan-ly-hoc-sinh" class="btn btn-primary btn-sm">
                             <i class="fa-solid fa-arrow-right me-1"></i>Mở quản lý hồ sơ
                         </a>
                     </div>
-                    <a href="/modules/quanLyHoSoHocSinh/quanLyHoSoHocSinhView.php" class="stretched-link" aria-label="Mở Quản lý học sinh"></a>
+                    <a href="/public/index.php?action=admin-quan-ly-hoc-sinh" class="stretched-link" aria-label="Mở Quản lý học sinh"></a>
                 </div>
             </div>
         </div>
@@ -289,10 +289,10 @@ $stats = [
                     <h5 class="card-title fw-bold">Quản Lý Tài Khoản</h5>
                     <p class="text-muted small">Tạo, chỉnh sửa, phân quyền tài khoản</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/admin/quanLyTaiKhoan.php?action=list" class="btn btn-success btn-sm">
+                        <a href="/models/admin/quanLyTaiKhoan.php?action=list" class="btn btn-success btn-sm">
                             <i class="fa-solid fa-list me-1"></i>Danh sách tài khoản
                         </a>
-                        <a href="/modules/admin/quanLyTaiKhoan.php?action=create" class="btn btn-outline-success btn-sm">
+                        <a href="/models/admin/quanLyTaiKhoan.php?action=create" class="btn btn-outline-success btn-sm">
                             <i class="fa-solid fa-user-plus me-1"></i>Tạo mới
                         </a>
                     </div>
@@ -310,7 +310,7 @@ $stats = [
                     <h5 class="card-title fw-bold">Phân công</h5>
                     <p class="text-muted small">Phân công lớp, giáo viên, thời khóa biểu</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/assignments/teachers.php" class="btn btn-danger btn-sm">
+                        <a href="/models/assignments/teachers.php" class="btn btn-danger btn-sm">
                             <i class="fa-solid fa-person-chalkboard me-1"></i>Phân công GV
                         </a>
                         <a href="/controllers/admin/ArrangeTKBController.php?module=tkb" class="btn btn-outline-danger btn-sm">
@@ -331,10 +331,10 @@ $stats = [
                     <h5 class="card-title fw-bold">Học vụ</h5>
                     <p class="text-muted small">Đơn sửa điểm, hồ sơ học vụ</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/academic/requests.php" class="btn btn-info btn-sm">
+                        <a href="/models/academic/requests.php" class="btn btn-info btn-sm">
                             <i class="fa-solid fa-clipboard-check me-1"></i>Duyệt đơn
                         </a>
-                        <a href="/modules/academic/records.php" class="btn btn-outline-info btn-sm">
+                        <a href="/models/academic/records.php" class="btn btn-outline-info btn-sm">
                             <i class="fa-solid fa-archive me-1"></i>Hồ sơ
                         </a>
                     </div>
@@ -352,7 +352,7 @@ $stats = [
                         <i class="fa-solid fa-users-gear text-primary me-2"></i>Quản lý người dùng
                     </h6>
                     <p class="text-muted small mb-3">Tài khoản, phân quyền hệ thống</p>
-                    <a href="/modules/users/list.php" class="btn btn-outline-primary w-100">
+                    <a href="/models/users/list.php" class="btn btn-outline-primary w-100">
                         <i class="fa-solid fa-list me-2"></i>Danh sách tài khoản
                     </a>
                 </div>
@@ -366,7 +366,7 @@ $stats = [
                         <i class="fa-solid fa-sliders text-success me-2"></i>Cấu hình hệ thống
                     </h6>
                     <p class="text-muted small mb-3">Thiết lập tham số, cấu hình</p>
-                    <a href="/modules/settings/index.php" class="btn btn-outline-success w-100">
+                    <a href="/models/settings/index.php" class="btn btn-outline-success w-100">
                         <i class="fa-solid fa-cog me-2"></i>Cài đặt
                     </a>
                 </div>
@@ -380,7 +380,7 @@ $stats = [
                         <i class="fa-solid fa-database text-warning me-2"></i>Sao lưu & Phục hồi
                     </h6>
                     <p class="text-muted small mb-3">Backup dữ liệu hệ thống</p>
-                    <a href="/modules/backup/index.php" class="btn btn-outline-warning w-100">
+                    <a href="/models/backup/index.php" class="btn btn-outline-warning w-100">
                         <i class="fa-solid fa-download me-2"></i>Sao lưu ngay
                     </a>
                 </div>

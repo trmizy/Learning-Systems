@@ -12,7 +12,7 @@ if (!isset($controller) || !is_object($controller)) {
 if (!isset($_GET['maTaiKhoan'])) {
     $_SESSION['message'] = 'Mã tài khoản không được cung cấp';
     $_SESSION['messageType'] = 'danger';
-    header('Location: /modules/admin/quanLyTaiKhoan.php?action=list');
+    header('Location: /models/admin/quanLyTaiKhoan.php?action=list');
     exit;
 }
 
@@ -20,7 +20,7 @@ $taiKhoan = $controller->getChiTietTaiKhoan($_GET['maTaiKhoan']);
 if (!$taiKhoan) {
     $_SESSION['message'] = 'Không tìm thấy tài khoản';
     $_SESSION['messageType'] = 'danger';
-    header('Location: /modules/admin/quanLyTaiKhoan.php?action=list');
+    header('Location: /models/admin/quanLyTaiKhoan.php?action=list');
     exit;
 }
 
@@ -35,7 +35,7 @@ $danhSachVaiTro = $controller->getDanhSachVaiTroCoSan();
             <p class="text-muted">Tài khoản: <strong><?php echo htmlspecialchars($taiKhoan['tenDangNhap']); ?></strong></p>
         </div>
         <div class="col-md-6 text-end">
-            <a href="/modules/admin/quanLyTaiKhoan.php?action=list" class="btn btn-secondary">
+            <a href="/models/admin/quanLyTaiKhoan.php?action=list" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Quay Lại
             </a>
         </div>
@@ -99,7 +99,7 @@ $danhSachVaiTro = $controller->getDanhSachVaiTroCoSan();
                         </div>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="/modules/admin/quanLyTaiKhoan.php?action=list" class="btn btn-secondary">Hủy</a>
+                            <a href="/models/admin/quanLyTaiKhoan.php?action=list" class="btn btn-secondary">Hủy</a>
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save"></i> Cập Nhật Quyền
                             </button>

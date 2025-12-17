@@ -323,7 +323,7 @@ $notifications = [
                 </p>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                <a href="/modules/students/profile.php" class="quick-action-btn btn">
+                <a href="/public/index.php?action=hs-profile" class="quick-action-btn btn">
                     <i class="fa-solid fa-user me-2"></i>Hồ sơ cá nhân
                 </a>
             </div>
@@ -425,10 +425,10 @@ $notifications = [
                     <h5 class="card-title fw-bold">Đơn xin phép</h5>
                     <p class="text-muted small">Gửi đơn nghỉ học, xem trạng thái</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/students/requests/create.php" class="btn btn-danger btn-sm">
+                        <a href="/public/index.php?action=hs-don-create" class="btn btn-danger btn-sm">
                             <i class="fa-solid fa-plus me-1"></i>Tạo đơn
                         </a>
-                        <a href="/modules/students/requests/list.php" class="btn btn-outline-danger btn-sm">
+                        <a href="/public/index.php?action=hs-don-list" class="btn btn-outline-danger btn-sm">
                             <i class="fa-solid fa-list me-1"></i>Danh sách
                         </a>
                     </div>
@@ -445,7 +445,7 @@ $notifications = [
                     </div>
                     <h5 class="card-title fw-bold">Thông báo</h5>
                     <p class="text-muted small">Tin từ BGH, GVCN, môn học</p>
-                    <a href="/modules/students/notifications.php" class="btn btn-info w-100 mt-3">
+                    <a href="/public/index.php?action=hs-thong-bao" class="btn btn-info w-100 mt-3">
                         <i class="fa-solid fa-bell me-2"></i>Xem tất cả
                     </a>
                 </div>
@@ -568,7 +568,7 @@ $notifications = [
                         </div>
                     </div>
                     <?php endforeach; ?>
-                    <a href="/modules/students/notifications.php" class="btn btn-outline-info w-100 mt-3">
+                    <a href="/public/index.php?action=hs-thong-bao" class="btn btn-outline-info w-100 mt-3">
                         <i class="fa-solid fa-envelope-open me-2"></i>Xem tất cả
                     </a>
                 </div>
@@ -603,13 +603,13 @@ $notifications = [
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-book text-primary me-2"></i>Học liệu
                     </h6>
-                    <a href="/modules/students/materials.php" class="d-block text-decoration-none text-dark mb-2 hover-link">
+                    <a href="/public/index.php?action=hs-tai-lieu" class="d-block text-decoration-none text-dark mb-2 hover-link">
                         <i class="fa-solid fa-file-pdf text-danger me-2"></i>Tài liệu học tập
                     </a>
-                    <a href="/modules/students/exams.php" class="d-block text-decoration-none text-dark mb-2 hover-link">
+                    <a href="/public/index.php?action=hs-de-thi" class="d-block text-decoration-none text-dark mb-2 hover-link">
                         <i class="fa-solid fa-file-lines text-warning me-2"></i>Đề thi - Đáp án
                     </a>
-                    <a href="/modules/students/library.php" class="d-block text-decoration-none text-dark hover-link">
+                    <a href="/public/index.php?action=hs-thu-vien" class="d-block text-decoration-none text-dark hover-link">
                         <i class="fa-solid fa-book-open text-success me-2"></i>Thư viện
                     </a>
                 </div>
@@ -622,13 +622,13 @@ $notifications = [
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-headset text-success me-2"></i>Hỗ trợ
                     </h6>
-                    <a href="/modules/students/contact-teacher.php" class="d-block text-decoration-none text-dark mb-2 hover-link">
+                    <a href="/public/index.php?action=hs-lien-he-gvcn" class="d-block text-decoration-none text-dark mb-2 hover-link">
                         <i class="fa-solid fa-comments text-primary me-2"></i>Liên hệ GVCN
                     </a>
-                    <a href="/modules/students/feedback.php" class="d-block text-decoration-none text-dark mb-2 hover-link">
+                    <a href="/public/index.php?action=hs-gop-y" class="d-block text-decoration-none text-dark mb-2 hover-link">
                         <i class="fa-solid fa-message text-info me-2"></i>Góp ý, phản hồi
                     </a>
-                    <a href="/modules/students/faq.php" class="d-block text-decoration-none text-dark hover-link">
+                    <a href="/public/index.php?action=hs-faq" class="d-block text-decoration-none text-dark hover-link">
                         <i class="fa-solid fa-circle-question text-warning me-2"></i>Câu hỏi thường gặp
                     </a>
                 </div>

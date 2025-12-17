@@ -209,23 +209,22 @@ if (!empty($teacherId)) {
     $notifications = [];
     $leaveRequests = [];
 }
-
-// Lịch dạy & đơn xin nghỉ mock
-$todaySchedule = [];
-$leaveRequests = [];
-if ($currentRole === 'gvcn') {
-    $leaveRequests = [
-        ['student' => 'Nguyễn Văn A', 'reason' => 'Ốm đau',       'date' => '2024-03-16', 'status' => 'pending'],
-        ['student' => 'Trần Thị B',   'reason' => 'Việc gia đình', 'date' => '2024-03-17', 'status' => 'pending'],
-        ['student' => 'Lê Văn C',     'reason' => 'Khám bệnh',     'date' => '2024-03-15', 'status' => 'pending'],
-    ];
-    $stats['pending_requests'] = count($leaveRequests);
-}
 ?>
 
 <style>
     .teacher-dashboard {
         animation: fadeIn 0.5s ease;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
     
     .stat-card {
@@ -274,6 +273,7 @@ if ($currentRole === 'gvcn') {
         background: white;
         overflow: hidden;
         position: relative;
+        height: 100%;
     }
     
     .feature-card::before {
@@ -331,19 +331,16 @@ if ($currentRole === 'gvcn') {
         margin-top: 0.5rem;
     }
     
-    .class-card {
-        padding: 1.25rem;
-        border-radius: 12px;
-        background: white;
-        border: 2px solid #e9ecef;
-        margin-bottom: 1rem;
-        transition: all 0.3s ease;
+    .section-header {
+        margin: 3rem 0 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 3px solid #667eea;
     }
     
-    .class-card:hover {
-        border-color: #667eea;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-        transform: translateX(5px);
+    .section-header h4 {
+        color: #667eea;
+        font-weight: 700;
+        margin: 0;
     }
     
     .schedule-item {
@@ -360,38 +357,6 @@ if ($currentRole === 'gvcn') {
         transform: translateX(5px);
     }
     
-    .notification-item {
-        padding: 1rem;
-        border-radius: 12px;
-        background: white;
-        border: 1px solid #e9ecef;
-        margin-bottom: 0.75rem;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .notification-item::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 4px;
-        background: linear-gradient(180deg, #667eea, #764ba2);
-    }
-    
-    .notification-item.unread {
-        background: linear-gradient(90deg, rgba(102, 126, 234, 0.05) 0%, white 100%);
-        border-color: #667eea;
-        font-weight: 500;
-    }
-    
-    .notification-item:hover {
-        transform: translateX(5px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-    
     .request-item {
         padding: 1rem;
         background: linear-gradient(135deg, rgba(240, 147, 251, 0.1) 0%, rgba(245, 87, 108, 0.1) 100%);
@@ -405,6 +370,15 @@ if ($currentRole === 'gvcn') {
         border-radius: 12px;
         font-size: 0.8rem;
         font-weight: 600;
+    }
+    
+    @media (max-width: 767.98px) {
+        .stat-card h3 {
+            font-size: 2rem;
+        }
+        .welcome-banner h2 {
+            font-size: 1.5rem;
+        }
     }
 </style>
 
@@ -458,7 +432,7 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
                 </div>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                <a href="/modules/teachers/profile.php" class="btn btn-light btn-lg">
+                <a href="/public/index.php?action=gvbm-profile" class="btn btn-light btn-lg">
                     <i class="fa-solid fa-user me-2"></i>Hồ sơ cá nhân
                 </a>
             </div>
@@ -518,11 +492,15 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
         </div>
     </div>
 
-    <!-- Main Functions Grid -->
+    <!-- ===== PHẦN 1: CHỨC NĂNG CHUNG (ALL ROLES) ===== -->
+    <div class="section-header">
+        <h4><i class="fa-solid fa-briefcase me-2"></i>Công việc hàng ngày</h4>
+    </div>
+    
     <div class="row g-4 mb-4">
         <!-- Nhập điểm -->
-        <div class="col-md-6 col-xl-3">
-            <div class="card feature-card h-100">
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card feature-card">
                 <div class="card-body text-center">
                     <div class="feature-icon mx-auto">
                         <i class="fa-solid fa-pen-to-square"></i>
@@ -530,31 +508,31 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
                     <h5 class="card-title fw-bold">Nhập điểm</h5>
                     <p class="text-muted small">Nhập, sửa điểm kiểm tra, thi</p>
                     <a href="/public/index.php?action=enterPoints_gvbm" class="btn btn-primary w-100 mt-3">
-                        <i class="fa-solid fa-pen-to-square me-2"></i>Nhập điểm
+                        <i class="fa-solid fa-keyboard me-2"></i>Nhập điểm
                     </a>
                 </div>
             </div>
         </div>
         
         <!-- Yêu cầu sửa điểm -->
-        <div class="col-md-6 col-xl-3">
-            <div class="card feature-card h-100">
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card feature-card">
                 <div class="card-body text-center">
-                    <div class="feature-icon mx-auto">
-                        <i class="fa-solid fa-pen-to-square"></i>
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <i class="fa-solid fa-edit"></i>
                     </div>
                     <h5 class="card-title fw-bold">Yêu cầu sửa điểm</h5>
-                    <p class="text-muted small"> Yêu cầu sửa điểm kiểm tra</p>
-                    <a href="index.php?action=yeu_cau_sua_diem" class="btn btn-primary w-100 mt-3">
-                        <i class="fa-solid fa-keyboard me-2"></i>Yêu cầu sửa điểm
+                    <p class="text-muted small">Gửi yêu cầu chỉnh sửa điểm</p>
+                    <a href="index.php?action=yeu_cau_sua_diem" class="btn btn-danger w-100 mt-3">
+                        <i class="fa-solid fa-paper-plane me-2"></i>Gửi yêu cầu
                     </a>
                 </div>
             </div>
         </div>
 
         <!-- Lớp giảng dạy -->
-        <div class="col-md-6 col-xl-3">
-            <div class="card feature-card h-100">
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card feature-card">
                 <div class="card-body text-center">
                     <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
                         <i class="fa-solid fa-chalkboard-user"></i>
@@ -568,54 +546,223 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
             </div>
         </div>
 
-        <!-- Lớp chủ nhiệm hoặc Thời khóa biểu -->
-        <?php if ($currentRole === 'gvcn' ): ?>
-        <div class="col-md-6 col-xl-3">
-            <div class="card feature-card h-100">
+        <!-- Lịch giảng dạy -->
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card feature-card">
                 <div class="card-body text-center">
-                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                        <i class="fa-solid fa-calendar-days"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Lịch giảng dạy</h5>
+                    <p class="text-muted small">Xem thời khóa biểu tuần</p>
+                    <a href="/public/index.php?action=gvbm-lich-day" class="btn btn-info w-100 mt-3">
+                        <i class="fa-solid fa-calendar-check me-2"></i>Xem lịch
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PHẦN 2: CHỨC NĂNG THEO ROLE ===== -->
+    <?php if ($currentRole === 'gvcn'): ?>
+    <!-- GVCN Features -->
+    <div class="section-header">
+        <h4><i class="fa-solid fa-user-tie me-2"></i>Công việc Chủ nhiệm</h4>
+    </div>
+    
+    <div class="row g-4 mb-4">
+        <!-- Lớp chủ nhiệm -->
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
                         <i class="fa-solid fa-house-user"></i>
                     </div>
                     <h5 class="card-title fw-bold">Lớp chủ nhiệm</h5>
-                    <p class="text-muted small">Xem thông tin lớp bạn phụ trách</p>
-                    <a href="index.php?action=xem_lop_cn" class="btn btn-success w-100 mt-3">
-                        <i class="fa-solid fa-list me-2"></i>Xem thông tin lớp
+                    <p class="text-muted small">Quản lý lớp phụ trách</p>
+                    <a href="index.php?action=xem_lop_cn" class="btn btn-warning w-100 mt-3">
+                        <i class="fa-solid fa-door-open me-2"></i>Vào lớp
                     </a>
                 </div>
             </div>
         </div>
-        <?php else: ?>
-        <!-- Thời khóa biểu -->
-        <div class="col-md-6 col-xl-3">
-            <div class="card feature-card h-100">
+
+        <!-- Duyệt đơn -->
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card feature-card">
                 <div class="card-body text-center">
                     <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                        <i class="fa-solid fa-calendar-days"></i>
+                        <i class="fa-solid fa-clipboard-check"></i>
                     </div>
-                    <h5 class="card-title fw-bold">Thời khóa biểu</h5>
-                    <p class="text-muted small">Lịch dạy trong tuần</p>
-                    <a href="/modules/teachers/schedule.php" class="btn btn-danger w-100 mt-3">
-                        <i class="fa-solid fa-calendar me-2"></i>Xem TKB
+                    <h5 class="card-title fw-bold">Duyệt đơn xin nghỉ</h5>
+                    <p class="text-muted small">Phê duyệt đơn học sinh</p>
+                    <div class="d-grid gap-2 mt-3">
+                        <a href="/public/index.php?action=gvcn-duyet-don-pending" class="btn btn-danger btn-sm">
+                            <i class="fa-solid fa-clock me-1"></i>Chờ duyệt (<?php echo $stats['pending_requests']; ?>)
+                        </a>
+                        <a href="/public/index.php?action=gvcn-duyet-don-list" class="btn btn-outline-danger btn-sm">
+                            <i class="fa-solid fa-list me-1"></i>Tất cả
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Xếp loại -->
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <i class="fa-solid fa-award"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Xếp loại học lực</h5>
+                    <p class="text-muted small">Xếp loại học sinh lớp CN</p>
+                    <a href="index.php?action=xep_loai" class="btn btn-primary w-100 mt-3">
+                        <i class="fa-solid fa-star me-2"></i>Xếp loại
                     </a>
                 </div>
             </div>
         </div>
-        <?php endif; ?>
-    </div>
 
-    <!--Xem phân công của tôi - CHỈ HIỂN THỊ CHO GVBM VÀ GVCN-->    
-    <?php if ($currentRole !== 'ttbm'): ?>
-    <div class="row g-4 mb-4">
-        <div class="col-md-4">
+        <!-- Phân công của tôi -->
+        <div class="col-md-6 col-lg-4 col-xl-3">
             <div class="card feature-card">
                 <div class="card-body text-center">
                     <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);">
                         <i class="fa-solid fa-list-check"></i>
                     </div>
-                    <h5 class="card-title fw-bold mt-2">Phân công của tôi</h5>
-                    <p class="text-muted small">Xem danh sách đề thi được giao</p>
-                    <a href="index.php?action=view_assign" class="btn btn-outline-warning w-100 mt-3">
+                    <h5 class="card-title fw-bold">Phân công ra đề</h5>
+                    <p class="text-muted small">Đề thi được giao</p>
+                    <a href="index.php?action=view_assign" class="btn btn-warning w-100 mt-3">
                         <i class="fa-solid fa-eye me-2"></i>Xem ngay
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <?php elseif ($currentRole === 'ttbm'): ?>
+    <!-- TTBM Features -->
+    <div class="section-header">
+        <h4><i class="fa-solid fa-users-gear me-2"></i>Công việc Tổ trưởng</h4>
+    </div>
+    
+    <div class="row g-4 mb-4">
+        <!-- Phân công ra đề -->
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                        <i class="fa-solid fa-file-pen"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Phân công ra đề</h5>
+                    <p class="text-muted small">Giao đề thi cho giáo viên</p>
+                    <a href="index.php?action=assign_exam" class="btn btn-warning w-100 mt-3">
+                        <i class="fa-solid fa-tasks me-2"></i>Quản lý
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quản lý giáo viên -->
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <i class="fa-solid fa-users-cog"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Quản lý tổ</h5>
+                    <p class="text-muted small">Giáo viên và phân công</p>
+                    <a href="/public/index.php?action=ttbm-quan-ly-to" class="btn btn-primary w-100 mt-3">
+                        <i class="fa-solid fa-list me-2"></i>Danh sách
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Báo cáo bộ môn -->
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Báo cáo bộ môn</h5>
+                    <p class="text-muted small">Tổng hợp chuyên môn</p>
+                    <a href="/public/index.php?action=ttbm-bao-cao" class="btn btn-success w-100 mt-3">
+                        <i class="fa-solid fa-file-chart me-2"></i>Xem báo cáo
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thông báo -->
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                        <i class="fa-solid fa-bullhorn"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Thông báo</h5>
+                    <p class="text-muted small">Gửi thông báo tổ BM</p>
+                    <a href="/public/index.php?action=ttbm-thong-bao" class="btn btn-info w-100 mt-3">
+                        <i class="fa-solid fa-paper-plane me-2"></i>Gửi TB
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <?php else: ?>
+    <!-- GVBM Features -->
+    <div class="section-header">
+        <h4><i class="fa-solid fa-chalkboard-user me-2"></i>Tiện ích giảng dạy</h4>
+    </div>
+    
+    <div class="row g-4 mb-4">
+        <!-- Phân công của tôi -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Phân công ra đề</h5>
+                    <p class="text-muted small">Đề thi được giao</p>
+                    <a href="index.php?action=view_assign" class="btn btn-warning w-100 mt-3">
+                        <i class="fa-solid fa-eye me-2"></i>Xem ngay
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thống kê -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <i class="fa-solid fa-chart-simple"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Thống kê điểm</h5>
+                    <p class="text-muted small">Xem kết quả học tập</p>
+                    <a href="/public/index.php?action=gvbm-thong-ke" class="btn btn-primary w-100 mt-3">
+                        <i class="fa-solid fa-chart-bar me-2"></i>Xem thống kê
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tài liệu -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                        <i class="fa-solid fa-book"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Tài liệu giảng dạy</h5>
+                    <p class="text-muted small">Quản lý bài giảng</p>
+                    <a href="/public/index.php?action=gvbm-tai-lieu" class="btn btn-success w-100 mt-3">
+                        <i class="fa-solid fa-folder me-2"></i>Tài liệu
                     </a>
                 </div>
             </div>
@@ -623,120 +770,48 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
     </div>
     <?php endif; ?>
 
-    <!-- GVCN/TTBM Features Section -->
-    <div class="row g-4 mb-4">
-        <?php if ($currentRole === 'gvcn'): ?>
-        <div class="col-md-6 col-xl-3">
-            <div class="card feature-card h-100">
-                <div class="card-body text-center">
-                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                        <i class="fa-solid fa-clipboard-check"></i>
-                    </div>
-                    <h5 class="card-title fw-bold">Duyệt đơn</h5>
-                    <p class="text-muted small">Đơn xin nghỉ học sinh</p>
-                    <div class="d-grid gap-2 mt-3">
-                        <!-- ⚠️ FIX: Sửa đường link sang action đúng -->
-                        <a href="/public/index.php?action=gvcn-duyet-don-pending" class="btn btn-info btn-sm">
-                            <i class="fa-solid fa-clock me-1"></i>Chờ duyệt (<?php echo $stats['pending_requests']; ?>)
-                        </a>
-                        <a href="/public/index.php?action=gvcn-duyet-don-list" class="btn btn-outline-info btn-sm">
-                            <i class="fa-solid fa-list me-1"></i>Tất cả
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <?php elseif ($currentRole === 'ttbm'): ?>
-        <div class="col-md-6 col-xl-3">
-            <div class="card feature-card h-100">
-                <div class="card-body text-center">
-                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                        <i class="fa-solid fa-tasks"></i>
-                    </div>
-                    <h5 class="card-title fw-bold">Phân công</h5>
-                    <p class="text-muted small">Ra đề thi, giảng dạy</p>
-                    <a href="index.php?action=assign_exam" class="btn btn-info w-100 mt-3">
-                        <i class="fa-solid fa-user-gear me-2"></i>Quản lý
-                    </a>
-                </div>
-            </div>
-        </div>
-        <?php else: ?>
-        <div class="col-md-6 col-xl-3">
-            <div class="card feature-card h-100">
-                <div class="card-body text-center">
-                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                        <i class="fa-solid fa-bell"></i>
-                    </div>
-                    <h5 class="card-title fw-bold">Thông báo</h5>
-                    <p class="text-muted small">Tin từ BGH, tổ bộ môn</p>
-                    <a href="/modules/teachers/notifications.php" class="btn btn-info w-100 mt-3">
-                        <i class="fa-solid fa-envelope me-2"></i>Xem tất cả
-                    </a>
-                </div>
-            </div>
-        </div>
-        <?php endif; ?>
+    <!-- ===== PHẦN 3: THÔNG TIN NHANH ===== -->
+    <div class="section-header">
+        <h4><i class="fa-solid fa-dashboard me-2"></i>Tổng quan hôm nay</h4>
     </div>
 
     <div class="row g-4">
-        <!-- Teaching Classes -->
-        <div class="col-lg-4">
-            <div class="card feature-card">
-                <div class="card-body">
-                    <h5 class="card-title fw-bold mb-4">
-                        <i class="fa-solid fa-school text-primary me-2"></i>
-                        Lớp giảng dạy (<?php echo count($teachingClasses); ?>)
-                    </h5>
-                    <?php foreach ($teachingClasses as $class): ?>
-                    <div class="class-card">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div>
-                                <div class="fw-bold text-primary fs-5">Lớp <?php echo htmlspecialchars($class['class']); ?></div>
-                                <div class="small text-muted">
-                                    <i class="fa-solid fa-users me-1"></i><?php echo $class['students']; ?> học sinh
-                                </div>
-                            </div>
-                            <div class="text-end">
-                                <div class="badge bg-success">ĐTB: <?php echo $class['avg_score']; ?></div>
-                            </div>
-                        </div>
-                        <div class="small text-muted">
-                            <i class="fa-solid fa-clock me-1"></i><?php echo htmlspecialchars($class['period']); ?>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                    <a href="/modules/teachers/classes.php" class="btn btn-outline-primary w-100 mt-3">
-                        <i class="fa-solid fa-list me-2"></i>Xem chi tiết
-                    </a>
-                </div>
-            </div>
-        </div>
-
         <!-- Today's Schedule -->
-        <div class="col-lg-4">
+        <div class="col-lg-6">
             <div class="card feature-card">
                 <div class="card-body">
                     <h5 class="card-title fw-bold mb-4">
-                        <i class="fa-solid fa-clock text-warning me-2"></i>
+                        <i class="fa-solid fa-clock text-primary me-2"></i>
                         Lịch dạy hôm nay
                     </h5>
-                    <?php foreach ($todaySchedule as $lesson): ?>
-                    <div class="schedule-item">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <div class="fw-bold text-primary">Tiết <?php echo $lesson['period']; ?>: Lớp <?php echo htmlspecialchars($lesson['class']); ?></div>
-                                <div class="small text-muted">
-                                    <i class="fa-solid fa-door-open me-1"></i>Phòng: <?php echo htmlspecialchars($lesson['room']); ?>
-                                </div>
-                            </div>
-                            <span class="badge bg-light text-dark">
-                                <?php echo $lesson['time']; ?>
-                            </span>
+                    <?php if (empty($todaySchedule)): ?>
+                        <div class="text-center text-muted py-4">
+                            <i class="fa-solid fa-calendar-xmark fa-3x mb-3 d-block"></i>
+                            <p>Hôm nay không có lịch dạy</p>
                         </div>
-                    </div>
-                    <?php endforeach; ?>
-                    <a href="/modules/teachers/schedule.php" class="btn btn-outline-warning w-100 mt-3">
+                    <?php else: ?>
+                        <?php foreach ($todaySchedule as $lesson): ?>
+                        <div class="schedule-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-bold text-primary">
+                                        Tiết <?php echo htmlspecialchars($lesson['period']); ?>: 
+                                        <?php echo htmlspecialchars($lesson['subject']); ?>
+                                    </div>
+                                    <div class="small text-muted">
+                                        <i class="fa-solid fa-users me-1"></i>
+                                        <?php echo htmlspecialchars($lesson['class'] ?? 'N/A'); ?>
+                                    </div>
+                                </div>
+                                <span class="badge bg-light text-dark">
+                                    <i class="fa-solid fa-door-open me-1"></i>
+                                    <?php echo htmlspecialchars($lesson['room'] ?? 'N/A'); ?>
+                                </span>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                    <a href="/public/index.php?action=gvbm-lich-day" class="btn btn-outline-primary w-100 mt-3">
                         <i class="fa-solid fa-calendar-week me-2"></i>Xem lịch tuần
                     </a>
                 </div>
@@ -744,7 +819,7 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
         </div>
 
         <!-- Notifications / Leave Requests -->
-        <div class="col-lg-4">
+        <div class="col-lg-6">
             <div class="card feature-card">
                 <div class="card-body">
                     <?php if ($currentRole === 'gvcn' && count($leaveRequests) > 0): ?>
@@ -763,7 +838,6 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
                                 Lý do: <?php echo htmlspecialchars($request['reason']); ?>
                             </div>
                             <div class="d-flex gap-2">
-                                <!-- ⚠️ FIX: Thêm form xử lý nhanh -->
                                 <form action="/public/index.php?action=gvcn-duyet-don-approve" method="POST" style="flex: 1;" onsubmit="return confirm('Xác nhận phê duyệt đơn này?')">
                                     <input type="hidden" name="maDonXinPhep" value="<?php echo htmlspecialchars($request['maDonXinPhep'] ?? ''); ?>">
                                     <button type="submit" class="btn btn-sm btn-success w-100">
@@ -781,13 +855,12 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
                             </div>
                         </div>
                         
-                        <!-- Modal từ chối nhanh -->
+                        <!-- Modal từ chối -->
                         <div class="modal fade" id="rejectModalQuick<?php echo htmlspecialchars($request['maDonXinPhep'] ?? ''); ?>" tabindex="-1">
                             <div class="modal-dialog modal-sm">
                                 <div class="modal-content">
                                     <form action="/public/index.php?action=gvcn-duyet-don-reject" method="POST">
                                         <input type="hidden" name="maDonXinPhep" value="<?php echo htmlspecialchars($request['maDonXinPhep'] ?? ''); ?>">
-                                        
                                         <div class="modal-header bg-danger text-white">
                                             <h6 class="modal-title">Từ chối đơn</h6>
                                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -810,13 +883,11 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
                                 </div>
                             </div>
                         </div>
-                        
                         <?php endforeach; ?>
                         <a href="/public/index.php?action=gvcn-duyet-don-pending" class="btn btn-outline-danger w-100 mt-3">
                             <i class="fa-solid fa-list me-2"></i>Xem tất cả
                         </a>
                     <?php elseif ($currentRole === 'gvcn'): ?>
-                        <!-- Không có đơn chờ duyệt -->
                         <h5 class="card-title fw-bold mb-4">
                             <i class="fa-solid fa-file-lines text-success me-2"></i>
                             Đơn xin nghỉ
@@ -829,147 +900,21 @@ if ($currentRole === 'ttbm' && ($_GET['action'] ?? '') === 'store_assign_exam') 
                             <i class="fa-solid fa-list me-2"></i>Xem tất cả đơn
                         </a>
                     <?php else: ?>
-                        <!-- ...existing code for notifications... -->
+                        <h5 class="card-title fw-bold mb-4">
+                            <i class="fa-solid fa-bell text-info me-2"></i>
+                            Thông báo
+                        </h5>
+                        <div class="text-center text-muted py-4">
+                            <i class="fa-solid fa-inbox fa-3x mb-3 d-block"></i>
+                            <p>Chưa có thông báo mới</p>
+                        </div>
+                        <a href="/public/index.php?action=gvbm-thong-bao" class="btn btn-outline-info w-100 mt-3">
+                            <i class="fa-solid fa-envelope me-2"></i>Xem tất cả
+                        </a>
                     <?php endif; ?>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Additional Features based on Role -->
-    <div class="row g-3 mt-4">
-        <?php if ($currentRole === 'gvcn'): ?>
-        <!-- GVCN specific features -->
-        <div class="col-md-4">
-            <div class="card feature-card">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-clipboard-check text-success me-2"></i>Hạnh kiểm & Học lực
-                    </h6>
-                    <p class="text-muted small mb-3">Xếp loại học sinh lớp chủ nhiệm</p>
-                    <a href="index.php?action=xep_loai" class="btn btn-outline-success w-100">
-                        <i class="fa-solid fa-star me-2"></i>Xếp loại
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card feature-card">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-award text-warning me-2"></i>Khen thưởng & Vi phạm
-                    </h6>
-                    <p class="text-muted small mb-3">Ghi nhận khen thưởng, vi phạm</p>
-                    <a href="/modules/teachers/homeroom/rewards.php" class="btn btn-outline-warning w-100">
-                        <i class="fa-solid fa-pen me-2"></i>Ghi nhận
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card feature-card">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-file-export text-primary me-2"></i>Báo cáo lớp
-                    </h6>
-                    <p class="text-muted small mb-3">Xuất báo cáo Excel, PDF</p>
-                    <a href="/modules/teachers/homeroom/reports.php" class="btn btn-outline-primary w-100">
-                        <i class="fa-solid fa-download me-2"></i>Xuất báo cáo
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <?php elseif ($currentRole === 'ttbm'): ?>
-        <!-- TTBM specific features -->
-        <div class="col-md-4">
-            <div class="card feature-card">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-file-pen text-primary me-2"></i>Phân công ra đề
-                    </h6>
-                    <p class="text-muted small mb-3">Phân công giáo viên ra đề thi</p>
-                    <a href="index.php?action=assign_exam" class="btn btn-outline-primary w-100">
-                        <i class="fa-solid fa-tasks me-2"></i>Phân công
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card feature-card">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-chart-line text-success me-2"></i>Báo cáo bộ môn
-                    </h6>
-                    <p class="text-muted small mb-3">Tổng hợp báo cáo chuyên môn</p>
-                    <a href="/modules/teachers/department/reports.php" class="btn btn-outline-success w-100">
-                        <i class="fa-solid fa-file-chart me-2"></i>Xem báo cáo
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card feature-card">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-users-gear text-warning me-2"></i>Quản lý tổ
-                    </h6>
-                    <p class="text-muted small mb-3">Giáo viên và phân công giảng dạy</p>
-                    <a href="/modules/teachers/department/teachers.php" class="btn btn-outline-warning w-100">
-                        <i class="fa-solid fa-list me-2"></i>Danh sách
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <?php else: ?>
-        <!-- GVBM basic features -->
-        <div class="col-md-4">
-            <div class="card feature-card">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-chart-simple text-primary me-2"></i>Thống kê điểm
-                    </h6>
-                    <p class="text-muted small mb-3">Xem thống kê kết quả học tập</p>
-                    <a href="/modules/teachers/statistics.php" class="btn btn-outline-primary w-100">
-                        <i class="fa-solid fa-chart-bar me-2"></i>Xem thống kê
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card feature-card">
-                <div class="card-body"></div>
-                    <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-book text-success me-2"></i>Tài liệu giảng dạy
-                    </h6>
-                    <p class="text-muted small mb-3">Quản lý tài liệu, bài giảng</p>
-                    <a href="/modules/teachers/materials.php" class="btn btn-outline-success w-100"></a>
-                        <i class="fa-solid fa-folder me-2"></i>Tài liệu
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card feature-card">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-headset text-warning me-2"></i>Hỗ trợ
-                    </h6>
-                    <p class="text-muted small mb-3">Hướng dẫn sử dụng hệ thống</p>
-                    <a href="/modules/teachers/support.php" class="btn btn-outline-warning w-100">
-                        <i class="fa-solid fa-circle-question me-2"></i>Trợ giúp
-                    </a>
-                </div>
-            </div>
-        </div>
-        <?php endif; ?>
     </div>
 </div>
 

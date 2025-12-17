@@ -29,7 +29,6 @@ class AdmissionTargetsModel {
     }
 
     /* ================== Năm học & Trường ================== */
-
     // Lấy danh sách các năm học
     public function loadNamHoc() {
         $defaults = ['2026-2027','2025-2026','2024-2025','2023-2024'];
@@ -49,7 +48,6 @@ class AdmissionTargetsModel {
             return $defaults;
         }
     }
-
     // Lấy danh sách tất cả các trường THPT
     public function getDanhSachTruong() {
         try {
@@ -62,9 +60,7 @@ class AdmissionTargetsModel {
             return [];
         }
     }
-
     /* ================== Nhân viên Sở ================== */
-
     // Lấy mã nhân viên sở từ username
     public function getMaNhanVienSoByUsername($username) {
         try {
@@ -90,18 +86,15 @@ class AdmissionTargetsModel {
             return null;
         }
     }
-
     /* ================== Chỉ tiêu theo năm ================== */
-
     // Lấy chỉ tiêu tuyển sinh đã phân bổ cho các trường theo năm học
     public function getChiTieuTheoNamHoc($namHoc) {
         try {
-            // Nếu là năm cố định: LUÔN tự động tính phân bổ đều (không lấy từ DB)
-            // Điều này đảm bảo khi thêm trường mới, năm cố định tự động cập nhật
+            // Nếu là năm cố định: LUÔN tự động tính phân bổ đều
+            // Năm cố định tự động cập nhật
             if ($this->laNamCodinh($namHoc)) {
                 return $this->sinhChiTieuTuDongChoNamCodinh($namHoc);
             }
-            
             // Năm khác: lấy từ DB như bình thường
             return $this->fetchAll("
                 SELECT 
@@ -121,12 +114,10 @@ class AdmissionTargetsModel {
             return [];
         }
     }
-    
     // Kiểm tra xem có phải năm cố định không
     private function laNamCodinh($namHoc) {
         return $namHoc === '2023-2024';
     }
-    
     // Tự động sinh chỉ tiêu phân bổ đều cho năm cố định
     private function sinhChiTieuTuDongChoNamCodinh($namHoc) {
         $danhSachTruong = $this->getDanhSachTruong();
@@ -162,12 +153,10 @@ class AdmissionTargetsModel {
         
         return $result;
     }
-
     // Lấy tổng chỉ tiêu phê duyệt của năm học
     // 2023-2024: cố định 2000, năm khác: lấy DB / 5% tăng / fallback 180 × số trường
     public function getTongPheDuyet($namHoc) {
         if ($this->laNamCodinh($namHoc)) return 2000;
-
         // Lấy nếu có trong DB
         $row = $this->fetchOne("
             SELECT tongChiTieu 
@@ -179,24 +168,36 @@ class AdmissionTargetsModel {
         if (!empty($row['tongChiTieu'])) {
             return (int)$row['tongChiTieu'];
         }
-
-        // Lấy năm trước gần nhất và tăng 5%
-        $prev = $this->fetchOne("
-            SELECT tongChiTieu 
+        // Tính tổng chỉ tiêu dựa trên năm trước (đệ quy hoặc tính dây chuyền)
+        list($namBatDau, $namKetThuc) = explode('-', $namHoc);
+        $namBatDauInt = (int)$namBatDau;
+        // Tìm trong database trước
+        $allYears = $this->fetchAll("
+            SELECT DISTINCT tongChiTieu, namHoc
             FROM ChiTieuTuyenSinh 
-            WHERE namHoc < ?
-            ORDER BY namHoc DESC 
-            LIMIT 1
-        ", [$namHoc]);
-
-        if (!empty($prev['tongChiTieu'])) {
-            return (int) round($prev['tongChiTieu'] * 1.05);
+            ORDER BY namHoc DESC
+        ");
+        // Tìm năm gần nhất trong DB
+        foreach ($allYears as $year) {
+            list($namBD, $namKT) = explode('-', $year['namHoc']);
+            $namBDInt = (int)$namBD;
+            if ($namBDInt < $namBatDauInt) {
+                $tongChiTieuNamTruoc = (int)$year['tongChiTieu'];
+                return (int) round($tongChiTieuNamTruoc * 1.05);
+            }
         }
-
+        // Nếu không tìm thấy trong DB, tính từ năm cố định 2023-2024
+        if ($namBatDauInt > 2023) {
+            // Tính dây chuyền từ năm 2023-2024 (= 2000)
+            $chiTieuGoc = 2000; // Năm cố định 2023-2024
+            $soNamCachBiet = $namBatDauInt - 2023;
+            // Mỗi năm tăng 5%: 2000 * (1.05)^n
+            $tongChiTieu = $chiTieuGoc * pow(1.05, $soNamCachBiet);
+            return (int) round($tongChiTieu);
+        }
         // Fallback: 180 × số trường
         return count($this->getDanhSachTruong()) * 180;
     }
-
     // Lấy tổng chỉ tiêu đã phân bổ cho năm học
     public function getTongChiTieuDaPhanBo($namHoc) {
         try {
@@ -207,291 +208,168 @@ class AdmissionTargetsModel {
             ", [$namHoc]);
             
             $tongDB = (int)($row['tongDaPhanBo'] ?? 0);
-            
             // Nếu là năm cố định và chưa có trong DB, trả về tổng phê duyệt
             if ($this->laNamCodinh($namHoc) && $tongDB == 0) {
                 return $this->getTongPheDuyet($namHoc);
             }
-            
             return $tongDB;
         } catch (PDOException $e) {
             error_log("Error getTongChiTieuDaPhanBo: " . $e->getMessage());
             return 0;
         }
     }
-
     /* ================== Gợi ý & năm trước ================== */
-
     // Tính gợi ý chỉ tiêu cho trường
     public function tinhGoiYChiTieu($maTruong, $namHoc) {
-        // Bước 1: Lấy chỉ tiêu năm trước của trường này
-        $chiTieuNamTruoc = $this->getChiTieuNamTruoc($maTruong, $namHoc);
+        $chiTieuNamTruoc = $this->getChiTieuNamTruocThucTe($maTruong, $namHoc);
+        if ($chiTieuNamTruoc > 0) return (int) round($chiTieuNamTruoc * 1.05);
 
-        // Bước 2: Nếu trường có chỉ tiêu năm trước => tăng 5%
-        if ($chiTieuNamTruoc > 0) {
-            return (int) round($chiTieuNamTruoc * 1.05);
-        }
+        $chiTieuTrungBinh = $this->getTrungBinhChiTieu($namHoc);
+        if ($chiTieuTrungBinh > 0) return $chiTieuTrungBinh;
 
-        // Bước 3: Trường mới hoặc chưa có chỉ tiêu năm trước
-        // => Tính trung bình chỉ tiêu của các trường khác trong năm trước
-        $chiTieuTrungBinh = $this->getTrungBinhChiTieuCacTruongKhac($namHoc);
-        
-        if ($chiTieuTrungBinh > 0) {
-            // Nếu có dữ liệu tham khảo, dùng trung bình của các trường khác
-            return (int) round($chiTieuTrungBinh);
-        }
-
-        // Bước 4: Fallback - chia đều tổng chỉ tiêu cho tất cả trường
         $tongChiTieu = $this->getTongPheDuyet($namHoc);
         $soTruong = count($this->getDanhSachTruong());
         
-        if ($tongChiTieu > 0 && $soTruong > 0) {
-            return (int) round($tongChiTieu / $soTruong);
-        }
-
-        // Bước 5: Giá trị mặc định cuối cùng
-        return 150;
+        return ($tongChiTieu > 0 && $soTruong > 0) 
+            ? (int) round($tongChiTieu / $soTruong) 
+            : 150;
     }
-
-    /**
-     * Tính trung bình chỉ tiêu của các trường khác trong năm trước
-     * Dùng để gợi ý cho trường mới
-     */
-    private function getTrungBinhChiTieuCacTruongKhac($namHocHienTai) {
+    // Tính trung bình chỉ tiêu các trường
+    private function getTrungBinhChiTieu($namHoc) {
         try {
-            // Nếu năm hiện tại là 2024-2025, lấy trung bình từ năm cố định 2023-2024
-            if ($namHocHienTai === '2024-2025') {
-                $chiTieuNamCodinh = $this->sinhChiTieuTuDongChoNamCodinh('2023-2024');
-                if (empty($chiTieuNamCodinh)) {
-                    return 0;
+            // Lấy từ năm cố định nếu >= 2024-2025
+            if ($namHoc >= '2024-2025') {
+                $chiTieuCodinh = $this->sinhChiTieuTuDongChoNamCodinh('2023-2024');
+                if (!empty($chiTieuCodinh)) {
+                    $tong = array_sum(array_column($chiTieuCodinh, 'chiTieuPhanBo'));
+                    return (int) round($tong / count($chiTieuCodinh));
                 }
-                
-                $tong = 0;
-                foreach ($chiTieuNamCodinh as $ct) {
-                    $tong += $ct['chiTieuPhanBo'];
-                }
-                
-                return (int)round($tong / count($chiTieuNamCodinh));
-            }
-            
-            // Năm trước 2024-2025: lấy từ DB như bình thường
-            // Lấy năm trước gần nhất
-            $stmt = $this->db->prepare("
-                SELECT DISTINCT namHoc 
-                FROM ChiTieuTuyenSinh 
-                WHERE namHoc < ?
-                ORDER BY namHoc DESC 
-                LIMIT 1
-            ");
-            $stmt->execute([$namHocHienTai]);
-            $result = $stmt->fetch();
-            
-            if (!$result) {
-                return 0;
-            }
-            
-            $namTruoc = $result['namHoc'];
-            
-            // Tính trung bình chỉ tiêu của tất cả trường trong năm đó
+            }    
+            // Lấy từ DB
             $row = $this->fetchOne("
-                SELECT AVG(chiTieuPhanBo) as trungBinh
+                SELECT AVG(chiTieuPhanBo) as tb
                 FROM ChiTieuTuyenSinh
-                WHERE namHoc = ? AND chiTieuPhanBo > 0
-            ", [$namTruoc]);
+                WHERE namHoc < ? AND chiTieuPhanBo > 0
+                ORDER BY namHoc DESC
+                LIMIT 1
+            ", [$namHoc]);
 
-            return (int)($row['trungBinh'] ?? 0);
+            return (int)($row['tb'] ?? 0);
         } catch (PDOException $e) {
-            error_log("Error getTrungBinhChiTieuCacTruongKhac: " . $e->getMessage());
             return 0;
         }
     }
-
-    // Lấy chỉ tiêu của trường trong năm trước
-    private function getChiTieuNamTruoc($maTruong, $namHocHienTai) {
+    // Lấy chỉ tiêu năm trước của trường (public cho controller)
+    public function getChiTieuNamTruocThucTe($maTruong, $namHoc) {
         try {
-            // Nếu năm hiện tại là 2024-2025, lấy từ năm cố định 2023-2024
-            if ($namHocHienTai === '2024-2025') {
-                return $this->getChiTieuTuNamCodinh($maTruong);
-            }
-            
-            // Các năm khác: lấy từ năm liền trước trong DB
+            // Lấy từ DB
             $row = $this->fetchOne("
                 SELECT chiTieuPhanBo 
                 FROM ChiTieuTuyenSinh
                 WHERE maTruong = ? AND namHoc < ?
-                ORDER BY namHoc DESC 
-                LIMIT 1
-            ", [$maTruong, $namHocHienTai]);
+                ORDER BY namHoc DESC LIMIT 1
+            ", [$maTruong, $namHoc]);
             
             $chiTieu = (int)($row['chiTieuPhanBo'] ?? 0);
             
-            // Nếu không tìm thấy trong DB và năm >= 2025-2026, thử lấy từ năm cố định
-            if ($chiTieu === 0 && $namHocHienTai >= '2025-2026') {
-                return $this->getChiTieuTuNamCodinh($maTruong);
+            // Fallback: lấy từ năm cố định nếu >= 2024-2025
+            if ($chiTieu === 0 && $namHoc >= '2024-2025') {
+                $chiTieuCodinh = $this->sinhChiTieuTuDongChoNamCodinh('2023-2024');
+                foreach ($chiTieuCodinh as $ct) {
+                    if ($ct['maTruong'] === $maTruong) {
+                        return (int)$ct['chiTieuPhanBo'];
+                    }
+                }
             }
-
             return $chiTieu;
         } catch (PDOException $e) {
-            error_log("Error getChiTieuNamTruoc: " . $e->getMessage());
             return 0;
         }
     }
-    
-    // Lấy chỉ tiêu của trường từ năm cố định (2023-2024)
-    private function getChiTieuTuNamCodinh($maTruong) {
-        // Lấy danh sách chỉ tiêu tự động sinh cho năm cố định
-        $chiTieuNamCodinh = $this->sinhChiTieuTuDongChoNamCodinh('2023-2024');
-        
-        // Tìm chỉ tiêu của trường này
-        foreach ($chiTieuNamCodinh as $ct) {
-            if ($ct['maTruong'] === $maTruong) {
-                return (int)$ct['chiTieuPhanBo'];
-            }
-        }
-        
-        // Nếu không tìm thấy (trường mới sau năm cố định), trả về 0
-        return 0;
-    }
-
-    // Public wrapper cho controller
-    public function getChiTieuNamTruocThucTe($maTruong, $namHocHienTai) {
-        return $this->getChiTieuNamTruoc($maTruong, $namHocHienTai);
-    }
-
     /* ================== Lưu / Xóa phân bổ ================== */
-
-    // Lưu phân bổ chỉ tiêu tuyển sinh
     public function luuPhanBo($namHoc, $chiTieuData, $maNhanVienSo) {
         try {
             $this->db->beginTransaction();
 
             $tongPheDuyet = $this->getTongPheDuyet($namHoc);
-            $tongPhanBo   = array_sum($chiTieuData);
+            $tongPhanBo = array_sum($chiTieuData);
 
             if ($tongPhanBo > $tongPheDuyet && $tongPheDuyet > 0) {
-                $this->db->rollBack();
-                return [
-                    'success' => false,
-                    'message' => "Tổng chỉ tiêu ($tongPhanBo) vượt quá phê duyệt ($tongPheDuyet)!"
-                ];
+                throw new Exception("Tổng chỉ tiêu ($tongPhanBo) vượt quá phê duyệt ($tongPheDuyet)!");
             }
 
-            // Xóa dữ liệu cũ của năm học
+            // Xóa dữ liệu cũ
             $this->exec("DELETE FROM ChiTieuTuyenSinh WHERE namHoc = ?", [$namHoc]);
 
-            $stmtInsert = $this->db->prepare("
+            // Validate mã nhân viên sở
+            $maNVS = (!empty($maNhanVienSo) && $maNhanVienSo !== 'NVS_DEFAULT' 
+                && $this->fetchOne("SELECT 1 FROM NhanVienSo WHERE maNhanVienSo = ?", [$maNhanVienSo]))
+                ? $maNhanVienSo : null;
+
+            list($namBD, $namKT) = explode('-', $namHoc);
+            $prefix = 'CT' . substr($namBD, -2) . substr($namKT, -2);
+
+            $stmt = $this->db->prepare("
                 INSERT INTO ChiTieuTuyenSinh 
                 (maChiTieu, namHoc, tongChiTieu, chiTieuPhanBo, maTruong, maNhanVienSo, ngayBanHanh)
                 VALUES (?, ?, ?, ?, ?, ?, NOW())
             ");
 
-            // Kiểm tra mã NVS 1 lần
-            $maNVS = null;
-            if (!empty($maNhanVienSo) && $maNhanVienSo !== 'NVS_DEFAULT') {
-                $check = $this->fetchOne("
-                    SELECT maNhanVienSo 
-                    FROM NhanVienSo 
-                    WHERE maNhanVienSo = ?
-                ", [$maNhanVienSo]);
-                if (!empty($check['maNhanVienSo'])) {
-                    $maNVS = $maNhanVienSo;
-                }
-            }
-
-            list($namBD, $namKT) = explode('-', $namHoc);
-            $prefix = 'CT' . substr($namBD, -2) . substr($namKT, -2);
-
             foreach ($chiTieuData as $maTruong => $soLuong) {
-                if ($soLuong <= 0) {
-                    $this->db->rollBack();
-                    return [
-                        'success' => false,
-                        'message' => "Chỉ tiêu cho trường $maTruong phải > 0!"
-                    ];
-                }
-
-                $maChiTieu = $prefix . $maTruong;
-                $stmtInsert->execute([
-                    $maChiTieu,
-                    $namHoc,
-                    $tongPheDuyet,
-                    $soLuong,
-                    $maTruong,
-                    $maNVS
+                if ($soLuong <= 0) throw new Exception("Chỉ tiêu trường $maTruong phải > 0!");
+                
+                $stmt->execute([
+                    $prefix . $maTruong, $namHoc, $tongPheDuyet, 
+                    $soLuong, $maTruong, $maNVS
                 ]);
             }
 
             $this->db->commit();
-            $this->guiThongBaoPhanBo($namHoc, $chiTieuData);
+            error_log("Đã phân bổ chỉ tiêu $namHoc cho " . count($chiTieuData) . " trường.");
 
-            return [
-                'success' => true,
-                'message' => "Phân bổ chỉ tiêu thành công cho năm học $namHoc!"
-            ];
-        } catch (PDOException $e) {
-            $this->db->rollBack();
-            error_log("Error luuPhanBo: " . $e->getMessage());
-            return ['success' => false, 'message' => "Lỗi: " . $e->getMessage()];
+            return ['success' => true, 'message' => "Phân bổ chỉ tiêu thành công cho năm học $namHoc!"];
+        } catch (Exception $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            return ['success' => false, 'message' => $e->getMessage()];
         }
     }
-
-    // Gửi thông báo về chỉ tiêu cho các trường
-    private function guiThongBaoPhanBo($namHoc, $chiTieuData) {
-        // TODO: gửi email / tạo notification
-        error_log("Đã phân bổ chỉ tiêu năm $namHoc cho " . count($chiTieuData) . " trường.");
-    }
-
-    // Xóa phân bổ chỉ tiêu theo năm học
     public function xoaPhanBoTheoNamHoc($namHoc) {
         try {
-            $stmtDelete = $this->db->prepare("DELETE FROM ChiTieuTuyenSinh WHERE namHoc = ?");
-            $stmtDelete->execute([$namHoc]);
-            $soXoa = $stmtDelete->rowCount();
+            $stmt = $this->db->prepare("DELETE FROM ChiTieuTuyenSinh WHERE namHoc = ?");
+            $stmt->execute([$namHoc]);
+            $soXoa = $stmt->rowCount();
 
-            if ($soXoa == 0) {
-                return ['success' => false, 'message' => "Không tìm thấy chỉ tiêu năm $namHoc!"];
-            }
-
-            return ['success' => true, 'message' => "Đã xóa $soXoa chỉ tiêu năm học $namHoc!"];
+            return $soXoa > 0
+                ? ['success' => true, 'message' => "Đã xóa $soXoa chỉ tiêu năm học $namHoc!"]
+                : ['success' => false, 'message' => "Không tìm thấy chỉ tiêu năm $namHoc!"];
         } catch (PDOException $e) {
-            error_log("Error xoaPhanBoTheoNamHoc: " . $e->getMessage());
             return ['success' => false, 'message' => "Lỗi: " . $e->getMessage()];
         }
     }
-
     /* ================== Validate & Thống kê ================== */
-
-    // Kiểm tra dữ liệu nhập có hợp lệ không
     public function kiemTraTongChiTieu($chiTieuData, $namHoc) {
-        $errors       = [];
-        $tongNhap     = array_sum($chiTieuData);
+        $errors = [];
+        $tongNhap = array_sum($chiTieuData);
         $tongPheDuyet = $this->getTongPheDuyet($namHoc);
-
         if ($tongPheDuyet > 0 && $tongNhap != $tongPheDuyet) {
-            $errors[] = "⚠️ Tổng nhập ($tongNhap) khác tổng phê duyệt ($tongPheDuyet)!";
+            $errors[] = 'Tổng nhập (' . $tongNhap . ') khác tổng phê duyệt (' . $tongPheDuyet . ')!';
         }
-
         foreach ($chiTieuData as $maTruong => $soLuong) {
             if (!is_numeric($soLuong)) {
-                $errors[] = "❌ Trường $maTruong: phải là số!";
+                $errors[] = 'Trường ' . $maTruong . ': phải là số!';
             } elseif ($soLuong < 0) {
-                $errors[] = "❌ Trường $maTruong: không được âm ($soLuong)!";
+                $errors[] = 'Trường ' . $maTruong . ': không được âm!';
             } elseif ($soLuong == 0) {
-                $errors[] = "⚠️ Trường $maTruong: không được = 0!";
+                $errors[] = 'Trường ' . $maTruong . ': không được = 0!';
             } elseif (floor($soLuong) != $soLuong) {
-                $errors[] = "⚠️ Trường $maTruong: phải là số nguyên!";
+                $errors[] = 'Trường ' . $maTruong . ': phải là số nguyên!';
             }
         }
-
         return ['valid' => empty($errors), 'errors' => $errors];
     }
-
-    // Tính tổng chỉ tiêu từ danh sách đã nhập
     public function tinhTongChiTieuDaNhap($chiTieuData) {
         return array_sum($chiTieuData);
     }
-
-    // Lấy lịch sử phân bổ chỉ tiêu
     public function getLichSuPhanBo($limit = 10) {
         try {
             return $this->fetchAll("
@@ -506,7 +384,6 @@ class AdmissionTargetsModel {
                 LIMIT ?
             ", [$limit]);
         } catch (PDOException $e) {
-            error_log("Error getLichSuPhanBo: " . $e->getMessage());
             return [];
         }
     }
