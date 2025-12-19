@@ -84,13 +84,59 @@ try {
 }
 
 
-// Thống kê theo trường
-$schoolStats = [
-    ['school' => 'THPT Lê Quý Đôn', 'students' => 2487, 'teachers' => 152, 'pass_rate' => 98.5, 'status' => 'active'],
-    ['school' => 'THPT Nguyễn Huệ', 'students' => 2315, 'teachers' => 145, 'pass_rate' => 97.8, 'status' => 'active'],
-    ['school' => 'THPT Trần Phú', 'students' => 2198, 'teachers' => 138, 'pass_rate' => 96.5, 'status' => 'active'],
-    ['school' => 'THPT Phan Châu Trinh', 'students' => 2089, 'teachers' => 132, 'pass_rate' => 95.2, 'status' => 'active'],
-];
+// ⚠️ THAY ĐỔI: Lấy dữ liệu $schoolStats từ database
+$schoolStats = [];
+
+try {
+    if (class_exists('Database')) {
+        $conn = Database::getInstance()->getConnection();
+
+        // FIX: BỎ cột t.trangThai vì không có trong schema
+        $sql = "SELECT 
+                    t.tenTruong as school,
+                    (SELECT COUNT(*) 
+                     FROM hocsinh hs 
+                     INNER JOIN lophoc lh ON hs.maLop = lh.maLop 
+                     WHERE hs.trangThai = 'DANGHOC') as students,
+                    (SELECT COUNT(*) 
+                     FROM giaovienbomon gv 
+                     WHERE gv.tinhTrangTaiKhoan = 'ACTIVE') as teachers,
+                    0 as pass_rate
+                FROM truong t
+                ORDER BY (SELECT COUNT(*) 
+                          FROM hocsinh hs 
+                          INNER JOIN lophoc lh ON hs.maLop = lh.maLop) DESC
+                LIMIT 4";
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        $schoolStats = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Nếu không có dữ liệu, dùng fallback data
+        if (empty($schoolStats)) {
+            $schoolStats = [
+                ['school' => 'THPT Lê Quý Đôn', 'students' => 450, 'teachers' => 16, 'pass_rate' => 0, 'status' => 'active'],
+                ['school' => 'THPT Nguyễn Huệ', 'students' => 0, 'teachers' => 0, 'pass_rate' => 0, 'status' => 'active'],
+                ['school' => 'THPT Trần Phú', 'students' => 0, 'teachers' => 0, 'pass_rate' => 0, 'status' => 'active'],
+                ['school' => 'THPT Phan Châu Trinh', 'students' => 0, 'teachers' => 0, 'pass_rate' => 0, 'status' => 'active'],
+            ];
+        } else {
+            // Format lại dữ liệu để đảm bảo type đúng
+            foreach ($schoolStats as &$school) {
+                $school['students'] = (int)($school['students'] ?? 0);
+                $school['teachers'] = (int)($school['teachers'] ?? 0);
+                $school['pass_rate'] = (float)($school['pass_rate'] ?? 0);
+                $school['status'] = 'active'; // Mặc định là active
+            }
+        }
+    }
+} catch (Exception $e) {
+    error_log("Error loading school stats: " . $e->getMessage());
+    // Fallback nếu lỗi DB
+    $schoolStats = [
+        ['school' => 'Dữ liệu đang cập nhật', 'students' => 0, 'teachers' => 0, 'pass_rate' => 0, 'status' => 'active'],
+    ];
+}
 
 // Dữ liệu tuyển sinh
 $admissionData = [
@@ -473,10 +519,10 @@ $notifications = [
                     <h5 class="card-title fw-bold">Tuyển sinh</h5>
                     <p class="text-muted small">Upload điểm, công bố kết quả</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/sogd/admission/upload.php" class="btn btn-primary btn-sm">
+                        <a href="/public/index.php?action=nhanvienso-tuyen-sinh-upload" class="btn btn-primary btn-sm">
                             <i class="fa-solid fa-upload me-1"></i>Upload điểm
                         </a>
-                        <a href="/modules/sogd/admission/results.php" class="btn btn-outline-primary btn-sm">
+                        <a href="/public/index.php?action=nhanvienso-tuyen-sinh-list" class="btn btn-outline-primary btn-sm">
                             <i class="fa-solid fa-list me-1"></i>Kết quả
                         </a>
                     </div>

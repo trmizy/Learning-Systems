@@ -495,10 +495,36 @@ if (isset($_GET['action'])) {
         $controller->view();
         break;
 
+    // ===== QUẢN LÝ TUYỂN SINH (NHÂN VIÊN SỞ) =====
+    case 'nhanvienso-tuyen-sinh-upload':
+        require_login();
+        require_role(['nhanvienso']);
+        require_once __DIR__ . '/../controllers/nhanvienso/TuyenSinhController.php';
+        $controller = new TuyenSinhController();
+        $controller->uploadDiemThi();
+        exit;
+        
+
+    case 'nhanvienso-tuyen-sinh-process':
+        require_login();
+        require_role(['nhanvienso']);
+        require_once __DIR__ . '/../controllers/nhanvienso/TuyenSinhController.php';
+        $controller = new TuyenSinhController();
+        $controller->processUpload();
+        exit;
+
+    case 'nhanvienso-tuyen-sinh-list':
+        require_login();
+        require_role(['nhanvienso']);
+        require_once __DIR__ . '/../controllers/nhanvienso/TuyenSinhController.php';
+        $controller = new TuyenSinhController();
+        $controller->danhSachThiSinh();
+        exit;
+
     default:
         http_response_code(404);
         require_once __DIR__ . '/../views/errors/404.php';
-        break;
+        exit;
     }
 }
 

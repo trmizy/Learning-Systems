@@ -925,19 +925,6 @@ try {
             <div class="card feature-card">
                 <div class="card-body text-center">
                     <h6 class="fw-bold mb-3">
-                        <i class="fa-solid fa-building text-warning me-2"></i>Cơ sở vật chất
-                    </h6>
-                    <a href="/modules/bgh/facilities/index.php" class="btn btn-outline-warning w-100">
-                        <i class="fa-solid fa-warehouse me-2"></i>Quản lý CSVC
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card feature-card">
-                <div class="card-body text-center">
-                    <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-file-contract text-danger me-2"></i>Văn bản - Quyết định
                     </h6>
                     <a href="/modules/bgh/documents/index.php" class="btn btn-outline-danger w-100">

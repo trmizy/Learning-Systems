@@ -20,10 +20,15 @@
         <div class="account-info-box">
             <h4><i class="fas fa-check-circle"></i> Thông tin tài khoản đã tạo</h4>
             <div class="account-info-item"><strong>Trường:</strong> <span><?= htmlspecialchars($newAccountInfo['tenTruong']) ?></span></div>
-            <div class="account-info-item"><strong>Mã trường:</strong> <span class="value"><?= htmlspecialchars($newAccountInfo['maTruong']) ?></span></div>
+            <div class="account-info-item"><strong>Mã trường:</strong> <span class="value"><?= htmlspecialchars($newAccountInfo['maTruong']) ?></span></div>            
+            <!-- ⚠️ THÊM: Hiển thị mã tài khoản -->
+            <div class="account-info-item"><strong>Mã tài khoản:</strong> <span class="value"><?= htmlspecialchars($newAccountInfo['maTaiKhoan']) ?></span></div>
+            
             <div class="account-info-item"><strong>Tên đăng nhập:</strong> <span class="value"><?= htmlspecialchars($newAccountInfo['tenDangNhap']) ?></span></div>
             <div class="account-info-item"><strong>Mật khẩu:</strong> <span class="value"><?= htmlspecialchars($newAccountInfo['matKhau']) ?></span></div>
             <div class="account-info-item"><strong>Email:</strong> <span><?= htmlspecialchars($newAccountInfo['email']) ?></span></div>
+            <div class="account-info-item"><strong>Vai trò:</strong> <span class="badge badge-primary">Admin (Phòng giáo vụ)</span></div>
+            
             <p style="margin-top: 15px; color: #00695c;"><i class="fas fa-info-circle"></i> Thông tin đã được gửi đến email của trường. Vui lòng thông báo cho trường kiểm tra hộp thư.</p>
         </div>
     <?php endif; ?>
