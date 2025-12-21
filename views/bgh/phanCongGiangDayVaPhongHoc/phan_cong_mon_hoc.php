@@ -139,7 +139,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                 Năm học: <strong><?php echo htmlspecialchars($namHoc); ?></strong>
             </p>
         </div>
-        <a href="index.php?page=bgh-phan-cong" class="btn btn-outline-secondary">
+        <a href="/public/index.php?action=bgh-phan-cong" class="btn btn-outline-secondary">
             <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
         </a>
     </div>
@@ -173,7 +173,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                 
                 <!-- Semester Filter -->
                 <form method="GET" class="d-flex align-items-center gap-2">
-                    <input type="hidden" name="page" value="bgh-phan-cong-mon-hoc">
+                    <input type="hidden" name="action" value="bgh-phan-cong-mon-hoc">
                     <input type="hidden" name="maLop" value="<?php echo htmlspecialchars($maLop); ?>">
                     <label class="mb-0 text-muted">
                         <i class="fa-solid fa-calendar me-1"></i>
@@ -249,7 +249,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                             <td class="text-center">
                                 <?php if ($mon['daPhanCong']): ?>
                                 <div class="btn-group" role="group">
-                                    <a href="?page=bgh-phan-cong-mon-hoc&maLop=<?php echo urlencode($maLop); ?>&hocKy=<?php echo urlencode($hocKy); ?>&action_modal=edit&maMonHoc=<?php echo urlencode($mon['maMonHoc']); ?>&tenMon=<?php echo urlencode($mon['tenMon']); ?>&maGV=<?php echo urlencode($mon['maGV']); ?>"
+                                    <a href="/public/index.php?action=bgh-phan-cong-mon-hoc&maLop=<?php echo urlencode($maLop); ?>&hocKy=<?php echo urlencode($hocKy); ?>&action_modal=edit&maMonHoc=<?php echo urlencode($mon['maMonHoc']); ?>&tenMon=<?php echo urlencode($mon['tenMon']); ?>&maGV=<?php echo urlencode($mon['maGV']); ?>"
                                        class="btn btn-sm btn-outline-secondary"
                                        title="Đổi GV">
                                         <i class="fa-solid fa-pen"></i>
@@ -265,7 +265,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                                     </form>
                                 </div>
                                 <?php else: ?>
-                                <a href="?page=bgh-phan-cong-mon-hoc&maLop=<?php echo urlencode($maLop); ?>&hocKy=<?php echo urlencode($hocKy); ?>&action_modal=add&maMonHoc=<?php echo urlencode($mon['maMonHoc']); ?>&tenMon=<?php echo urlencode($mon['tenMon']); ?>"
+                                <a href="/public/index.php?action=bgh-phan-cong-mon-hoc&maLop=<?php echo urlencode($maLop); ?>&hocKy=<?php echo urlencode($hocKy); ?>&action_modal=add&maMonHoc=<?php echo urlencode($mon['maMonHoc']); ?>&tenMon=<?php echo urlencode($mon['tenMon']); ?>"
                                    class="btn btn-sm btn-primary"
                                    title="Phân công GV">
                                     <i class="fa-solid fa-user-plus me-1"></i>Phân GV
@@ -314,7 +314,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                     <i class="fa-solid fa-user-plus me-2"></i>
                     Phân công giáo viên
                 </h5>
-                <a href="?page=bgh-phan-cong-mon-hoc&maLop=<?php echo urlencode($maLop); ?>&hocKy=<?php echo urlencode($hocKy); ?>" class="btn-close"></a>
+                <a href="/public/index.php?action=bgh-phan-cong-mon-hoc&maLop=<?php echo urlencode($maLop); ?>&hocKy=<?php echo urlencode($hocKy); ?>" class="btn-close"></a>
             </div>
             <form method="POST">
                 <div class="modal-body">
@@ -344,7 +344,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <a href="?page=bgh-phan-cong-mon-hoc&maLop=<?php echo urlencode($maLop); ?>&hocKy=<?php echo urlencode($hocKy); ?>" class="btn btn-secondary">Hủy</a>
+                    <a href="/public/index.php?action=bgh-phan-cong-mon-hoc&maLop=<?php echo urlencode($maLop); ?>&hocKy=<?php echo urlencode($hocKy); ?>" class="btn btn-secondary">Hủy</a>
                     <button type="submit" class="btn btn-primary">
                         <i class="fa-solid fa-check me-2"></i>Xác nhận
                     </button>

@@ -5,7 +5,7 @@
  * Path: models/PhanCongModel.php
  */
 
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../../config/database.php';
 
 class PhanCongModel {
     private $db;
@@ -601,18 +601,10 @@ class PhanCongModel {
     }
 
     /**
-     * Cập nhật phân công giảng dạy (đổi GV)
-     * @param string $maLop
-     * @param string $maMonHoc
-     * @param string $maGV
-     * @param string $namHoc
-     * @param string $hocKy
-     * @return bool
+     * Cập nhật phân công giảng dạy - FIX: INSERT nếu chưa tồn tại
      */
     public function capNhatPhanCongGiangDay($maLop, $maMonHoc, $maGV, $namHoc, $hocKy) {
         try {
-            // Áp dụng cùng ràng buộc như khi thêm mới
-            
             // Ràng buộc 1: Kiểm tra GV bộ môn chỉ được phụ trách tối đa 5 lớp
             $stmtCheck = $this->db->prepare("
                 SELECT COUNT(DISTINCT maLop) as soLop
@@ -657,12 +649,33 @@ class PhanCongModel {
                 }
             }
             
-            $stmt = $this->db->prepare("
-                UPDATE phanconggiangday
-                SET maGV = ?
+            // ⚠️ FIX QUAN TRỌNG: Kiểm tra phân công đã tồn tại chưa
+            $stmtExist = $this->db->prepare("
+                SELECT maPhanCong 
+                FROM phanconggiangday
                 WHERE maLop = ? AND maMonHoc = ? AND namHoc = ? AND hocKy = ?
             ");
-            return $stmt->execute([$maGV, $maLop, $maMonHoc, $namHoc, $hocKy]);
+            $stmtExist->execute([$maLop, $maMonHoc, $namHoc, $hocKy]);
+            $existing = $stmtExist->fetch();
+            
+            if ($existing) {
+                // ✅ CÓ RỒI → UPDATE
+                $stmt = $this->db->prepare("
+                    UPDATE phanconggiangday
+                    SET maGV = ?
+                    WHERE maLop = ? AND maMonHoc = ? AND namHoc = ? AND hocKy = ?
+                ");
+                return $stmt->execute([$maGV, $maLop, $maMonHoc, $namHoc, $hocKy]);
+            } else {
+                // ✅ CHƯA CÓ → INSERT (giống logic ganGVCN)
+                $maPhanCong = 'PC_' . $maLop . '_' . $maMonHoc . '_HK' . $hocKy . '_' . time();
+                $stmt = $this->db->prepare("
+                    INSERT INTO phanconggiangday (maPhanCong, maLop, maMonHoc, maGV, namHoc, hocKy)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ");
+                return $stmt->execute([$maPhanCong, $maLop, $maMonHoc, $maGV, $namHoc, $hocKy]);
+            }
+            
         } catch (Exception $e) {
             throw $e;
         } catch (PDOException $e) {
@@ -804,6 +817,217 @@ class PhanCongModel {
         }
         
         return $danhSach;
+    }
+
+    /**
+     * Phân công GVCN mới - FIX: Sửa lỗi cú pháp
+     */
+public function phanCongGVCN($maGV, $maLop) {
+    try {
+        $this->db->beginTransaction();
+
+        // BƯỚC 1: Kiểm tra xem giáo viên đã là GVCN của lớp khác chưa
+        $stmtCheck = $this->db->prepare("SELECT lop FROM giaovienchunhiem WHERE maGV = ?");
+        $stmtCheck->execute([$maGV]);
+        $existingClass = $stmtCheck->fetchColumn();
+
+        if ($existingClass) {
+            throw new Exception("Giáo viên đã là chủ nhiệm của lớp $existingClass");
+        }
+
+        // BƯỚC 2: Kiểm tra lớp đã có GVCN chưa
+        // BƯỚC 2: Kiểm tra lớp đã có GVCN chưa
+        $stmtCheckClass = $this->db->prepare("SELECT maGV FROM giaovienchunhiem WHERE lop = ?");
+        $stmtCheckClass->execute([$maLop]);
+        $existingGV = $stmtCheckClass->fetchColumn();
+
+        if ($existingGV) {
+            // Xóa GVCN cũ khỏi lớp này
+            $stmtDelete = $this->db->prepare("DELETE FROM giaovienchunhiem WHERE lop = ?");
+            $stmtDelete->execute([$maLop]);
+            
+            // LOGIC QUAN TRỌNG: Kiểm tra xem GV cũ còn chủ nhiệm lớp nào KHÁC không?
+            $stmtCheckOldGV = $this->db->prepare("SELECT COUNT(*) FROM giaovienchunhiem WHERE maGV = ?");
+            $stmtCheckOldGV->execute([$existingGV]);
+            $countLopOldGV = $stmtCheckOldGV->fetchColumn();
+
+            // Chỉ hạ quyền về 'gvbm' nếu họ KHÔNG còn chủ nhiệm lớp nào nữa
+            if ($countLopOldGV == 0) {
+                $stmtGetOldTK = $this->db->prepare("SELECT maTaiKhoan FROM giaovienbomon WHERE maGV = ?");
+                $stmtGetOldTK->execute([$existingGV]);
+                $oldMaTK = $stmtGetOldTK->fetchColumn();
+                
+                if ($oldMaTK) {
+                    // Update đúng bảng taikhoan_vaitro
+                    $stmtDowngradeOld = $this->db->prepare("UPDATE taikhoan_vaitro SET maVaiTro = 'gvbm' WHERE maTaiKhoan = ?");
+                    $stmtDowngradeOld->execute([$oldMaTK]);
+                }
+            }
+        }
+
+        // BƯỚC 3: Thêm GVCN mới vào bảng giaovienchunhiem
+        $stmtInsert = $this->db->prepare("INSERT INTO giaovienchunhiem (maGV, lop) VALUES (?, ?)");
+        $stmtInsert->execute([$maGV, $maLop]);
+
+// BƯỚC 4: Cập nhật role trong bảng taikhoan_vaitro
+        // Lấy mã tài khoản từ bảng giáo viên
+        $stmtGetMaTK = $this->db->prepare("SELECT maTaiKhoan FROM giaovienbomon WHERE maGV = ?");
+        $stmtGetMaTK->execute([$maGV]);
+        $maTaiKhoan = $stmtGetMaTK->fetchColumn();
+
+        // [DEBUG] In ra để xem PHP thực sự lấy được gì
+        error_log("DEBUG FIX: Mã GV [$maGV] có Mã TK là: [" . ($maTaiKhoan ?? 'NULL') . "]");
+
+        if ($maTaiKhoan) {
+            // SỬA LỖI QUAN TRỌNG: Dùng TRIM() để bỏ qua lỗi khoảng trắng (nếu có)
+            // Và kiểm tra luôn: Nếu chưa có thì INSERT, có rồi thì UPDATE
+            
+            // 1. Kiểm tra chính xác xem tài khoản này đã nằm trong bảng phân quyền chưa
+            $stmtCheck = $this->db->prepare("SELECT count(*) FROM taikhoan_vaitro WHERE TRIM(maTaiKhoan) = TRIM(?)");
+            $stmtCheck->execute([$maTaiKhoan]);
+            $exists = $stmtCheck->fetchColumn();
+
+            if ($exists > 0) {
+                // Có rồi -> UPDATE
+                error_log("DEBUG FIX: Tìm thấy tài khoản -> Đang chạy lệnh UPDATE...");
+                $stmtUpdate = $this->db->prepare("UPDATE taikhoan_vaitro SET maVaiTro = 'gvcn' WHERE TRIM(maTaiKhoan) = TRIM(?)");
+                $stmtUpdate->execute([$maTaiKhoan]);
+                error_log("DEBUG FIX: Đã UPDATE thành công " . $stmtUpdate->rowCount() . " dòng.");
+            } else {
+                // Chưa có -> INSERT
+                error_log("DEBUG FIX: Không tìm thấy trong bảng role -> Đang chạy lệnh INSERT...");
+                $stmtInsertRole = $this->db->prepare("INSERT INTO taikhoan_vaitro (maTaiKhoan, maVaiTro) VALUES (TRIM(?), 'gvcn')");
+                $stmtInsertRole->execute([$maTaiKhoan]);
+            }
+        } else {
+            error_log("ERROR: Không tìm thấy maTaiKhoan cho giáo viên này. Kiểm tra lại bảng giaovienbomon.");
+        }
+
+        $this->db->commit();
+        return true;
+
+    } catch (Exception $e) {
+        $this->db->rollBack();
+        error_log("ERROR phanCongGVCN: " . $e->getMessage());
+        error_log("ERROR Stack trace: " . $e->getTraceAsString());
+        throw $e;
+    }
+}
+
+/**
+ * Hủy phân công GVCN và chuyển về gvbm
+ */
+public function huyPhanCongGVCN($maGV, $maLop) {
+    try {
+        $this->db->beginTransaction();
+
+        // 1. Xóa khỏi bảng giaovienchunhiem
+        $stmtDelete = $this->db->prepare("DELETE FROM giaovienchunhiem WHERE maGV = ? AND lop = ?");
+        $stmtDelete->execute([$maGV, $maLop]);
+
+        // 2. Kiểm tra xem GV còn là GVCN của lớp nào khác không
+        $stmtCheck = $this->db->prepare("SELECT COUNT(*) FROM giaovienchunhiem WHERE maGV = ?");
+        $stmtCheck->execute([$maGV]);
+        $stillGVCN = $stmtCheck->fetchColumn();
+
+        // 3. Nếu KHÔNG còn là GVCN nữa -> Chuyển về gvbm trong bảng TAIKHOAN_VAITRO
+        if ($stillGVCN == 0) {
+            $stmtGetMaTK = $this->db->prepare("SELECT maTaiKhoan FROM giaovienbomon WHERE maGV = ?");
+            $stmtGetMaTK->execute([$maGV]);
+            $maTaiKhoan = $stmtGetMaTK->fetchColumn();
+
+            if ($maTaiKhoan) {
+                // SỬA LẠI DÒNG NÀY: Update đúng bảng taikhoan_vaitro
+                $stmtUpdateRole = $this->db->prepare("UPDATE taikhoan_vaitro SET maVaiTro = 'gvbm' WHERE maTaiKhoan = ?");
+                $stmtUpdateRole->execute([$maTaiKhoan]);
+                
+                // Nếu hệ thống cũ còn dùng cột role trong bảng taikhoan, update luôn cho chắc (nếu không dùng thì bỏ dòng dưới)
+                // $stmtSync = $this->db->prepare("UPDATE taikhoan SET role = 'gvbm' WHERE maTaiKhoan = ?");
+                // $stmtSync->execute([$maTaiKhoan]);
+            }
+        }
+
+        $this->db->commit();
+        return true;
+
+    } catch (Exception $e) {
+        $this->db->rollBack();
+        error_log("ERROR huyPhanCongGVCN: " . $e->getMessage());
+        return false;
+    }
+}
+
+    /**
+     * Lấy danh sách GVCN hiện tại
+     */
+    public function getDanhSachGVCN() {
+        try {
+            $sql = "SELECT 
+                        gvcn.maGV,
+                        gv.hoTen,
+                        gvcn.lop as maLop,
+                        lh.tenLop,
+                        lh.siSo
+                    FROM giaovienchunhiem gvcn
+                    INNER JOIN giaovienbomon gv ON gvcn.maGV = gv.maGV
+                    INNER JOIN lophoc lh ON gvcn.lop = lh.maLop
+                    ORDER BY lh.tenLop";
+            
+            $stmt = $this->db->query($sql);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            error_log("Error getDanhSachGVCN: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Lấy danh sách giáo viên chưa là GVCN
+     */
+    public function getDanhSachGVChuaLaGVCN() {
+        try {
+            $sql = "SELECT 
+                        gv.maGV,
+                        gv.hoTen,
+                        gv.monHocPhuTrach
+                    FROM giaovienbomon gv
+                    LEFT JOIN giaovienchunhiem gvcn ON gv.maGV = gvcn.maGV
+                    WHERE gvcn.maGV IS NULL
+                      AND gv.tinhTrangTaiKhoan = 'ACTIVE'
+                    ORDER BY gv.hoTen";
+            
+            $stmt = $this->db->query($sql);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            error_log("Error getDanhSachGVChuaLaGVCN: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Lấy danh sách lớp chưa có GVCN
+     */
+    public function getDanhSachLopChuaCoGVCN() {
+        try {
+            $sql = "SELECT 
+                        lh.maLop,
+                        lh.tenLop,
+                        lh.siSo,
+                        lh.khoi
+                    FROM lophoc lh
+                    LEFT JOIN giaovienchunhiem gvcn ON lh.maLop = gvcn.lop
+                    WHERE gvcn.maGV IS NULL
+                    ORDER BY lh.khoi, lh.tenLop";
+            
+            $stmt = $this->db->query($sql);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            error_log("Error getDanhSachLopChuaCoGVCN: " . $e->getMessage());
+            return [];
+        }
     }
 }
 

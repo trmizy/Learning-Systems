@@ -51,7 +51,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                         Năm học:
                     </label>
                     <form method="GET" style="display:inline;">
-                        <input type="hidden" name="page" value="bgh-phan-cong">
+                        <input type="hidden" name="action" value="bgh-phan-cong">
                         <select name="namHoc" class="form-select form-select-sm" style="width: auto; min-width: 150px;" onchange="this.form.submit()">
                             <?php while($namHoc = $danhSachNamHoc->fetch(PDO::FETCH_ASSOC)): ?>
                                 <option value="<?php echo htmlspecialchars($namHoc['namHoc']); ?>" 
@@ -130,12 +130,12 @@ require_once __DIR__ . '/../../layouts/header.php';
                             <td class="text-center">
                                 <div class="d-flex flex-column gap-1">
                                     <div class="btn-group" role="group">
-                                        <a href="?page=bgh-phan-cong&action_modal=gan_gvcn&maLop=<?php echo urlencode($lop['maLop']); ?>&tenLop=<?php echo urlencode($lop['tenLop']); ?>&maGVCN=<?php echo urlencode($lop['maGVCN'] ?? ''); ?>&namHoc=<?php echo urlencode($namHocFilter); ?>"
+                                        <a href="?action=bgh-phan-cong&action_modal=gan_gvcn&maLop=<?php echo urlencode($lop['maLop']); ?>&tenLop=<?php echo urlencode($lop['tenLop']); ?>&maGVCN=<?php echo urlencode($lop['maGVCN'] ?? ''); ?>&namHoc=<?php echo urlencode($namHocFilter); ?>"
                                            class="btn btn-sm btn-outline-secondary"
                                            title="Gán GVCN">
                                             <i class="fa-solid fa-user-plus"></i>
                                         </a>
-                                        <a href="?page=bgh-phan-cong&action_modal=gan_phong&maLop=<?php echo urlencode($lop['maLop']); ?>&tenLop=<?php echo urlencode($lop['tenLop']); ?>&maPhong=<?php echo urlencode($lop['maPhong'] ?? ''); ?>&namHoc=<?php echo urlencode($namHocFilter); ?>"
+                                        <a href="?action=bgh-phan-cong&action_modal=gan_phong&maLop=<?php echo urlencode($lop['maLop']); ?>&tenLop=<?php echo urlencode($lop['tenLop']); ?>&maPhong=<?php echo urlencode($lop['maPhong'] ?? ''); ?>&namHoc=<?php echo urlencode($namHocFilter); ?>"
                                            class="btn btn-sm btn-outline-secondary"
                                            title="Gán phòng học">
                                             <i class="fa-solid fa-door-open"></i>
@@ -159,7 +159,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                                         </form>
                                         <?php endif; ?>
                                     </div>
-                                    <a href="index.php?page=bgh-phan-cong-mon-hoc&maLop=<?php echo urlencode($lop['maLop']); ?>" 
+                                    <a href="index.php?action=bgh-phan-cong-mon-hoc&maLop=<?php echo urlencode($lop['maLop']); ?>" 
                                        class="btn btn-sm btn-primary"
                                        title="Phân công GV bộ môn">
                                         <i class="fa-solid fa-chalkboard-user me-1"></i>
@@ -187,9 +187,9 @@ require_once __DIR__ . '/../../layouts/header.php';
                     <i class="fa-solid fa-user-plus me-2"></i>
                     Gán giáo viên chủ nhiệm
                 </h5>
-                <a href="?page=bgh-phan-cong&namHoc=<?php echo urlencode($namHocFilter); ?>" class="btn-close"></a>
+                <a href="?action=bgh-phan-cong&namHoc=<?php echo urlencode($namHocFilter); ?>" class="btn-close"></a>
             </div>
-            <form method="POST" action="/public/index.php?page=bgh-phan-cong">
+            <form method="POST" action="/public/index.php?action=bgh-phan-cong">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="gan_gvcn">
                     <input type="hidden" name="maLop" value="<?php echo htmlspecialchars($_GET['maLop'] ?? ''); ?>">
@@ -213,7 +213,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <a href="?page=bgh-phan-cong&namHoc=<?php echo urlencode($namHocFilter); ?>" class="btn btn-secondary">Hủy</a>
+                    <a href="/public/index.php?php echo urlencode($namHocFilter); ?>" class="btn btn-secondary">Hủy</a>
                     <button type="submit" class="btn btn-primary">
                         <i class="fa-solid fa-check me-2"></i>Xác nhận
                     </button>
@@ -238,9 +238,9 @@ require_once __DIR__ . '/../../layouts/header.php';
                     <i class="fa-solid fa-door-open me-2"></i>
                     Gán phòng học
                 </h5>
-                <a href="?page=bgh-phan-cong&namHoc=<?php echo urlencode($namHocFilter); ?>" class="btn-close"></a>
+                <a href="?action=bgh-phan-cong&namHoc=<?php echo urlencode($namHocFilter); ?>" class="btn-close"></a>
             </div>
-            <form method="POST" action="/public/index.php?page=bgh-phan-cong">
+            <form method="POST" action="/public/index.php?action=bgh-phan-cong">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="gan_phong">
                     <input type="hidden" name="maLop" value="<?php echo htmlspecialchars($_GET['maLop'] ?? ''); ?>">
@@ -274,7 +274,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <a href="?page=bgh-phan-cong&namHoc=<?php echo urlencode($namHocFilter); ?>" class="btn btn-secondary">Hủy</a>
+                    <a href="/public/index.php?action=bgh-phan-cong&namHoc=<?php echo urlencode($namHocFilter); ?>" class="btn btn-secondary">Hủy</a>
                     <button type="submit" class="btn btn-primary">
                         <i class="fa-solid fa-check me-2"></i>Xác nhận
                     </button>

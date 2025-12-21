@@ -370,7 +370,7 @@ require_once __DIR__ . '/../layouts/header.php';
 
     <!-- Nút quay lại -->
     <div class="text-center mt-4">
-        <a href="/public/index.php?action=hs-dashboard" class="btn btn-secondary">
+        <a href="/public/index.php" class="btn btn-secondary">
             <i class="fa-solid fa-arrow-left me-2"></i>Quay lại Dashboard
         </a>
     </div>

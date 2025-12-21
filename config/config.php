@@ -52,13 +52,13 @@ $MENU_ITEMS = [
         ['icon' => 'fa-square-poll-vertical', 'text' => 'Nhập điểm', 'link' => '/public/index.php?action=enterPoints_gvbm'],
         ['icon' => 'fa-calendar-check', 'text' => 'Điểm danh', 'link' => '/modules/attendance/mark.php'],
     ],
-    'hocsinh' => [
-        ['icon' => 'fa-graduation-cap', 'text' => 'Kết quả học tập', 'link' => '/modules/grades/view.php'],
-        ['icon' => 'fa-calendar-days', 'text' => 'Thời khóa biểu', 'link' => '/modules/timetable/student.php'],
+    'hs' => [
+        ['icon' => 'fa-graduation-cap', 'text' => 'Kết quả học tập', 'link' => '/public/index.php?action=hs-xem-diem'],
+        ['icon' => 'fa-calendar-days', 'text' => 'Thời khóa biểu', 'link' => '/public/index.php?action=hs-xem-tkb'],
     ],
-    'phuhuynh' => [
-        ['icon' => 'fa-graduation-cap', 'text' => 'Kết quả học tập', 'link' => '/modules/grades/parent.php'],
-        ['icon' => 'fa-calendar-check', 'text' => 'Điểm danh', 'link' => '/modules/attendance/parent.php'],
+    'ph' => [
+        ['icon' => 'fa-graduation-cap', 'text' => 'Kết quả học tập', 'link' => '/public/index.php?action=ph-xem-diem'],
+        ['icon' => 'fa-calendar-check', 'text' => 'Thời khóa biểu', 'link' => '/public/index.php?action=ph-xem-tkb'],
     ]
 ];
 

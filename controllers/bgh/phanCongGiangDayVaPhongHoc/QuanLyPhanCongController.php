@@ -9,7 +9,7 @@
  * - Sử dụng PHP thuần, không AJAX
  */
 
-require_once __DIR__ . '/../../../models/PhanCongModel.php';
+require_once __DIR__ . '/../../../models/bgh/PhanCongModel.php';
 
 // Kiểm tra quyền truy cập
 if (!isset($_SESSION['auth']) || $_SESSION['auth']['role'] !== 'bgh') {
@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         switch ($action) {
             case 'gan_gvcn':
-                $maGV = $_POST['maGV'] ?? '';
+                $maGV = trim($_POST['maGV'] ?? '');
                 if (empty($maLop) || empty($maGV)) {
                     throw new Exception('Vui lòng chọn đầy đủ thông tin');
                 }
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
                 
             case 'gan_phong':
-                $maPhong = $_POST['maPhong'] ?? '';
+                $maPhong = trim($_POST['maPhong'] ?? '');
                 if (empty($maLop) || empty($maPhong)) {
                     throw new Exception('Vui lòng chọn đầy đủ thông tin');
                 }
@@ -84,12 +84,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         // Redirect để tránh form resubmission
-        header("Location: /public/index.php?page=bgh-phan-cong&namHoc=" . urlencode($_GET['namHoc'] ?? '2024-2025'));
+        header("Location: /public/index.php?action=bgh-phan-cong&namHoc=" . urlencode($_GET['namHoc'] ?? '2024-2025'));
         exit;
         
     } catch (Exception $e) {
         $_SESSION['flash_error'] = $e->getMessage();
-        header("Location: /public/index.php?page=bgh-phan-cong&namHoc=" . urlencode($_GET['namHoc'] ?? '2024-2025'));
+        header("Location: /public/index.php?action=bgh-phan-cong&namHoc=" . urlencode($_GET['namHoc'] ?? '2024-2025'));
         exit;
     }
 }
@@ -121,3 +121,54 @@ if (isset($_SESSION['flash_success'])) {
 
 // Gọi View
 require_once __DIR__ . '/../../../views/bgh/phanCongGiangDayVaPhongHoc/quan_ly_phan_cong.php';
+
+require_once __DIR__ . '/../../../middlewares/AuthGuard.php';
+require_once __DIR__ . '/../../../config/database.php';
+
+class QuanLyPhanCongController {
+    private $db;
+
+    public function __construct() {
+        $this->db = Database::getInstance()->getConnection();
+    }
+
+    /**
+     * Hiển thị danh sách phân công giảng dạy
+     */
+    public function index() {
+        require_role(['bgh']);
+
+        try {
+            // Lấy danh sách phân công
+            $stmt = $this->db->query("
+                SELECT 
+                    pc.maPhanCong,
+                    lh.tenLop,
+                    mh.tenMon,
+                    gv.hoTen as tenGiaoVien,
+                    pc.namHoc,
+                    pc.hocKy,
+                    pc.ghiChu
+                FROM phanconggiangday pc
+                INNER JOIN lophoc lh ON pc.maLop = lh.maLop
+                INNER JOIN monhoc mh ON pc.maMonHoc = mh.maMonHoc
+                LEFT JOIN giaovienbomon gv ON pc.maGV = gv.maGV
+                WHERE pc.namHoc = '2024-2025'
+                ORDER BY lh.tenLop, mh.tenMon
+            ");
+            
+            $danhSachPhanCong = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Render view
+            require_once __DIR__ . '/../../../views/bgh/phan_cong_list.php';
+            
+        } catch (PDOException $e) {
+            error_log("Error QuanLyPhanCongController::index: " . $e->getMessage());
+            $_SESSION['flash_error'] = 'Không thể tải danh sách phân công.';
+            header('Location: /public/index.php');
+            exit;
+        }
+    }
+
+    // ...existing code...
+}

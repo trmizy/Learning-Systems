@@ -272,20 +272,20 @@ if (isset($_GET['action'])) {
     // ⚠️ THÊM ROUTE MỚI - Quản lý hồ sơ giáo viên
     case 'bgh-quan-ly-giao-vien':
         require_once __DIR__ . '/../controllers/bgh/quanLyHoSoGiaoVien/QuanLyGiaoVienController.php';
-        break;
+        exit;
 
     // ⚠️ THÊM ROUTE MỚI - Lớp giảng dạy (GVBM, GVCN, TTBM)
     case 'lop_giang_day':
         require_once __DIR__ . '/../controllers/gvbm/LopGiangDayController.php';
         $controller = new LopGiangDayController();
         $controller->index();
-        break;
+        exit;
 
     case 'chi_tiet_lop':
         require_once __DIR__ . '/../controllers/gvbm/LopGiangDayController.php';
         $controller = new LopGiangDayController();
         $controller->chiTietLop();
-        break;
+        exit;
 
     case 'chi_tiet_hoc_sinh':
         require_once __DIR__ . '/../controllers/gvbm/LopGiangDayController.php';
@@ -357,25 +357,25 @@ if (isset($_GET['action'])) {
         require_once __DIR__ . '/../controllers/ph/LeaveRequestController.php';
         $controller = new LeaveRequestController();
         $controller->create();
-        break;
+        exit;
 
     case 'ph-leave-store':
         require_once __DIR__ . '/../controllers/ph/LeaveRequestController.php';
         $controller = new LeaveRequestController();
         $controller->store();
-        break;
+        exit;
 
     case 'ph-leave-list':
         require_once __DIR__ . '/../controllers/ph/LeaveRequestController.php';
         $controller = new LeaveRequestController();
         $controller->index();
-        break;
+        exit;
 
     case 'ph-leave-cancel':
         require_once __DIR__ . '/../controllers/ph/LeaveRequestController.php';
         $controller = new LeaveRequestController();
         $controller->cancel();
-        break;
+        exit;
 
     // ==================== GVCN - Dashboard ====================
 
@@ -451,7 +451,7 @@ if (isset($_GET['action'])) {
         // TODO: Tạo controller thêm học sinh
         $_SESSION['flash_info'] = 'Chức năng đang phát triển';
         header('Location: /public/index.php?action=admin-quan-ly-hoc-sinh');
-        break;
+        exit;
 
     // ===== QUẢN LÝ DANH SÁCH HỌC SINH =====
     case 'admin-danh-sach-hoc-sinh':
@@ -460,7 +460,7 @@ if (isset($_GET['action'])) {
         require_once __DIR__ . '/../controllers/admin/DanhSachHocSinhController.php';
         $controller = new DanhSachHocSinhController();
         $controller->danhSachTheoKhoiVaLop();
-        break;
+        exit;
 
     // ===== QUẢN LÝ GIÁO VIÊN (BGH) =====
     case 'bgh-giao-vien-list':
@@ -469,7 +469,7 @@ if (isset($_GET['action'])) {
         require_once __DIR__ . '/../controllers/bgh/QuanLyGiaoVienController.php';
         $controller = new QuanLyGiaoVienController();
         $controller->index();
-        break;
+        exit;
 
     case 'bgh-giao-vien-create':
         require_login();
@@ -477,7 +477,7 @@ if (isset($_GET['action'])) {
         require_once __DIR__ . '/../controllers/bgh/QuanLyGiaoVienController.php';
         $controller = new QuanLyGiaoVienController();
         $controller->create();
-        break;
+        exit;
 
     case 'bgh-giao-vien-edit':
         require_login();
@@ -485,7 +485,7 @@ if (isset($_GET['action'])) {
         require_once __DIR__ . '/../controllers/bgh/QuanLyGiaoVienController.php';
         $controller = new QuanLyGiaoVienController();
         $controller->edit();
-        break;
+        exit;
 
     case 'bgh-giao-vien-view':
         require_login();
@@ -493,7 +493,7 @@ if (isset($_GET['action'])) {
         require_once __DIR__ . '/../controllers/bgh/QuanLyGiaoVienController.php';
         $controller = new QuanLyGiaoVienController();
         $controller->view();
-        break;
+        exit;
 
     // ===== QUẢN LÝ TUYỂN SINH (NHÂN VIÊN SỞ) =====
     case 'nhanvienso-tuyen-sinh-upload':
@@ -521,6 +521,41 @@ if (isset($_GET['action'])) {
         $controller->danhSachThiSinh();
         exit;
 
+    case 'thong-ke-diem':
+        require_once __DIR__ . '/../controllers/nhanvienso/ThongKeController.php';
+        $controller = new ThongKeController();
+        $controller->diemTuyenSinh();
+        break;  
+    case 'hs-xem-diem':
+        require_once __DIR__ . '/../controllers/hs/XemDiemController.php';
+        $controller = new XemDiemController(); // ← Tạo instance
+        $controller->index();                   // ← Gọi method
+        exit;
+    case 'hs-xem-tkb':
+        require_once __DIR__ . '/../controllers/hs/ThoiKhoaBieuController.php';
+        $controller = new ThoiKhoaBieuController(); 
+        $controller->indexHocSinh();
+        exit;
+    case 'bgh-phan-cong':
+        require_once __DIR__ . '/../controllers/bgh/phanCongGiangDayVaPhongHoc/QuanLyPhanCongController.php';
+        $controller = new QuanLyPhanCongController();
+        $controller->index();
+        exit;
+                
+    case 'bgh-phan-cong-mon-hoc':
+        require_once __DIR__ . '/../controllers/bgh/phanCongGiangDayVaPhongHoc/PhanCongMonHocController.php';
+        $controller = new PhanCongMonHocController();
+        $controller->index();
+        exit;
+                
+    case 'bgh-quan-ly-giao-vien':
+        require_once __DIR__ . '/../controllers/bgh/quanLyHoSoGiaoVien/QuanLyGiaoVienController.php';
+        $controller = new QuanLyGiaoVienController();
+        $controller->index();
+        exit;
+        
+    
+
     default:
         http_response_code(404);
         require_once __DIR__ . '/../views/errors/404.php';
@@ -529,43 +564,21 @@ if (isset($_GET['action'])) {
 }
 
 // Handle page routing
-if (isset($_GET['page']) && isset($_SESSION['auth'])) {
-    $page = $_GET['page'];
+if (isset($_GET['action']) && isset($_SESSION['auth'])) {
+    $page = $_GET['action'];
     
     // BGH pages
-    if ($_SESSION['auth']['role'] === 'bgh') {
-        switch ($page) {
-            case 'bgh-phan-cong':
-                require_once __DIR__ . '/../controllers/bgh/phanCongGiangDayVaPhongHoc/QuanLyPhanCongController.php';
-                exit;
-                
-            case 'bgh-phan-cong-mon-hoc':
-                require_once __DIR__ . '/../controllers/bgh/phanCongGiangDayVaPhongHoc/PhanCongMonHocController.php';
-                exit;
-                
-            case 'bgh-quan-ly-giao-vien':
-                require_once __DIR__ . '/../controllers/bgh/quanLyHoSoGiaoVien/QuanLyGiaoVienController.php';
-                exit;
-        }
-    }
+   
     
     // HS pages
     if ($_SESSION['auth']['role'] === 'hs') {
         switch ($page) {
-            case 'hs-xem-diem':
-                require_once __DIR__ . '/../controllers/hs/XemDiemController.php';
-                exit;
+            
+                
+
         }
     }
-    
-    // PH pages
-    if ($_SESSION['auth']['role'] === 'ph') {
-        switch ($page) {
-            case 'ph-xem-diem':
-                require_once __DIR__ . '/../controllers/ph/XemDiemController.php';
-                exit;
-        }
-    }
+
 }
 
 // Display flash messages if they exist

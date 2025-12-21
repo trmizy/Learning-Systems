@@ -33,7 +33,7 @@ class LopGiangDayController {
 
         // Lấy học kỳ, năm học hiện tại
         $namHoc = $_GET['namHoc'] ?? '2024-2025';
-        $hocKy = $_GET['hocKy'] ?? 'HK1';
+        $hocKy = $_GET['hocKy'] ?? '1';
 
         // Lấy danh sách lớp giảng dạy
         $danhSachLop = $this->model->getDanhSachLopGiangDay($maGV, $namHoc, $hocKy);

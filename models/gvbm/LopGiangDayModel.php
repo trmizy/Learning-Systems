@@ -34,7 +34,7 @@ class LopGiangDayModel {
     /**
      * Lấy danh sách lớp mà giáo viên đang giảng dạy (GVBM/TTBM)
      */
-    public function getDanhSachLopGiangDay($maGV, $namHoc = '2024-2025', $hocKy = 'HK1') {
+    public function getDanhSachLopGiangDay($maGV, $namHoc = '2024-2025', $hocKy = '1') {
         try {
             $sql = "SELECT DISTINCT
                         lh.maLop,

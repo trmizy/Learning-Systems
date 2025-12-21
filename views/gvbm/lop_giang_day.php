@@ -70,8 +70,8 @@ require_once __DIR__ . '/../layouts/header.php';
                 <div class="col-md-4">
                     <label class="form-label fw-semibold">Học kỳ</label>
                     <select name="hocKy" class="form-select">
-                        <option value="HK1" <?php echo $selected_hocKy == 'HK1' ? 'selected' : ''; ?>>Học kỳ I</option>
-                        <option value="HK2" <?php echo $selected_hocKy == 'HK2' ? 'selected' : ''; ?>>Học kỳ II</option>
+                        <option value="1" <?php echo $selected_hocKy == 'HK1' ? 'selected' : ''; ?>>Học kỳ I</option>
+                        <option value="2" <?php echo $selected_hocKy == 'HK2' ? 'selected' : ''; ?>>Học kỳ II</option>
                     </select>
                 </div>
                 

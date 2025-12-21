@@ -12,7 +12,7 @@
  * - GVCN phải dạy môn của mình cho lớp mình chủ nhiệm
  */
 
-require_once __DIR__ . '/../../../models/PhanCongModel.php';
+require_once __DIR__ . '/../../../models/bgh/PhanCongModel.php';
 
 // Kiểm tra quyền truy cập
 if (!isset($_SESSION['auth']) || $_SESSION['auth']['role'] !== 'bgh') {
@@ -29,7 +29,7 @@ $hocKy = $_GET['hocKy'] ?? '1';
 
 if (!$maLop) {
     $_SESSION['flash_error'] = 'Không tìm thấy mã lớp';
-    header('Location: /public/index.php?page=bgh-phan-cong');
+    header('Location: /public/index.php?action=bgh-phan-cong');
     exit;
 }
 
@@ -37,7 +37,7 @@ if (!$maLop) {
 $lopInfo = $phanCongModel->getThongTinLop($maLop);
 if (!$lopInfo) {
     $_SESSION['flash_error'] = 'Không tìm thấy thông tin lớp';
-    header('Location: /public/index.php?page=bgh-phan-cong');
+    header('Location: /public/index.php?action=bgh-phan-cong');
     exit;
 }
 
@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // Redirect về trang hiện tại
-    header("Location: /public/index.php?page=bgh-phan-cong-mon-hoc&maLop=" . urlencode($maLop) . "&hocKy=" . urlencode($hocKy));
+    header("Location: /public/index.php?action=bgh-phan-cong-mon-hoc&maLop=" . urlencode($maLop) . "&hocKy=" . urlencode($hocKy));
     exit;
 }
 
@@ -152,3 +152,107 @@ foreach ($allMonHocs as $mon) {
 
 // Load view
 require_once __DIR__ . '/../../../views/bgh/phanCongGiangDayVaPhongHoc/phan_cong_mon_hoc.php';
+
+require_once __DIR__ . '/../../../middlewares/AuthGuard.php';
+require_once __DIR__ . '/../../../config/database.php';
+
+class PhanCongMonHocController {
+    private $db;
+
+    public function __construct() {
+        $this->db = Database::getInstance()->getConnection();
+    }
+
+    /**
+     * Hiển thị form phân công môn học
+     */
+    public function index() {
+        require_role(['bgh']);
+
+        try {
+            // Lấy danh sách lớp
+            $stmtLop = $this->db->query("SELECT maLop, tenLop, khoi FROM lophoc ORDER BY tenLop");
+            $danhSachLop = $stmtLop->fetchAll(PDO::FETCH_ASSOC);
+
+            // Lấy danh sách môn học
+            $stmtMon = $this->db->query("SELECT maMonHoc, tenMon FROM monhoc ORDER BY tenMon");
+            $danhSachMon = $stmtMon->fetchAll(PDO::FETCH_ASSOC);
+
+            // Lấy danh sách giáo viên
+            $stmtGV = $this->db->query("
+                SELECT maGV, hoTen, monHocPhuTrach 
+                FROM giaovienbomon 
+                WHERE tinhTrangTaiKhoan = 'ACTIVE'
+                ORDER BY hoTen
+            ");
+            $danhSachGiaoVien = $stmtGV->fetchAll(PDO::FETCH_ASSOC);
+
+            // Render view
+            require_once __DIR__ . '/../../../views/bgh/phan_cong_mon_hoc.php';
+            
+        } catch (PDOException $e) {
+            error_log("Error PhanCongMonHocController::index: " . $e->getMessage());
+            $_SESSION['flash_error'] = 'Không thể tải dữ liệu phân công.';
+            header('Location: /public/index.php');
+            exit;
+        }
+    }
+
+    /**
+     * Xử lý lưu phân công môn học
+     */
+    public function store() {
+        require_role(['bgh']);
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /public/index.php?action=bgh-phan-cong-mon-hoc');
+            exit;
+        }
+
+        try {
+            $maLop = $_POST['maLop'] ?? '';
+            $maMonHoc = $_POST['maMonHoc'] ?? '';
+            $maGV = $_POST['maGV'] ?? '';
+            $namHoc = $_POST['namHoc'] ?? '2024-2025';
+            $hocKy = $_POST['hocKy'] ?? 'HK1';
+            $ghiChu = $_POST['ghiChu'] ?? '';
+
+            // Validate
+            if (empty($maLop) || empty($maMonHoc) || empty($maGV)) {
+                $_SESSION['flash_error'] = 'Vui lòng điền đầy đủ thông tin.';
+                header('Location: /public/index.php?action=bgh-phan-cong-mon-hoc');
+                exit;
+            }
+
+            // Tạo mã phân công
+            $maPhanCong = 'PC_' . $maLop . '_' . $maMonHoc . '_' . time();
+
+            // Insert
+            $stmt = $this->db->prepare("
+                INSERT INTO phanconggiangday 
+                (maPhanCong, maLop, maMonHoc, maGV, namHoc, hocKy, ghiChu, ngayPhanCong)
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+            ");
+            
+            $stmt->execute([
+                $maPhanCong,
+                $maLop,
+                $maMonHoc,
+                $maGV,
+                $namHoc,
+                $hocKy,
+                $ghiChu
+            ]);
+
+            $_SESSION['flash_success'] = 'Phân công môn học thành công!';
+            header('Location: /public/index.php?action=bgh-phan-cong');
+            exit;
+            
+        } catch (PDOException $e) {
+            error_log("Error PhanCongMonHocController::store: " . $e->getMessage());
+            $_SESSION['flash_error'] = 'Không thể lưu phân công. Vui lòng thử lại.';
+            header('Location: /public/index.php?action=bgh-phan-cong-mon-hoc');
+            exit;
+        }
+    }
+}

@@ -667,9 +667,9 @@ try {
                         <i class="fa-solid fa-user-gear"></i>
                     </div>
                     <h5 class="card-title fw-bold">Phân công</h5>
-                    <p class="text-muted small">Phân công giảng dạy và phòng học</p>
+                    <p class="text-muted small">Giảng dạy và phòng học</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/public/index.php?page=bgh-phan-cong" class="btn btn-info btn-sm">
+                        <a href="/public/index.php?action=bgh-phan-cong" class="btn btn-info btn-sm">
                             <i class="fa-solid fa-cog me-1"></i>Quản lý
                         </a>
                     </div>
@@ -687,7 +687,7 @@ try {
                     <h5 class="card-title fw-bold">Hồ sơ giáo viên</h5>
                     <p class="text-muted small">Quản lý hồ sơ giáo viên</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/public/index.php?page=bgh-quan-ly-giao-vien" class="btn btn-primary btn-sm">
+                        <a href="/public/index.php?action=bgh-quan-ly-giao-vien" class="btn btn-primary btn-sm">
                             <i class="fa-solid fa-user-tie me-1"></i>Quản lý
                         </a>
                     </div>
@@ -901,7 +901,7 @@ try {
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-users-gear text-primary me-2"></i>Quản lý nhân sự
                     </h6>
-                    <a href="/public/index.php?page=bgh-quan-ly-giao-vien" class="btn btn-outline-primary w-100">
+                    <a href="/public/index.php?action=bgh-quan-ly-giao-vien" class="btn btn-outline-primary w-100">
                         <i class="fa-solid fa-user-tie me-2"></i>Xem danh sách
                     </a>
                 </div>

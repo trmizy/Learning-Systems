@@ -6,7 +6,7 @@ require_once __DIR__ . '/../../middlewares/AuthGuard.php';
 require_role(['hs']); // ⚠️ THAY ĐỔI: 'hocsinh' → 'hs'
 
 // Lấy thông tin học sinh từ database
-require_once __DIR__ . '/../../models/DiemModel.php';
+require_once __DIR__ . '/../../models/hs/DiemModel.php';
 require_once __DIR__ . '/../../models/hs/DashboardModel.php';
 
 $diemModel = new DiemModel();
@@ -416,25 +416,6 @@ $notifications = [
         </div>
 
         <!-- Đơn xin nghỉ -->
-        <div class="col-md-6 col-xl-3">
-            <div class="card feature-card h-100">
-                <div class="card-body text-center">
-                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                        <i class="fa-solid fa-file-signature"></i>
-                    </div>
-                    <h5 class="card-title fw-bold">Đơn xin phép</h5>
-                    <p class="text-muted small">Gửi đơn nghỉ học, xem trạng thái</p>
-                    <div class="d-grid gap-2 mt-3">
-                        <a href="/public/index.php?action=hs-don-create" class="btn btn-danger btn-sm">
-                            <i class="fa-solid fa-plus me-1"></i>Tạo đơn
-                        </a>
-                        <a href="/public/index.php?action=hs-don-list" class="btn btn-outline-danger btn-sm">
-                            <i class="fa-solid fa-list me-1"></i>Danh sách
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Thông báo -->
         <div class="col-md-6 col-xl-3">

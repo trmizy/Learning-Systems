@@ -28,8 +28,8 @@ $systemStats = [
     'total_schools'         => 0,
     'total_students'        => 0,
     'total_teachers'        => 0,
-    'admission_target'      => 0,
-    'admission_registered'  => 0,
+    'total_thisinh'         => 0, // ⚠️ THAY ĐỔI: Tổng số thí sinh
+    'thisinh_registered'    => 0, // ⚠️ THAY ĐỔI: Thí sinh đã đăng ký nguyện vọng
     'admission_rate'        => 0, // %
 ];
 
@@ -55,23 +55,22 @@ try {
             $systemStats['total_teachers'] = (int) $stmt->fetchColumn();
         }
 
-        // 4. Chỉ tiêu tuyển sinh (tổng tongChiTieu trong bảng chitieutuyensinh)
-        $stmt = $conn->query("SELECT COALESCE(SUM(tongChiTieu), 0) FROM chitieutuyensinh");
-        if ($stmt) {
-            $systemStats['admission_target'] = (int) $stmt->fetchColumn();
-        }
-
-        // 5. Số lượng hồ sơ đăng ký (số thí sinh trong bảng thisinh)
+        // ⚠️ THAY ĐỔI 4: Tổng số thí sinh
         $stmt = $conn->query("SELECT COUNT(*) FROM thisinh");
         if ($stmt) {
-            $systemStats['admission_registered'] = (int) $stmt->fetchColumn();
+            $systemStats['total_thisinh'] = (int) $stmt->fetchColumn();
         }
 
-        // 6. Tỷ lệ đỗ = (số trúng tuyển / chỉ tiêu) * 100
-        // Hiện chưa có cột trúng tuyển nên tạm dùng số thisinh / chỉ tiêu (hoặc để 0 nếu muốn)
-        if ($systemStats['admission_target'] > 0) {
+        // ⚠️ THAY ĐỔI 5: Số thí sinh đã đăng ký nguyện vọng (DISTINCT từ bảng nguyenvong)
+        $stmt = $conn->query("SELECT COUNT(DISTINCT maThiSinh) FROM nguyenvong");
+        if ($stmt) {
+            $systemStats['thisinh_registered'] = (int) $stmt->fetchColumn();
+        }
+
+        // 6. Tỷ lệ đăng ký = (số thí sinh đã đăng ký NV / tổng thí sinh) * 100
+        if ($systemStats['total_thisinh'] > 0) {
             $systemStats['admission_rate'] = round(
-                ($systemStats['admission_registered'] / $systemStats['admission_target']) * 100,
+                ($systemStats['thisinh_registered'] / $systemStats['total_thisinh']) * 100,
                 1
             );
         } else {
@@ -80,92 +79,52 @@ try {
     }
 } catch (Exception $e) {
     // Nếu lỗi DB, giữ nguyên các giá trị default
-    // error_log("SoGD Dashboard error: " . $e->getMessage());
+    error_log("SoGD Dashboard error: " . $e->getMessage());
 }
 
+// ⚠️ XÓA: Không cần $admissionData nữa
 
-// ⚠️ THAY ĐỔI: Lấy dữ liệu $schoolStats từ database
-$schoolStats = [];
+// ⚠️ THAY ĐỔI: Lấy thống kê điểm từ bảng THISINH
+$scoreStats = [
+    'highest_score' => 0,
+    'avg_score' => 0,
+    'count_below' => 0,
+    'count_above' => 0,
+    'year' => date('Y'), // Năm hiện tại
+];
 
 try {
     if (class_exists('Database')) {
         $conn = Database::getInstance()->getConnection();
 
-        // FIX: BỎ cột t.trangThai vì không có trong schema
-        $sql = "SELECT 
-                    t.tenTruong as school,
-                    (SELECT COUNT(*) 
-                     FROM hocsinh hs 
-                     INNER JOIN lophoc lh ON hs.maLop = lh.maLop 
-                     WHERE hs.trangThai = 'DANGHOC') as students,
-                    (SELECT COUNT(*) 
-                     FROM giaovienbomon gv 
-                     WHERE gv.tinhTrangTaiKhoan = 'ACTIVE') as teachers,
-                    0 as pass_rate
-                FROM truong t
-                ORDER BY (SELECT COUNT(*) 
-                          FROM hocsinh hs 
-                          INNER JOIN lophoc lh ON hs.maLop = lh.maLop) DESC
-                LIMIT 4";
+        // Lấy thống kê từ bảng thisinh
+        $stmtScores = $conn->query("
+            SELECT 
+                MAX(diem) as highest_score,
+                ROUND(AVG(diem), 2) as avg_score,
+                SUM(CASE WHEN diem < 20 THEN 1 ELSE 0 END) as count_below,
+                SUM(CASE WHEN diem >=20 THEN 1 ELSE 0 END) as count_above,
+                YEAR(CURDATE()) as year
+            FROM thisinh
+            WHERE diem IS NOT NULL
+        ");
         
-        $stmt = $conn->prepare($sql);
-        $stmt->execute();
-        $schoolStats = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Nếu không có dữ liệu, dùng fallback data
-        if (empty($schoolStats)) {
-            $schoolStats = [
-                ['school' => 'THPT Lê Quý Đôn', 'students' => 450, 'teachers' => 16, 'pass_rate' => 0, 'status' => 'active'],
-                ['school' => 'THPT Nguyễn Huệ', 'students' => 0, 'teachers' => 0, 'pass_rate' => 0, 'status' => 'active'],
-                ['school' => 'THPT Trần Phú', 'students' => 0, 'teachers' => 0, 'pass_rate' => 0, 'status' => 'active'],
-                ['school' => 'THPT Phan Châu Trinh', 'students' => 0, 'teachers' => 0, 'pass_rate' => 0, 'status' => 'active'],
-            ];
-        } else {
-            // Format lại dữ liệu để đảm bảo type đúng
-            foreach ($schoolStats as &$school) {
-                $school['students'] = (int)($school['students'] ?? 0);
-                $school['teachers'] = (int)($school['teachers'] ?? 0);
-                $school['pass_rate'] = (float)($school['pass_rate'] ?? 0);
-                $school['status'] = 'active'; // Mặc định là active
+        if ($stmtScores) {
+            $result = $stmtScores->fetch(PDO::FETCH_ASSOC);
+            if ($result) {
+                $scoreStats = [
+                    'highest_score' => $result['highest_score'] ?? 0,
+                    'avg_score' => $result['avg_score'] ?? 0,
+                    'count_below' => $result['count_below'] ?? 0,
+                    'count_above' => $result['count_above'] ?? 0,
+                    'year' => $result['year'] ?? date('Y'),
+                ];
             }
         }
     }
 } catch (Exception $e) {
-    error_log("Error loading school stats: " . $e->getMessage());
-    // Fallback nếu lỗi DB
-    $schoolStats = [
-        ['school' => 'Dữ liệu đang cập nhật', 'students' => 0, 'teachers' => 0, 'pass_rate' => 0, 'status' => 'active'],
-    ];
+    error_log("Dashboard score stats error: " . $e->getMessage());
 }
-
-// Dữ liệu tuyển sinh
-$admissionData = [
-    'pending_review' => 3,
-    'approved' => 25,
-    'rejected' => 2,
-    'total_applications' => 15840,
-];
-
-// Thống kê điểm tuyển sinh
-$scoreStats = [
-    ['subject' => 'Toán', 'avg_score' => 7.8, 'highest' => 10.0, 'lowest' => 3.5],
-    ['subject' => 'Văn', 'avg_score' => 7.5, 'highest' => 9.8, 'lowest' => 4.0],
-    ['subject' => 'Anh', 'avg_score' => 7.2, 'highest' => 9.5, 'lowest' => 3.8],
-];
-
-// Báo cáo cần xử lý
-$pendingReports = [
-    ['school' => 'THPT Lê Quý Đôn', 'type' => 'Học vụ cuối năm', 'date' => '2024-03-15', 'status' => 'pending'],
-    ['school' => 'THPT Nguyễn Huệ', 'type' => 'Tuyển sinh', 'date' => '2024-03-14', 'status' => 'pending'],
-    ['school' => 'THPT Trần Phú', 'type' => 'Cơ sở vật chất', 'date' => '2024-03-13', 'status' => 'pending'],
-];
-
-// Thông báo quan trọng
-$notifications = [
-    ['title' => 'Họp triển khai kế hoạch tuyển sinh 2024', 'date' => '2024-03-25 08:00', 'type' => 'meeting', 'priority' => 'high'],
-    ['title' => 'Hạn nộp báo cáo học vụ năm học 2023-2024', 'date' => '2024-03-30', 'type' => 'deadline', 'priority' => 'high'],
-    ['title' => 'Kiểm tra định kỳ các trường THPT', 'date' => '2024-04-05', 'type' => 'inspection', 'priority' => 'medium'],
-];
 ?>
 
 <style>
@@ -564,9 +523,6 @@ $notifications = [
                         <a href="index.php?action=xem_bao_cao" class="btn btn-danger btn-sm">
                             <i class="fa-solid fa-chart-line me-1"></i>Dashboard
                         </a>
-                        <a href="/modules/sogd/reports/export.php" class="btn btn-outline-danger btn-sm">
-                            <i class="fa-solid fa-file-export me-1"></i>Xuất file
-                        </a>
                     </div>
                 </div>
             </div>
@@ -585,19 +541,17 @@ $notifications = [
                         <a href="/public/index.php?action=targets_nhanvienso" class="btn btn-info btn-sm">
                             <i class="fa-solid fa-chart-bar me-1"></i>Phân bổ chỉ tiêu
                         </a>
-                        <a href="/modules/sogd/targets/planning.php" class="btn btn-outline-info btn-sm">
-                            <i class="fa-solid fa-clipboard-list me-1"></i>Kế hoạch
-                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Admission Overview & Score Statistics - GỘP THÀNH 1 HÀNG -->
     <div class="row g-4">
-        <!-- Admission Overview -->
+        <!-- Tổng quan tuyển sinh -->
         <div class="col-lg-6">
-            <div class="card feature-card">
+            <div class="card feature-card h-100">
                 <div class="card-body">
                     <h5 class="card-title fw-bold mb-4">
                         <i class="fa-solid fa-graduation-cap text-primary me-2"></i>
@@ -606,8 +560,8 @@ $notifications = [
                     
                     <div class="chart-card">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="fw-semibold">Chỉ tiêu tuyển sinh</span>
-                            <span class="badge bg-primary"><?php echo number_format($systemStats['admission_target']); ?></span>
+                            <span class="fw-semibold">Số lượng thí sinh</span>
+                            <span class="badge bg-primary"><?php echo number_format($systemStats['total_thisinh']); ?></span>
                         </div>
                         <div class="progress-custom">
                             <div class="progress-bar" style="width: 100%"></div>
@@ -616,171 +570,91 @@ $notifications = [
 
                     <div class="chart-card">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="fw-semibold">Số lượng đăng ký</span>
-                            <span class="badge bg-success"><?php echo number_format($systemStats['admission_registered']); ?></span>
+                            <span class="fw-semibold">Số thí sinh đã đăng ký nguyện vọng</span>
+                            <span class="badge bg-success"><?php echo number_format($systemStats['thisinh_registered']); ?></span>
                         </div>
                         <div class="progress-custom">
-                            <div class="progress-bar" style="width: <?php echo ($systemStats['admission_registered']/$systemStats['admission_target'])*100; ?>%; background: linear-gradient(90deg, #11998e, #38ef7d);"></div>
+                            <?php 
+                            $percentage = $systemStats['total_thisinh'] > 0 
+                                ? ($systemStats['thisinh_registered']/$systemStats['total_thisinh'])*100 
+                                : 0;
+                            ?>
+                            <div class="progress-bar" style="width: <?php echo $percentage; ?>%; background: linear-gradient(90deg, #11998e, #38ef7d);"></div>
                         </div>
                         <div class="small text-muted mt-2">
-                            Vượt chỉ tiêu <?php echo number_format($systemStats['admission_registered'] - $systemStats['admission_target']); ?> học sinh
+                            Tỷ lệ đăng ký: <?php echo $systemStats['admission_rate']; ?>%
                         </div>
                     </div>
 
-                    <div class="row g-3 mt-2">
-                        <div class="col-3">
-                            <div class="text-center">
-                                <div class="admission-badge bg-warning text-dark"><?php echo $admissionData['pending_review']; ?></div>
-                                <div class="small text-muted mt-1">Chờ duyệt</div>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="text-center">
-                                <div class="admission-badge bg-success text-white"><?php echo $admissionData['approved']; ?></div>
-                                <div class="small text-muted mt-1">Đã duyệt</div>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="text-center">
-                                <div class="admission-badge bg-danger text-white"><?php echo $admissionData['rejected']; ?></div>
-                                <div class="small text-muted mt-1">Từ chối</div>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="text-center">
-                                <div class="admission-badge bg-info text-white"><?php echo number_format($admissionData['total_applications']); ?></div>
-                                <div class="small text-muted mt-1">Tổng hồ sơ</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <a href="/modules/sogd/admission/manage.php" class="btn btn-outline-primary w-100 mt-3">
+                    <a href="/public/index.php?action=nhanvienso-tuyen-sinh-list" class="btn btn-outline-primary w-100 mt-3">
                         <i class="fa-solid fa-cog me-2"></i>Quản lý tuyển sinh
                     </a>
                 </div>
             </div>
         </div>
 
-        <!-- Top Schools by Performance -->
+        <!-- Thống kê điểm thi -->
         <div class="col-lg-6">
-            <div class="card feature-card">
-                <div class="card-body">
-                    <h5 class="card-title fw-bold mb-4">
-                        <i class="fa-solid fa-trophy text-warning me-2"></i>
-                        Trường đạt thành tích cao
-                    </h5>
-                    <?php foreach ($schoolStats as $school): ?>
-                    <div class="school-item">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div>
-                                <div class="fw-bold text-primary"><?php echo htmlspecialchars($school['school']); ?></div>
-                                <div class="small text-muted">
-                                    <i class="fa-solid fa-users me-1"></i><?php echo number_format($school['students']); ?> HS
-                                    <span class="mx-2">|</span>
-                                    <i class="fa-solid fa-chalkboard-user me-1"></i><?php echo $school['teachers']; ?> GV
-                                </div>
-                            </div>
-                            <div class="text-end">
-                                <div class="badge bg-success mb-1">Đỗ: <?php echo $school['pass_rate']; ?>%</div>
-                            </div>
-                        </div>
-                        <div class="progress-custom">
-                            <div class="progress-bar" style="width: <?php echo $school['pass_rate']; ?>%; background: linear-gradient(90deg, #11998e, #38ef7d);"></div>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                    <a href="/modules/sogd/schools/rankings.php" class="btn btn-outline-warning w-100 mt-3">
-                        <i class="fa-solid fa-ranking-star me-2"></i>Xem bảng xếp hạng
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Reports & Notifications -->
-    <div class="row g-4 mt-2">
-        <!-- Score Statistics -->
-        <div class="col-lg-4">
-            <div class="card feature-card">
+            <div class="card feature-card h-100">
                 <div class="card-body">
                     <h5 class="card-title fw-bold mb-4">
                         <i class="fa-solid fa-chart-bar text-success me-2"></i>
-                        Thống kê điểm tuyển sinh
+                        Thống kê điểm thi (Năm <?php echo $scoreStats['year']; ?>)
                     </h5>
-                    <?php foreach ($scoreStats as $score): ?>
+                    
                     <div class="chart-card">
-                        <div class="fw-semibold mb-2"><?php echo htmlspecialchars($score['subject']); ?></div>
-                        <div class="row g-2 small">
-                            <div class="col-4">
-                                <div class="text-muted">Trung bình</div>
-                                <div class="fw-bold text-primary"><?php echo $score['avg_score']; ?></div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted">
+                                <i class="fa-solid fa-trophy me-2"></i>Điểm cao nhất
+                            </span>
+                            <span class="badge bg-success px-3 py-2 fs-5">
+                                <?php echo number_format($scoreStats['highest_score'], 1); ?>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted">
+                                <i class="fa-solid fa-calculator me-2"></i>Điểm trung bình
+                            </span>
+                            <span class="badge bg-primary px-3 py-2 fs-5">
+                                <?php echo number_format($scoreStats['avg_score'], 2); ?>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mt-2">
+                        <div class="col-6">
+                            <div class="chart-card bg-danger bg-opacity-10 border-danger">
+                                <div class="text-center">
+                                    <div class="small text-muted mb-1">
+                                        <i class="fa-solid fa-arrow-down me-1"></i>Điểm dưới 20
+                                    </div>
+                                    <div class="fs-4 fw-bold text-danger">
+                                        <?php echo number_format($scoreStats['count_below']); ?>
+                                    </div>
+                                    <div class="small text-muted">thí sinh</div>
+                                </div>
                             </div>
-                            <div class="col-4">
-                                <div class="text-muted">Cao nhất</div>
-                                <div class="fw-bold text-success"><?php echo $score['highest']; ?></div>
-                            </div>
-                            <div class="col-4">
-                                <div class="text-muted">Thấp nhất</div>
-                                <div class="fw-bold text-danger"><?php echo $score['lowest']; ?></div>
+                        </div>
+                        <div class="col-6">
+                            <div class="chart-card bg-success bg-opacity-10 border-success">
+                                <div class="text-center">
+                                    <div class="small text-muted mb-1">
+                                        <i class="fa-solid fa-arrow-up me-1"></i>Điểm từ 20 trở lên
+                                    </div>
+                                    <div class="fs-4 fw-bold text-success">
+                                        <?php echo number_format($scoreStats['count_above']); ?>
+                                    </div>
+                                    <div class="small text-muted">thí sinh</div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <?php endforeach; ?>
-                    <a href="/modules/sogd/statistics/scores.php" class="btn btn-outline-success w-100 mt-3">
+
+                    <a href="/public/index.php?action=thong-ke-diem" class="btn btn-outline-success w-100 mt-3">
                         <i class="fa-solid fa-chart-line me-2"></i>Chi tiết thống kê
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pending Reports -->
-        <div class="col-lg-4">
-            <div class="card feature-card">
-                <div class="card-body">
-                    <h5 class="card-title fw-bold mb-4">
-                        <i class="fa-solid fa-file-lines text-warning me-2"></i>
-                        Báo cáo chờ xử lý (<?php echo count($pendingReports); ?>)
-                    </h5>
-                    <?php foreach ($pendingReports as $report): ?>
-                    <div class="report-item">
-                        <div class="fw-semibold mb-1"><?php echo htmlspecialchars($report['school']); ?></div>
-                        <div class="small text-muted mb-2">
-                            <?php echo htmlspecialchars($report['type']); ?>
-                            <span class="mx-2">|</span>
-                            <i class="fa-solid fa-calendar me-1"></i><?php echo $report['date']; ?>
-                        </div>
-                        <button class="btn btn-sm btn-primary">
-                            <i class="fa-solid fa-eye me-1"></i>Xem báo cáo
-                        </button>
-                    </div>
-                    <?php endforeach; ?>
-                    <a href="/modules/sogd/reports/pending.php" class="btn btn-outline-warning w-100 mt-3">
-                        <i class="fa-solid fa-list me-2"></i>Xem tất cả
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Important Notifications -->
-        <div class="col-lg-4">
-            <div class="card feature-card">
-                <div class="card-body">
-                    <h5 class="card-title fw-bold mb-4">
-                        <i class="fa-solid fa-bell text-info me-2"></i>
-                        Lịch trình quan trọng
-                    </h5>
-                    <div class="notification-timeline">
-                        <?php foreach ($notifications as $notif): ?>
-                        <div class="timeline-item priority-<?php echo $notif['priority']; ?>">
-                            <div class="fw-semibold mb-1"><?php echo htmlspecialchars($notif['title']); ?></div>
-                            <div class="small text-muted">
-                                <i class="fa-solid fa-clock me-1"></i><?php echo $notif['date']; ?>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    </div>
-                    <a href="/modules/sogd/calendar.php" class="btn btn-outline-info w-100 mt-3">
-                        <i class="fa-solid fa-calendar me-2"></i>Xem lịch đầy đủ
                     </a>
                 </div>
             </div>
@@ -795,10 +669,10 @@ $notifications = [
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-file-excel text-success me-2"></i>Import/Export dữ liệu
                     </h6>
-                    <a href="/modules/sogd/data/import.php" class="btn btn-outline-success w-100 mb-2">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-outline-success w-100 mb-2">
                         <i class="fa-solid fa-file-import me-2"></i>Import Excel
                     </a>
-                    <a href="/modules/sogd/data/export.php" class="btn btn-outline-primary w-100">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-outline-primary w-100">
                         <i class="fa-solid fa-file-export me-2"></i>Export Báo cáo
                     </a>
                 </div>
@@ -811,10 +685,10 @@ $notifications = [
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-globe text-primary me-2"></i>Công bố thông tin
                     </h6>
-                    <a href="/modules/sogd/public/scores.php" class="btn btn-outline-primary w-100 mb-2">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-outline-primary w-100 mb-2">
                         <i class="fa-solid fa-trophy me-2"></i>Điểm chuẩn
                     </a>
-                    <a href="/modules/sogd/public/results.php" class="btn btn-outline-success w-100">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-outline-success w-100">
                         <i class="fa-solid fa-list me-2"></i>Kết quả TS
                     </a>
                 </div>
@@ -827,7 +701,7 @@ $notifications = [
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-chart-column text-warning me-2"></i>Biểu đồ & Thống kê
                     </h6>
-                    <a href="/modules/sogd/charts/overview.php" class="btn btn-outline-warning w-100">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-outline-warning w-100">
                         <i class="fa-solid fa-chart-pie me-2"></i>Dashboard
                     </a>
                 </div>
@@ -840,7 +714,7 @@ $notifications = [
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-shield-halved text-danger me-2"></i>Kiểm tra dữ liệu
                     </h6>
-                    <a href="/modules/sogd/validation/check.php" class="btn btn-outline-danger w-100">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-outline-danger w-100">
                         <i class="fa-solid fa-check-double me-2"></i>Xác minh
                     </a>
                 </div>
