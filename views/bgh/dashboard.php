@@ -648,10 +648,10 @@ try {
                     <h5 class="card-title fw-bold">Hạnh kiểm</h5>
                     <p class="text-muted small">Duyệt xếp loại hạnh kiểm</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/bgh/conduct/pending.php" class="btn btn-success btn-sm">
+                        <a href="/models/bgh/conduct/pending.php" class="btn btn-success btn-sm">
                             <i class="fa-solid fa-clock me-1"></i>Chờ duyệt (<?php echo $stats['conduct_approvals']; ?>)
                         </a>
-                        <a href="/modules/bgh/conduct/list.php" class="btn btn-outline-success btn-sm">
+                        <a href="/models/bgh/conduct/list.php" class="btn btn-outline-success btn-sm">
                             <i class="fa-solid fa-list me-1"></i>Đã duyệt
                         </a>
                     </div>
@@ -755,7 +755,7 @@ try {
                                     </a>
                                 <?php elseif ($approval['type'] === 'tohopmon' && !empty($approval['maToHop'])): ?>
                                     <!-- Nút cho tổ hợp môn -->
-                                    <a href="/modules/chonToHopMon/quanLyChonDetail.php?maToHop=<?php echo urlencode($approval['maToHop']); ?>" 
+                                    <a href="/models/chonToHopMon/quanLyChonDetail.php?maToHop=<?php echo urlencode($approval['maToHop']); ?>" 
                                        class="btn btn-sm btn-primary flex-1">
                                         <i class="fa-solid fa-eye me-1"></i>Chi Tiết
                                     </a>
@@ -819,7 +819,7 @@ try {
                         </div>
                     </div>
                     <?php endforeach; ?>
-                    <a href="/modules/bgh/reports/by-grade.php" class="btn btn-outline-primary w-100 mt-3">
+                    <a href="/models/bgh/reports/by-grade.php" class="btn btn-outline-primary w-100 mt-3">
                         <i class="fa-solid fa-chart-line me-2"></i>Xem chi tiết
                     </a>
                 </div>
@@ -858,7 +858,7 @@ try {
                             </a>
                         </div>
                         <div class="col-md-6">
-                            <a href="/modules/bgh/reports/export.php" class="btn btn-outline-success w-100">
+                            <a href="/models/bgh/reports/export.php" class="btn btn-outline-success w-100">
                                 <i class="fa-solid fa-file-export me-2"></i>Xuất báo cáo
                             </a>
                         </div>
@@ -885,7 +885,7 @@ try {
                         </div>
                         <?php endforeach; ?>
                     </div>
-                    <a href="/modules/bgh/calendar.php" class="btn btn-outline-info w-100 mt-3">
+                    <a href="/models/bgh/calendar.php" class="btn btn-outline-info w-100 mt-3">
                         <i class="fa-solid fa-calendar me-2"></i>Xem lịch đầy đủ
                     </a>
                 </div>
@@ -914,7 +914,7 @@ try {
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-clipboard-list text-success me-2"></i>Kế hoạch giảng dạy
                     </h6>
-                    <a href="/modules/bgh/curriculum/index.php" class="btn btn-outline-success w-100">
+                    <a href="/models/bgh/curriculum/index.php" class="btn btn-outline-success w-100">
                         <i class="fa-solid fa-book me-2"></i>Xem kế hoạch
                     </a>
                 </div>
@@ -927,7 +927,7 @@ try {
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-file-contract text-danger me-2"></i>Văn bản - Quyết định
                     </h6>
-                    <a href="/modules/bgh/documents/index.php" class="btn btn-outline-danger w-100">
+                    <a href="/models/bgh/documents/index.php" class="btn btn-outline-danger w-100">
                         <i class="fa-solid fa-folder-open me-2"></i>Xem văn bản
                     </a>
                 </div>
@@ -939,7 +939,7 @@ try {
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-layer-group text-primary me-2"></i>Chọn Tổ Hợp Môn
                     </h6>
-                    <a href="/modules/chonToHopMon/quanLyChonList.php" class="btn btn-outline-primary w-100">
+                    <a href="/models/bgh/quanLyChonList.php" class="btn btn-outline-primary w-100">
                         <i class="fa-solid fa-list me-2"></i>Quản lý Tổ Hợp Môn
                     </a>
                 </div>

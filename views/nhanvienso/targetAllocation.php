@@ -264,22 +264,22 @@ function updateTotal() {
 
 function validateForm() {
     const inputs = document.querySelectorAll('.chitieu-input');
-    let total = 0, hasEmpty = false, hasNegative = false, hasZero = false, negativeSchools = [];
+    let total = 0;
+    const errors = [];
 
     inputs.forEach(input => {
         const value = input.value.trim();
-        const schoolName = input.closest('tr').querySelector('td:first-child').textContent.trim();
+        const schoolName = input.closest('tr').querySelector('.school-name').textContent.trim();
         
         if (value === '') {
-            hasEmpty = true;
+            errors.push(`⚠️ Trường "${schoolName}": Chưa nhập chỉ tiêu`);
             input.style.borderColor = '#dc3545';
         } else if (parseInt(value) < 0) {
-            hasNegative = true;
-            negativeSchools.push(schoolName);
+            errors.push(`❌ Trường "${schoolName}": Không được nhập số âm`);
             input.style.borderColor = '#dc3545';
             input.style.backgroundColor = '#fff5f5';
         } else if (parseInt(value) === 0) {
-            hasZero = true;
+            errors.push(`⚠️ Trường "${schoolName}": Chỉ tiêu phải > 0`);
             input.style.borderColor = '#dc3545';
         } else {
             total += parseInt(value);
@@ -288,15 +288,19 @@ function validateForm() {
         }
     });
 
-    if (hasEmpty) { alert('⚠️ Vui lòng nhập chỉ tiêu cho tất cả các trường!'); return false; }
-    if (hasNegative) { alert('❌ KHÔNG ĐƯỢC NHẬP SỐ ÂM!\n\nCác trường có chỉ tiêu âm:\n' + negativeSchools.join('\n') + '\n\nVui lòng nhập số dương lớn hơn 0!'); return false; }
-    if (hasZero) { alert('⚠️ Chỉ tiêu phải là số dương lớn hơn 0!\n\nKhông được nhập số 0.'); return false; }
-
+    // Kiểm tra vượt quá tổng phê duyệt
     if (tongChiTieuPheDuyet > 0 && total > tongChiTieuPheDuyet) {
-        if (!confirm(`⚠️ Tổng chỉ tiêu phân bổ (${total.toLocaleString('vi-VN')}) vượt quá tổng chỉ tiêu được phê duyệt (${tongChiTieuPheDuyet.toLocaleString('vi-VN')})!\n\nBạn có chắc chắn muốn tiếp tục?`)) return false;
+        errors.push(`🚫 Tổng phân bổ (${total.toLocaleString('vi-VN')}) vượt quá tổng phê duyệt (${tongChiTieuPheDuyet.toLocaleString('vi-VN')})`);
     }
 
-    return confirm(`✓ Xác nhận phân bổ chỉ tiêu tuyển sinh cho ${inputs.length} trường?\n\nTổng chỉ tiêu: ${total.toLocaleString('vi-VN')} học sinh`);
+    // Nếu có lỗi → Hiển thị tất cả lỗi và dừng (KHÔNG confirm)
+    if (errors.length > 0) {
+        alert('❌ PHÁT HIỆN LỖI:\n\n' + errors.join('\n') + '\n\nVui lòng kiểm tra lại!');
+        return false;
+    }
+
+    // Không có lỗi → Confirm 1 lần duy nhất
+    return confirm(`✓ Xác nhận phân bổ chỉ tiêu tuyển sinh cho ${inputs.length} trường?\n\nTổng chỉ tiêu: ${total.toLocaleString('vi-VN')} / ${tongChiTieuPheDuyet.toLocaleString('vi-VN')} học sinh\n\nNhấn OK để lưu vào hệ thống.`);
 }
 
 function applyGoiY(maTruong, goiY) {

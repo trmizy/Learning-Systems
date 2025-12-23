@@ -27,7 +27,7 @@
             <div class="account-info-item"><strong>Tên đăng nhập:</strong> <span class="value"><?= htmlspecialchars($newAccountInfo['tenDangNhap']) ?></span></div>
             <div class="account-info-item"><strong>Mật khẩu:</strong> <span class="value"><?= htmlspecialchars($newAccountInfo['matKhau']) ?></span></div>
             <div class="account-info-item"><strong>Email:</strong> <span><?= htmlspecialchars($newAccountInfo['email']) ?></span></div>
-            <div class="account-info-item"><strong>Vai trò:</strong> <span class="badge badge-primary">Admin (Phòng giáo vụ)</span></div>
+            <div class="account-info-item"><strong>Vai trò:</strong> <span>Admin (Phòng giáo vụ)</span></div>
             
             <p style="margin-top: 15px; color: #00695c;"><i class="fas fa-info-circle"></i> Thông tin đã được gửi đến email của trường. Vui lòng thông báo cho trường kiểm tra hộp thư.</p>
         </div>
@@ -88,10 +88,13 @@
                                     </td>
                                     <td>
                                         <?php if ($daCap): ?>
-                                            <button class="btn btn-sm btn-danger btn-delete-account" 
+                                            <button class="btn btn-sm btn-warning btn-edit-account" 
                                                     data-matruong="<?= htmlspecialchars($truong['maTruong']) ?>" 
-                                                    data-tentruong="<?= htmlspecialchars($truong['tenTruong']) ?>">
-                                                <i class="fas fa-trash"></i> Xóa TK
+                                                    data-tentruong="<?= htmlspecialchars($truong['tenTruong']) ?>"
+                                                    data-email="<?= htmlspecialchars($truong['email']) ?>"
+                                                    data-sdt="<?= htmlspecialchars($truong['soDienThoai']) ?>"
+                                                    data-diachi="<?= htmlspecialchars($truong['diaChi']) ?>">
+                                                <i class="fas fa-edit"></i> Chỉnh sửa
                                             </button>
                                         <?php elseif (!$coEmail): ?>
                                             <button class="btn btn-sm btn-secondary" disabled title="Cần bổ sung email trước">
@@ -196,33 +199,48 @@
     </div>
 </div>
 
-<!-- Modal xóa tài khoản -->
-<div id="deleteAccountModal" class="modal">
+<!-- Modal chỉnh sửa thông tin trường -->
+<div id="editAccountModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3><i class="fas fa-exclamation-triangle"></i> Xác nhận xóa tài khoản</h3>
-            <span class="close" onclick="closeDeleteModal()">&times;</span>
+            <h3><i class="fas fa-edit"></i> Chỉnh sửa thông tin trường</h3>
+            <span class="close" onclick="closeEditModal()">&times;</span>
         </div>
-        <div class="modal-body">
-            <p>Bạn có chắc chắn muốn xóa tài khoản của trường:</p>
-            <p><strong id="deleteSchoolName"></strong></p>
-            <p style="color: #dc3545;">
-                <i class="fas fa-exclamation-circle"></i> 
-                <strong>Lưu ý:</strong> Trường sẽ không thể đăng nhập vào hệ thống sau khi xóa tài khoản.
-            </p>
-        </div>
-        <div class="modal-footer">
-            <form method="POST" action="/public/index.php?action=schoolAccount_nhanvienso" id="deleteAccountForm">
-                <input type="hidden" name="action" value="delete_account">
-                <input type="hidden" name="maTruong" id="deleteMaTruong">
-                <button type="submit" class="btn btn-danger">
-                    <i class="fas fa-trash"></i> Xác nhận xóa
+        <form method="POST" action="/public/index.php?action=schoolAccount_nhanvienso" id="editAccountForm">
+            <input type="hidden" name="action" value="edit_school">
+            <input type="hidden" name="maTruong" id="editMaTruong">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="editTenTruong">Tên trường <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" id="editTenTruong" name="tenTruong" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editDiaChi">Địa chỉ</label>
+                    <input type="text" class="form-control" id="editDiaChi" name="diaChi">
+                </div>
+                
+                <div class="form-group">
+                    <label for="editEmail">Email</label>
+                    <input type="email" class="form-control" id="editEmail" name="email" readonly style="background-color: #e9ecef; cursor: not-allowed;">
+                    <small class="form-text text-muted"><i class="fas fa-info-circle"></i> Email không thể thay đổi vì đang được dùng làm tên đăng nhập</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editSoDienThoai">Số điện thoại</label>
+                    <input type="tel" class="form-control" id="editSoDienThoai" name="soDienThoai" pattern="[0-9]{10,11}">
+                    <small class="form-text">10-11 chữ số</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Lưu thay đổi
                 </button>
-                <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">
                     <i class="fas fa-times"></i> Hủy
                 </button>
-            </form>
-        </div>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -264,13 +282,15 @@ document.querySelectorAll('.btn-create-account').forEach(btn => {
     });
 });
 
-// Xử lý click nút "Xóa TK"
-document.querySelectorAll('.btn-delete-account').forEach(btn => {
+// Xử lý click nút "Chỉnh sửa"
+document.querySelectorAll('.btn-edit-account').forEach(btn => {
     btn.addEventListener('click', function() {
-        showModal('delete', {
-            maTruong: this.dataset.matruong, 
-            tenTruong: this.dataset.tentruong
-        });
+        document.getElementById('editMaTruong').value = this.dataset.matruong;
+        document.getElementById('editTenTruong').value = this.dataset.tentruong;
+        document.getElementById('editEmail').value = this.dataset.email;
+        document.getElementById('editSoDienThoai').value = this.dataset.sdt;
+        document.getElementById('editDiaChi').value = this.dataset.diachi;
+        document.getElementById('editAccountModal').classList.add('show');
     });
 });
 
@@ -278,15 +298,15 @@ function closeCreateModal() {
     document.getElementById('createAccountModal').classList.remove('show'); 
 }
 
-function closeDeleteModal() { 
-    document.getElementById('deleteAccountModal').classList.remove('show'); 
+function closeEditModal() { 
+    document.getElementById('editAccountModal').classList.remove('show'); 
 }
 
 // Đóng modal khi click bên ngoài
 window.onclick = function(event) {
     if (event.target.id === 'addSchoolModal') closeAddSchoolModal();
     if (event.target.id === 'createAccountModal') closeCreateModal();
-    if (event.target.id === 'deleteAccountModal') closeDeleteModal();
+    if (event.target.id === 'editAccountModal') closeEditModal();
 }
 </script>
 

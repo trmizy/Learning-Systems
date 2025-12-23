@@ -530,7 +530,7 @@ if (isset($_GET['action'])) {
         require_once __DIR__ . '/../controllers/nhanvienso/ThongKeController.php';
         $controller = new ThongKeController();
         $controller->diemTuyenSinh();
-        break;  
+        exit;  
     case 'hs-xem-diem':
         require_once __DIR__ . '/../controllers/hs/XemDiemController.php';
         $controller = new XemDiemController(); // ← Tạo instance

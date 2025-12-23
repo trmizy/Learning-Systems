@@ -68,212 +68,143 @@ class SchoolAccountModel {
     }
 
     /**
-     * Tạo mã tài khoản cho nhân viên sở theo format TKGVUXXX
-     * @return string Mã tài khoản mới
+     * Hàm chung để tạo mã tự động
+     * @param string $table Tên bảng
+     * @param string $column Tên cột chứa mã
+     * @param string $prefix Tiền tố mã
+     * @param int $prefixLength Độ dài tiền tố
+     * @param int $numberLength Độ dài phần số
+     * @param string $condition Điều kiện WHERE (optional)
+     * @return string Mã mới
      */
-    private function taoMaTaiKhoanSo() {
+    private function taoMaTuDong($table, $column, $prefix, $prefixLength, $numberLength, $condition = '') {
         try {
-            $sql = "SELECT maTaiKhoan FROM nhanvienphonggiaovu 
-                    WHERE maTaiKhoan LIKE 'TKGVU%' 
-                    ORDER BY maTaiKhoan DESC LIMIT 1";
+            $where = $condition ? "WHERE $condition AND" : "WHERE";
+            $sql = "SELECT $column FROM $table $where $column LIKE :pattern ORDER BY $column DESC LIMIT 1";
             $stmt = $this->conn->prepare($sql);
-            $stmt->execute();
+            $stmt->execute(['pattern' => $prefix . '%']);
             $result = $stmt->fetch();
             
-            if ($result) {
-                // Lấy số cuối và tăng lên 1
-                $lastNumber = intval(substr($result['maTaiKhoan'], 5)); // Bỏ "TKGVU"
-                $newNumber = $lastNumber + 1;
-            } else {
-                // Chưa có tài khoản nào
-                $newNumber = 1;
-            }
-            
-            return 'TKGVU' . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+            $newNumber = $result ? intval(substr($result[$column], $prefixLength)) + 1 : 1;
+            return $prefix . str_pad($newNumber, $numberLength, '0', STR_PAD_LEFT);
         } catch (PDOException $e) {
-            error_log("Error in taoMaTaiKhoanSo: " . $e->getMessage());
-            return 'TKGVU' . rand(100, 999);
+            error_log("Error in taoMaTuDong: " . $e->getMessage());
+            return $prefix . str_pad(rand(1, pow(10, $numberLength) - 1), $numberLength, '0', STR_PAD_LEFT);
         }
+    }
+
+    /**
+     * Tạo mã tài khoản cho nhân viên sở theo format TKGVUXXX
+     */
+    private function taoMaTaiKhoanSo() {
+        return $this->taoMaTuDong('nhanvienphonggiaovu', 'maTaiKhoan', 'TKGVU', 5, 3);
     }
 
     /**
      * Tạo mã nhân viên giáo vụ theo format TRXXXNVYYZZZZ
-     * XXX: Mã trường (3 ký tự)
-     * YY: Năm cấp tài khoản (2 chữ số cuối)
-     * ZZZZ: Số random thứ tự (4 chữ số)
-     * @param string $maTruong Mã trường (ví dụ: TR001)
-     * @return string Mã nhân viên mới
      */
     private function taoMaNhanVienGiaoVu($maTruong) {
-        try {
-            // Lấy 3 số cuối của mã trường (TR001 -> 001)
-            $soTruong = substr($maTruong, 2, 3);
-            
-            // Lấy 2 số cuối của năm hiện tại (2025 -> 25)
-            $namCap = date('y');
-            
-            // Tìm số thứ tự lớn nhất cho trường này trong năm hiện tại
-            $pattern = $maTruong . 'NV' . $namCap . '%';
-            $sql = "SELECT maNVGiaoVu FROM nhanvienphonggiaovu 
-                    WHERE maNVGiaoVu LIKE :pattern 
-                    ORDER BY maNVGiaoVu DESC LIMIT 1";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute(['pattern' => $pattern]);
-            $result = $stmt->fetch();
-            
-            if ($result) {
-                // Lấy 4 số cuối và tăng lên 1
-                $lastNumber = intval(substr($result['maNVGiaoVu'], -4));
-                $newNumber = $lastNumber + 1;
-            } else {
-                $newNumber = 1;
-            }
-            
-            return $maTruong . 'NV' . $namCap . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
-        } catch (PDOException $e) {
-            error_log("Error in taoMaNhanVienGiaoVu: " . $e->getMessage());
-            return $maTruong . 'NV' . date('y') . rand(1000, 9999);
+        $prefix = $maTruong . 'NV' . date('y');
+        return $this->taoMaTuDong('nhanvienphonggiaovu', 'maNVGiaoVu', $prefix, strlen($prefix), 4);
+    }
+
+    /**
+     * Tạo mã trường tự động theo format TRXXX
+     */
+    private function taoMaTruong() {
+        return $this->taoMaTuDong('truong', 'maTruong', 'TR', 2, 3);
+    }
+
+    /**
+     * Validate email
+     */
+    private function validateEmail($email) {
+        if (empty($email)) {
+            throw new Exception('Email không được để trống');
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new Exception('Email không hợp lệ');
         }
     }
 
     /**
+     * Kiểm tra email đã tồn tại chưa
+     */
+    private function kiemTraEmailTonTai($email, $excludeMaTruong = null) {
+        $sql = "SELECT COUNT(*) as count FROM truong WHERE email = :email";
+        if ($excludeMaTruong) {
+            $sql .= " AND maTruong != :maTruong";
+        }
+        $stmt = $this->conn->prepare($sql);
+        $params = ['email' => $email];
+        if ($excludeMaTruong) {
+            $params['maTruong'] = $excludeMaTruong;
+        }
+        $stmt->execute($params);
+        return $stmt->fetch()['count'] > 0;
+    }
+
+    /**
      * Tạo tài khoản cho trường
-     * @param string $maTruong Mã trường
-     * @param string $maNhanVienSo Mã nhân viên sở thực hiện
-     * @return array Kết quả: ['success' => bool, 'message' => string, 'data' => array]
      */
     public function taoTaiKhoanChoTruong($maTruong, $maNhanVienSo) {
         try {
-            // Bắt đầu transaction
             $this->conn->beginTransaction();
 
-            // 1. Lấy thông tin trường
+            // Lấy và validate thông tin trường
             $truongInfo = $this->getThongTinTruong($maTruong);
-            
             if (!$truongInfo) {
                 throw new Exception("Không tìm thấy thông tin trường");
             }
-
-            // 2. Kiểm tra email
             if (empty($truongInfo['email'])) {
-                throw new Exception("Không có email của trường trong hệ thống. Vui lòng bổ sung email trước khi cấp tài khoản.");
+                throw new Exception("Không có email của trường. Vui lòng bổ sung email trước.");
             }
-
-            // 3. Kiểm tra đã có tài khoản chưa
             if ($truongInfo['trangThaiCapTaiKhoan'] === 'Đã cấp') {
                 throw new Exception("Trường này đã được cấp tài khoản");
             }
 
-            // 4. Tạo thông tin tài khoản
-            // Tạo mã tài khoản theo format TKGVUXXX
-            $maTaiKhoan = $this->taoMaTaiKhoanSo();
-            
-            // Tạo mã nhân viên giáo vụ theo format TRXXXNVYYZZZZ
-            $maNVGiaoVu = $this->taoMaNhanVienGiaoVu($maTruong);
-            
-            // Email từ thông tin trường
-            $email = $truongInfo['email'];
-            $soDienThoai = $truongInfo['soDienThoai'];
-            
-            // Tên đăng nhập = email của nhân viên phòng giáo vụ
-            $tenDangNhap = $email;
-            
-            // Mật khẩu mặc định = 1111
-            $matKhauMacDinh = "1111";
+            // Tạo thông tin tài khoản
+            $accountData = [
+                'maTaiKhoan' => $this->taoMaTaiKhoanSo(),
+                'maNVGiaoVu' => $this->taoMaNhanVienGiaoVu($maTruong),
+                'tenDangNhap' => $truongInfo['email'],
+                'matKhau' => '1111',
+                'email' => $truongInfo['email'],
+                'soDienThoai' => $truongInfo['soDienThoai'],
+                'maTruong' => $maTruong
+            ];
 
-            // 5. Thêm vào bảng taikhoan (để đăng nhập)
-            $sqlInsertTaiKhoan = "
-                INSERT INTO taikhoan (maTaiKhoan, tenDangNhap, matKhau, email, soDienThoai, trangThai, maTruong)
-                VALUES (:maTaiKhoan, :tenDangNhap, :matKhau, :email, :soDienThoai, 'ACTIVE', :maTruong)
-            ";
-
-            $stmt = $this->conn->prepare($sqlInsertTaiKhoan);
-            $ok = $stmt->execute([
-                'maTaiKhoan'  => $maTaiKhoan,
-                'tenDangNhap' => $tenDangNhap,
-                'matKhau'     => $matKhauMacDinh,
-                'email'       => $email,
-                'soDienThoai' => $soDienThoai,
-                'maTruong'    => $maTruong
+            // Insert tài khoản (chỉ truyền các field cần thiết)
+            $this->insertTaiKhoan([
+                'maTaiKhoan' => $accountData['maTaiKhoan'],
+                'tenDangNhap' => $accountData['tenDangNhap'],
+                'matKhau' => $accountData['matKhau'],
+                'email' => $accountData['email'],
+                'soDienThoai' => $accountData['soDienThoai'],
+                'maTruong' => $accountData['maTruong']
             ]);
 
-            if (!$ok) {
-                $err = $stmt->errorInfo();
-                throw new Exception("Lỗi khi tạo tài khoản: " . $err[2]);
-            }
-
-
-            // 6. Thêm vào bảng nhanvienphonggiaovu (admin là nhân viên phòng giáo vụ)
-            $sqlInsertNVGV = "
-                INSERT INTO nhanvienphonggiaovu (
-                    maNVGiaoVu, 
-                    hoTen, 
-                    chucDanh, 
-                    email, 
-                    soDienThoai, 
-                    trangThai, 
-                    maTruong, 
-                    maTaiKhoan,
-                    ngayTao
-                ) VALUES (
-                    :maNVGiaoVu,
-                    :hoTen,
-                    'Nhan vien phong giao vu',
-                    :email,
-                    :soDienThoai,
-                    'ACTIVE',
-                    :maTruong,
-                    :maTaiKhoan,
-                    NOW()
-                )
-            ";
-            
-            $stmt = $this->conn->prepare($sqlInsertNVGV);
-            $stmt->execute([
-                'maNVGiaoVu' => $maNVGiaoVu,
+            // Insert nhân viên phòng giáo vụ
+            $this->insertNhanVienGiaoVu([
+                'maNVGiaoVu' => $accountData['maNVGiaoVu'],
                 'hoTen' => $truongInfo['hoTenNV'],
-                'email' => $email,
-                'soDienThoai' => $soDienThoai,
-                'maTruong' => $maTruong,
-                'maTaiKhoan' => $maTaiKhoan
+                'email' => $accountData['email'],
+                'soDienThoai' => $accountData['soDienThoai'],
+                'maTruong' => $accountData['maTruong'],
+                'maTaiKhoan' => $accountData['maTaiKhoan']
             ]);
 
-            // 7. Thêm vai trò cho tài khoản (vai trò admin - tài khoản trường)
-            // Kiểm tra vai trò 'admin' có tồn tại chưa
-            $sqlCheckVaiTro = "SELECT maVaiTro FROM vaitro WHERE maVaiTro = 'admin'";
-            $stmtCheck = $this->conn->prepare($sqlCheckVaiTro);
-            $stmtCheck->execute();
-            
-            if (!$stmtCheck->fetch()) {
-                // Tạo vai trò mới nếu chưa có
-                $sqlInsertVaiTro = "INSERT INTO vaitro (maVaiTro, tenVaiTro) VALUES ('admin', 'Quản trị viên trường')";
-                $this->conn->prepare($sqlInsertVaiTro)->execute();
-            }
+            // Gán vai trò admin
+            $this->ganVaiTro($accountData['maTaiKhoan'], 'admin');
 
-            // Gán vai trò cho tài khoản
-            $sqlInsertTaiKhoanVaiTro = "
-                INSERT INTO taikhoan_vaitro (maTaiKhoan, maVaiTro)
-                VALUES (:maTaiKhoan, 'admin')
-            ";
-            $stmt = $this->conn->prepare($sqlInsertTaiKhoanVaiTro);
-            $stmt->execute(['maTaiKhoan' => $maTaiKhoan]);
-
-            // 8. Commit transaction
             $this->conn->commit();
 
-            // 9. Gửi email (sẽ được xử lý ở controller)
             return [
                 'success' => true,
                 'message' => 'Tạo tài khoản thành công',
-                'data' => [
-                    'maTaiKhoan' => $maTaiKhoan,
-                    'maNVGiaoVu' => $maNVGiaoVu,
-                    'maTruong' => $maTruong,
-                    'tenTruong' => $truongInfo['tenTruong'],
-                    'tenDangNhap' => $tenDangNhap,
-                    'matKhau' => $matKhauMacDinh,
-                    'email' => $email
-                ]
+                'data' => array_merge($accountData, [
+                    'tenTruong' => $truongInfo['tenTruong']
+                ])
             ];
 
         } catch (Exception $e) {
@@ -291,103 +222,63 @@ class SchoolAccountModel {
     }
 
     /**
-     * Xóa tài khoản của trường (hủy cấp tài khoản)
-     * LƯU Ý: Chỉ xóa tài khoản có vai trò 'admin' (tài khoản trường), không ảnh hưởng tài khoản giáo viên
-     * @param string $maTruong Mã trường
-     * @return array Kết quả
+     * Insert tài khoản vào database
      */
-    public function xoaTaiKhoanTruong($maTruong) {
-        try {
-            $this->conn->beginTransaction();
-
-            // Lấy mã tài khoản trường (có vai trò 'admin')
-            $sqlGetAccount = "SELECT tk.maTaiKhoan 
-                             FROM taikhoan tk
-                             INNER JOIN taikhoan_vaitro tkv ON tk.maTaiKhoan = tkv.maTaiKhoan
-                             WHERE tk.maTruong = :maTruong AND tkv.maVaiTro = 'admin'
-                             LIMIT 1";
-            $stmt = $this->conn->prepare($sqlGetAccount);
-            $stmt->execute(['maTruong' => $maTruong]);
-            $account = $stmt->fetch();
-
-            if (!$account) {
-                throw new Exception('Không tìm thấy tài khoản trường');
-            }
-
-            $maTaiKhoan = $account['maTaiKhoan'];
-
-            // Xóa vai trò
-            $sqlDeleteVaiTro = "DELETE FROM taikhoan_vaitro WHERE maTaiKhoan = :maTaiKhoan";
-            $stmt = $this->conn->prepare($sqlDeleteVaiTro);
-            $stmt->execute(['maTaiKhoan' => $maTaiKhoan]);
-            
-            // Xóa từ bảng nhanvienphonggiaovu
-            $sqlDeleteNVGV = "DELETE FROM nhanvienphonggiaovu WHERE maTaiKhoan = :maTaiKhoan";
-            $stmt = $this->conn->prepare($sqlDeleteNVGV);
-            $stmt->execute(['maTaiKhoan' => $maTaiKhoan]);
-
-            // Xóa tài khoản
-            $sqlDeleteTaiKhoan = "DELETE FROM taikhoan WHERE maTaiKhoan = :maTaiKhoan";
-            $stmt = $this->conn->prepare($sqlDeleteTaiKhoan);
-            $stmt->execute(['maTaiKhoan' => $maTaiKhoan]);
-
-            $this->conn->commit();
-
-            return [
-                'success' => true,
-                'message' => 'Xóa tài khoản trường thành công'
-            ];
-
-        } catch (Exception $e) {
-            if ($this->conn->inTransaction()) {
-                $this->conn->rollBack();
-            }
-            
-            return [
-                'success' => false,
-                'message' => 'Lỗi: ' . $e->getMessage()
-            ];
+    private function insertTaiKhoan($data) {
+        $sql = "INSERT INTO taikhoan (maTaiKhoan, tenDangNhap, matKhau, email, soDienThoai, trangThai, maTruong)
+                VALUES (:maTaiKhoan, :tenDangNhap, :matKhau, :email, :soDienThoai, 'ACTIVE', :maTruong)";
+        $stmt = $this->conn->prepare($sql);
+        if (!$stmt->execute($data)) {
+            throw new Exception("Lỗi khi tạo tài khoản: " . implode(', ', $stmt->errorInfo()));
         }
     }
 
     /**
+     * Insert nhân viên phòng giáo vụ
+     */
+    private function insertNhanVienGiaoVu($data) {
+        $sql = "INSERT INTO nhanvienphonggiaovu (maNVGiaoVu, hoTen, chucDanh, email, soDienThoai, trangThai, maTruong, maTaiKhoan, ngayTao)
+                VALUES (:maNVGiaoVu, :hoTen, 'Nhan vien phong giao vu', :email, :soDienThoai, 'ACTIVE', :maTruong, :maTaiKhoan, NOW())";
+        $this->conn->prepare($sql)->execute($data);
+    }
+
+    /**
+     * Gán vai trò cho tài khoản
+     */
+    private function ganVaiTro($maTaiKhoan, $maVaiTro) {
+        // Đảm bảo vai trò tồn tại
+        $check = $this->conn->prepare("SELECT maVaiTro FROM vaitro WHERE maVaiTro = ?");
+        $check->execute([$maVaiTro]);
+        if (!$check->fetch()) {
+            $this->conn->prepare("INSERT INTO vaitro (maVaiTro, tenVaiTro) VALUES (?, 'Quản trị viên trường')")
+                       ->execute([$maVaiTro]);
+        }
+        // Gán vai trò
+        $this->conn->prepare("INSERT INTO taikhoan_vaitro (maTaiKhoan, maVaiTro) VALUES (?, ?)")
+                   ->execute([$maTaiKhoan, $maVaiTro]);
+    }
+
+    /**
      * Thêm trường mới vào hệ thống
-     * @param array $data Thông tin trường [tenTruong, diaChi, email, soDienThoai]
-     * @return array Kết quả
      */
     public function themTruongMoi($data) {
         try {
-            // Validate dữ liệu
+            // Validate
             if (empty($data['tenTruong'])) {
-                return ['success' => false, 'message' => 'Tên trường không được để trống'];
+                throw new Exception('Tên trường không được để trống');
+            }
+            $this->validateEmail($data['email']);
+            
+            if ($this->kiemTraEmailTonTai($data['email'])) {
+                throw new Exception('Email này đã được sử dụng bởi trường khác');
             }
             
-            if (empty($data['email'])) {
-                return ['success' => false, 'message' => 'Email không được để trống'];
-            }
-            
-            // Kiểm tra email hợp lệ
-            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-                return ['success' => false, 'message' => 'Email không hợp lệ'];
-            }
-            
-            // Kiểm tra email đã tồn tại chưa
-            $sqlCheck = "SELECT COUNT(*) as count FROM truong WHERE email = :email";
-            $stmtCheck = $this->conn->prepare($sqlCheck);
-            $stmtCheck->execute(['email' => $data['email']]);
-            if ($stmtCheck->fetch()['count'] > 0) {
-                return ['success' => false, 'message' => 'Email này đã được sử dụng bởi trường khác'];
-            }
-            
-            // Tạo mã trường tự động
+            // Insert
             $maTruong = $this->taoMaTruong();
+            $sql = "INSERT INTO truong (maTruong, tenTruong, diaChi, email, soDienThoai) 
+                    VALUES (:maTruong, :tenTruong, :diaChi, :email, :soDienThoai)";
             
-            // Thêm trường vào database
-            $sqlInsert = "INSERT INTO truong (maTruong, tenTruong, diaChi, email, soDienThoai) 
-                         VALUES (:maTruong, :tenTruong, :diaChi, :email, :soDienThoai)";
-            
-            $stmt = $this->conn->prepare($sqlInsert);
-            $stmt->execute([
+            $this->conn->prepare($sql)->execute([
                 'maTruong' => $maTruong,
                 'tenTruong' => $data['tenTruong'],
                 'diaChi' => $data['diaChi'] ?? '',
@@ -398,42 +289,11 @@ class SchoolAccountModel {
             return [
                 'success' => true,
                 'message' => 'Thêm trường mới thành công',
-                'data' => [
-                    'maTruong' => $maTruong,
-                    'tenTruong' => $data['tenTruong']
-                ]
+                'data' => ['maTruong' => $maTruong, 'tenTruong' => $data['tenTruong']]
             ];
-            
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             error_log("Error in themTruongMoi: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()];
-        }
-    }
-    
-    /**
-     * Tạo mã trường tự động theo format TRXXX
-     * @return string Mã trường mới
-     */
-    private function taoMaTruong() {
-        try {
-            $sql = "SELECT maTruong FROM truong WHERE maTruong LIKE 'TR%' ORDER BY maTruong DESC LIMIT 1";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute();
-            $result = $stmt->fetch();
-            
-            if ($result) {
-                // Lấy số cuối và tăng lên 1
-                $lastNumber = intval(substr($result['maTruong'], 2));
-                $newNumber = $lastNumber + 1;
-            } else {
-                // Chưa có trường nào
-                $newNumber = 1;
-            }
-            
-            return 'TR' . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
-        } catch (PDOException $e) {
-            error_log("Error in taoMaTruong: " . $e->getMessage());
-            return 'TR' . rand(100, 999);
+            return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 
@@ -507,6 +367,38 @@ class SchoolAccountModel {
         } catch (Exception $e) {
             error_log("Error sending email: " . $e->getMessage());
             return false;
+        }
+    }
+    
+    /**
+     * Cập nhật thông tin trường (không cập nhật email)
+     */
+    public function capNhatThongTinTruong($maTruong, $data) {
+        try {
+            $this->conn->beginTransaction();
+            
+            // Validate
+            if (!$this->conn->prepare("SELECT 1 FROM truong WHERE maTruong = ?")->execute([$maTruong])) {
+                throw new Exception('Không tìm thấy trường trong hệ thống');
+            }
+            if (empty($data['tenTruong'])) {
+                throw new Exception('Tên trường không được để trống');
+            }
+            
+            // Update
+            $sql = "UPDATE truong SET tenTruong = ?, diaChi = ?, soDienThoai = ? WHERE maTruong = ?";
+            $this->conn->prepare($sql)->execute([
+                $data['tenTruong'],
+                $data['diaChi'],
+                $data['soDienThoai'],
+                $maTruong
+            ]);
+            
+            $this->conn->commit();
+            return ['success' => true, 'message' => 'Cập nhật thông tin trường thành công'];
+        } catch (Exception $e) {
+            if ($this->conn->inTransaction()) $this->conn->rollBack();
+            return ['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()];
         }
     }
 }

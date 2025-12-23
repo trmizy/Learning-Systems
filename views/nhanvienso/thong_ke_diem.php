@@ -59,7 +59,7 @@ require_once __DIR__ . '/../layouts/header.php';
                     </option>
                 <?php endforeach; ?>
             </select>
-            <a href="/public/index.php?action=nhanvienso-dashboard" class="btn btn-outline-secondary">
+            <a href="/public/index.php" class="btn btn-outline-secondary">
                 <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
             </a>
         </div>

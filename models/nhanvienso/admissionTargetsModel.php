@@ -351,8 +351,8 @@ class AdmissionTargetsModel {
         $errors = [];
         $tongNhap = array_sum($chiTieuData);
         $tongPheDuyet = $this->getTongPheDuyet($namHoc);
-        if ($tongPheDuyet > 0 && $tongNhap != $tongPheDuyet) {
-            $errors[] = 'Tổng nhập (' . $tongNhap . ') khác tổng phê duyệt (' . $tongPheDuyet . ')!';
+        if ($tongPheDuyet > 0 && $tongNhap > $tongPheDuyet) {
+            $errors[] = 'Tổng nhập (' . $tongNhap . ') vượt quá tổng phê duyệt (' . $tongPheDuyet . ')!';
         }
         foreach ($chiTieuData as $maTruong => $soLuong) {
             if (!is_numeric($soLuong)) {

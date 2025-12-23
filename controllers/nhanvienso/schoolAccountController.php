@@ -88,19 +88,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         
         if ($result['success']) {
             // Gửi email
-            $emailSent = $schoolAccountModel->guiEmailThongTinTaiKhoan($result['data']);
+            $schoolAccountModel->guiEmailThongTinTaiKhoan($result['data']);
             
-            if ($emailSent) {
-                $_SESSION['messages'][] = [
-                    'type' => 'success',
-                    'text' => 'Tạo tài khoản thành công! Email đã được gửi đến ' . $result['data']['email']
-                ];
-            } else {
-                $_SESSION['messages'][] = [
-                    'type' => 'warning',
-                    'text' => 'Tạo tài khoản thành công nhưng không thể gửi email. Vui lòng thông báo trực tiếp cho trường.'
-                ];
-            }
+            $_SESSION['messages'][] = [
+                'type' => 'success',
+                'text' => 'Tạo tài khoản thành công!'
+            ];
             
             // Lưu thông tin tài khoản để hiển thị
             $_SESSION['new_account_info'] = $result['data'];
@@ -115,25 +108,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         exit;
     }
     
-    if ($_POST['action'] === 'delete_account') {
+    // Chỉnh sửa thông tin trường
+    if ($_POST['action'] === 'edit_school') {
         $maTruong = $_POST['maTruong'] ?? '';
         
         if (empty($maTruong)) {
             $_SESSION['messages'][] = [
                 'type' => 'danger',
-                'text' => 'Vui lòng chọn trường cần xóa tài khoản'
+                'text' => 'Vui lòng chọn trường cần chỉnh sửa'
             ];
             header("Location: /public/index.php?action=schoolAccount_nhanvienso");
             exit;
         }
         
-        // Xóa tài khoản
-        $result = $schoolAccountModel->xoaTaiKhoanTruong($maTruong);
+        $data = [
+            'tenTruong' => trim($_POST['tenTruong'] ?? ''),
+            'diaChi' => trim($_POST['diaChi'] ?? ''),
+            'email' => trim($_POST['email'] ?? ''),
+            'soDienThoai' => trim($_POST['soDienThoai'] ?? '')
+        ];
+        
+        $result = $schoolAccountModel->capNhatThongTinTruong($maTruong, $data);
         
         if ($result['success']) {
             $_SESSION['messages'][] = [
                 'type' => 'success',
-                'text' => 'Xóa tài khoản thành công'
+                'text' => 'Cập nhật thông tin trường thành công'
             ];
         } else {
             $_SESSION['messages'][] = [
