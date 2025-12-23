@@ -6,6 +6,9 @@
 $pageTitle = 'Phân công giảng dạy - ' . htmlspecialchars($lopInfo['tenLop']);
 require_once __DIR__ . '/../../layouts/header.php';
 ?>
+<?php
+$maLop = $maLop ?? '';
+?>
 
 <style>
     .assignment-container {

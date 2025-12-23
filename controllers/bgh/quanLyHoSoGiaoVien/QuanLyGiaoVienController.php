@@ -14,7 +14,7 @@ if (!isset($_SESSION['auth']) || $_SESSION['auth']['role'] !== 'bgh') {
 $giaoVienModel = new GiaoVienModel();
 
 // Xử lý các hành động
-$action = $_GET['action'] ?? 'list';
+$action = $_GET['sub_action'] ?? 'list';
 $message = null;
 $messageType = 'info';
 
@@ -62,6 +62,7 @@ try {
                     'hoTen' => trim($_POST['hoTen'] ?? ''),
                     'gioiTinh' => $_POST['gioiTinh'] ?? '',
                     'ngaySinh' => $_POST['ngaySinh'] ?? '',
+                    'soCCCD' => $_POST['soCCCD'] ?? '', // ⚠️ PHẢI CÓ DÒNG NÀY
                     'soDienThoai' => trim($_POST['soDienThoai'] ?? ''),
                     'email' => trim($_POST['email'] ?? ''),
                     'diaChi' => trim($_POST['diaChi'] ?? ''),
@@ -70,6 +71,12 @@ try {
                     'chucVu' => trim($_POST['chucVu'] ?? 'Giáo viên'),
                     'tinhTrangTaiKhoan' => $_POST['tinhTrangTaiKhoan'] ?? 'ACTIVE'
                 ];
+
+                // === DEBUG LOG TRƯỚC KHI GỌI MODEL ===
+                error_log("=== Controller - Data truyền vào Model ===");
+                error_log("soCCCD: '" . $data['soCCCD'] . "'");
+                error_log("Full data: " . print_r($data, true));
+                // === END DEBUG ===
 
                 $giaoVienModel->themGiaoVien($data);
                 $_SESSION['flash_success'] = "Thêm giáo viên thành công với mã: {$maGV}";
@@ -94,6 +101,7 @@ try {
                     'hoTen' => trim($_POST['hoTen'] ?? ''),
                     'gioiTinh' => $_POST['gioiTinh'] ?? '',
                     'ngaySinh' => $_POST['ngaySinh'] ?? '',
+                    'soCCCD' => $_POST['soCCCD'] ?? '', // ⚠️ PHẢI CÓ DÒNG NÀY
                     'soDienThoai' => trim($_POST['soDienThoai'] ?? ''),
                     'email' => trim($_POST['email'] ?? ''),
                     'diaChi' => trim($_POST['diaChi'] ?? ''),

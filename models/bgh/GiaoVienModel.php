@@ -35,6 +35,7 @@ class GiaoVienModel {
                 monHocPhuTrach,
                 trinhDoHocVan,
                 chucVu,
+                soCCCD,
                 tinhTrangTaiKhoan
             FROM giaovienbomon
             ORDER BY hoTen ASC
@@ -60,6 +61,7 @@ class GiaoVienModel {
                 monHocPhuTrach,
                 trinhDoHocVan,
                 chucVu,
+                soCCCD,
                 tinhTrangTaiKhoan
             FROM giaovienbomon
             WHERE maGV = ?
@@ -152,13 +154,95 @@ class GiaoVienModel {
     }
 
     /**
-     * Tạo mới hồ sơ giáo viên
-     * @param array $data
+     * Kiểm tra CCCD đã tồn tại chưa (trừ giáo viên hiện tại khi cập nhật)
+     * @param string $soCCCD
+     * @param string|null $maGVHienTai
      * @return bool
+     */
+    public function kiemTraCCCDTonTai($soCCCD, $maGVHienTai = null) {
+        if ($maGVHienTai) {
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM giaovienbomon WHERE soCCCD = ? AND maGV != ?");
+            $stmt->execute([$soCCCD, $maGVHienTai]);
+        } else {
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM giaovienbomon WHERE soCCCD = ?");
+            $stmt->execute([$soCCCD]);
+        }
+        return $stmt->fetchColumn() > 0;
+    }
+
+    /**
+     * ⚠️ MỚI: Tạo mã tài khoản tự động theo pattern TKGVXXXX
+     */
+    private function taoMaTaiKhoan() {
+        $stmt = $this->db->query("
+            SELECT maTaiKhoan 
+            FROM taikhoan 
+            WHERE maTaiKhoan LIKE 'TKGV%' 
+            ORDER BY maTaiKhoan DESC 
+            LIMIT 1
+        ");
+        $result = $stmt->fetch();
+        
+        if ($result) {
+            $lastNumber = (int)substr($result['maTaiKhoan'], 4);
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+        
+        return 'TKGV' . str_pad((string)$newNumber, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * ⚠️ CẬP NHẬT: Tạo tài khoản với username = email, password = 123456
+     * @param string $email Email giáo viên (dùng làm username)
+     * @param string $soDienThoai Số điện thoại
+     * @param string $maTruong Mã trường (VD: TR001)
+     * @return string Mã tài khoản đã tạo
      * @throws Exception
      */
+    private function taoTaiKhoanGiaoVien($email, $soDienThoai, $maTruong) {
+        try {
+            // 1. Tạo mã tài khoản
+            $maTaiKhoan = $this->taoMaTaiKhoan();
+            
+            // 2. Username = Email
+            $username = $email;
+            
+            // 3. Mật khẩu mặc định = "123456" (không mã hóa)
+            $passwordHash = '123456';
+            
+            // 4. Insert vào bảng taikhoan - CẬP NHẬT: Thêm soDienThoai và maTruong
+            $stmtTK = $this->db->prepare("
+                INSERT INTO taikhoan (maTaiKhoan, tenDangNhap, matKhau, email, soDienThoai, maTruong, trangThai)
+                VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE')
+            ");
+            $stmtTK->execute([$maTaiKhoan, $username, $passwordHash, $email, $soDienThoai, $maTruong]);
+            
+            // 5. Thêm vai trò 'gvbm' vào bảng taikhoan_vaitro
+            $stmtVT = $this->db->prepare("
+                INSERT INTO taikhoan_vaitro (maTaiKhoan, maVaiTro)
+                VALUES (?, 'gvbm')
+            ");
+            $stmtVT->execute([$maTaiKhoan]);
+            
+            // Log thông tin tài khoản đã tạo
+            error_log("=== TẠO TÀI KHOẢN GIÁO VIÊN ===");
+            error_log("Mã TK: $maTaiKhoan | Username: $username | Password: 123456 | SĐT: $soDienThoai | Trường: $maTruong");
+            
+            return $maTaiKhoan;
+            
+        } catch (PDOException $e) {
+            error_log("Lỗi tạo tài khoản giáo viên: " . $e->getMessage());
+            throw new Exception("Không thể tạo tài khoản cho giáo viên");
+        }
+    }
+
+    /**
+     * Tạo mới hồ sơ giáo viên - CẬP NHẬT: Truyền thêm soDienThoai và maTruong
+     */
     public function themGiaoVien($data) {
-        // Validate dữ liệu
+        $data = $this->trimData($data);
         $this->validateGiaoVien($data);
 
         // Kiểm tra email đã tồn tại
@@ -171,15 +255,32 @@ class GiaoVienModel {
             throw new Exception("Số điện thoại đã được sử dụng");
         }
 
+        // Kiểm tra CCCD đã tồn tại
+        if ($this->kiemTraCCCDTonTai($data['soCCCD'])) {
+            throw new Exception("Số CCCD đã được sử dụng");
+        }
+
         try {
+            $this->db->beginTransaction();
+
+            // ⚠️ CẬP NHẬT: Truyền thêm soDienThoai và maTruong vào hàm tạo tài khoản
+            $maTruong = explode('GV', $data['maGV'])[0]; // Lấy TR001 từ TR001GV250001
+            $maTaiKhoan = $this->taoTaiKhoanGiaoVien(
+                $data['email'], 
+                $data['soDienThoai'],
+                $maTruong
+            );
+
+            // INSERT GIÁO VIÊN
             $stmt = $this->db->prepare("
                 INSERT INTO giaovienbomon (
                     maGV, hoTen, gioiTinh, ngaySinh, soDienThoai, 
-                    email, diaChi, monHocPhuTrach, trinhDoHocVan, chucVu, tinhTrangTaiKhoan
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    email, diaChi, monHocPhuTrach, trinhDoHocVan, chucVu, 
+                    soCCCD, tinhTrangTaiKhoan, maTaiKhoan
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
-            return $stmt->execute([
+            $result = $stmt->execute([
                 $data['maGV'],
                 $data['hoTen'],
                 $data['gioiTinh'],
@@ -190,16 +291,25 @@ class GiaoVienModel {
                 $data['monHocPhuTrach'],
                 $data['trinhDoHocVan'] ?? '',
                 $data['chucVu'] ?? 'Giáo viên',
-                $data['tinhTrangTaiKhoan'] ?? 'ACTIVE'
+                $data['soCCCD'],
+                $data['tinhTrangTaiKhoan'] ?? 'ACTIVE',
+                $maTaiKhoan
             ]);
+
+            $this->db->commit();
+            return $result;
+
         } catch (PDOException $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             error_log("Lỗi thêm giáo viên: " . $e->getMessage());
-            throw new Exception("Không thể thêm giáo viên");
+            throw new Exception("Không thể thêm giáo viên: " . $e->getMessage());
         }
     }
 
     /**
-     * Cập nhật thông tin giáo viên
+     * Cập nhật thông tin giáo viên - ⚠️ CẬP NHẬT: Thêm CCCD
      * @param string $maGV
      * @param array $data
      * @return bool
@@ -211,6 +321,9 @@ class GiaoVienModel {
             throw new Exception("Không tìm thấy giáo viên");
         }
 
+        // ⚠️ FIX: Trim dữ liệu trước khi validate
+        $data = $this->trimData($data);
+        
         // Validate dữ liệu
         $this->validateGiaoVien($data, $maGV);
 
@@ -222,6 +335,11 @@ class GiaoVienModel {
         // Kiểm tra SĐT trùng (trừ SĐT của chính giáo viên)
         if ($this->kiemTraSDTTonTai($data['soDienThoai'], $maGV)) {
             throw new Exception("Số điện thoại đã được sử dụng bởi giáo viên khác");
+        }
+
+        // ⚠️ Kiểm tra CCCD trùng (trừ CCCD của chính giáo viên)
+        if ($this->kiemTraCCCDTonTai($data['soCCCD'], $maGV)) {
+            throw new Exception("Số CCCD đã được sử dụng bởi giáo viên khác");
         }
 
         try {
@@ -236,6 +354,7 @@ class GiaoVienModel {
                     monHocPhuTrach = ?,
                     trinhDoHocVan = ?,
                     chucVu = ?,
+                    soCCCD = ?,
                     tinhTrangTaiKhoan = ?
                 WHERE maGV = ?
             ");
@@ -250,6 +369,7 @@ class GiaoVienModel {
                 $data['monHocPhuTrach'],
                 $data['trinhDoHocVan'] ?? '',
                 $data['chucVu'] ?? 'Giáo viên',
+                $data['soCCCD'], // ⚠️ THÊM CCCD
                 $data['tinhTrangTaiKhoan'] ?? 'ACTIVE',
                 $maGV
             ]);
@@ -260,10 +380,21 @@ class GiaoVienModel {
     }
 
     /**
-     * Validate dữ liệu giáo viên
+     * ⚠️ MỚI: Trim tất cả dữ liệu string trong array
      * @param array $data
-     * @param string|null $maGVHienTai
-     * @throws Exception
+     * @return array
+     */
+    private function trimData($data) {
+        foreach ($data as $key => $value) {
+            if (is_string($value)) {
+                $data[$key] = trim($value);
+            }
+        }
+        return $data;
+    }
+
+    /**
+     * Validate dữ liệu giáo viên - ⚠️ FIX: Lấy đúng giá trị từ $data
      */
     private function validateGiaoVien($data, $maGVHienTai = null) {
         // Kiểm tra họ tên
@@ -287,6 +418,23 @@ class GiaoVienModel {
 
         if ($tuoi < 22 || $tuoi > 65) {
             throw new Exception("Tuổi giáo viên phải từ 22 đến 65");
+        }
+
+        // ⚠️ FIX: Lấy soCCCD trực tiếp từ $data (đã được trim ở Controller)
+        $soCCCD = $data['soCCCD'] ?? '';
+        
+        // DEBUG: Log giá trị CCCD
+        error_log("=== Model validateGiaoVien ===");
+        error_log("soCCCD từ \$data: '$soCCCD'");
+        error_log("Length: " . strlen($soCCCD));
+        
+        if (empty($soCCCD)) {
+            throw new Exception("Số CCCD không được để trống");
+        }
+        
+        if (!preg_match('/^[0-9]{12}$/', $soCCCD)) {
+            error_log("CCCD validation failed: '$soCCCD' (length: " . strlen($soCCCD) . ")");
+            throw new Exception("Số CCCD không hợp lệ (phải là 12 chữ số, không có khoảng trắng)");
         }
 
         // Kiểm tra số điện thoại

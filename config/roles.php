@@ -7,19 +7,33 @@ const ROLES = [
     'gvcn' => 'Giáo viên chủ nhiệm',
     'gvbm' => 'Giáo viên bộ môn',
     'phuhuynh' => 'Phụ huynh',
-    'hocsinh' => 'Học sinh'
+    'hocsinh' => 'Học sinh',
+    'ts' => 'Thí sinh' // Thêm role mới
+];
+
+const ROLE_DISPLAY_NAMES = [
+    'nhanvienso' => 'Nhân viên Sở Giáo dục',
+    'admin' => 'Admin Nhân viên phòng giáo vụ',
+    'bgh' => 'Ban giám hiệu',
+    'ttbm' => 'Tổ trưởng bộ môn',
+    'gvcn' => 'Giáo viên chủ nhiệm',
+    'gvbm' => 'Giáo viên bộ môn',
+    'ph' => 'Phụ huynh',
+    'hs' => 'Học sinh',
+    'ts' => 'Thí sinh'  // ⚠️ THÊM ROLE MỚI
 ];
 
 // Định nghĩa quyền cho từng role
 const ROLE_PERMISSIONS = [
-    'nhanvienso' => ['nhanvienso', 'admin', 'giaovu', 'vanphong', 'gvcn', 'gvbm'], // Nhân viên sở có full quyền
-    'giaovu' => ['admin', 'giaovu', 'vanphong', 'gvcn', 'gvbm'], // Giáo vụ có full quyền admin
-    'admin' => ['admin', 'gvcn', 'gvbm'], // BGH có quyền hạn chế hơn
-    'totruong' => ['totruong', 'gvbm'],
-    'gvcn' => ['gvcn', 'gvbm'],
-    'gvbm' => ['gvbm'],
-    'phuhuynh' => ['phuhuynh'],
-    'hocsinh' => ['hocsinh']
+    'nhanvienso' => ['full_access'],
+    'admin' => ['manage_school', 'view_reports'],
+    'bgh' => ['manage_teachers', 'view_statistics'],
+    'ttbm' => ['manage_subject', 'assign_exams'],
+    'gvcn' => ['manage_class', 'enter_conduct'],
+    'gvbm' => ['enter_grades', 'view_assignments'],
+    'ph' => ['view_student_info', 'submit_leave_request'],
+    'hs' => ['view_grades', 'view_schedule'],
+    'ts' => ['view_results', 'register_wishes']  // ⚠️ THÊM QUYỀN
 ];
 
 function getRoleName($roleKey) {

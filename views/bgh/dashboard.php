@@ -140,7 +140,7 @@ try {
 }
 
 // ⚠️ FIX: Xử lý an toàn khi file model không tồn tại
-$modelPath = __DIR__ . '/../../models/bgh/chonToHopMonModel.php';
+$modelPath = __DIR__ . '/../../../models/bgh/chonToHopMonModel.php';
 if (file_exists($modelPath)) {
     require_once $modelPath;
     try {

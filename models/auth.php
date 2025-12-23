@@ -77,7 +77,7 @@ class Auth {
 
             // 4) Chọn role hiện tại theo thứ tự ưu tiên
             // Ưu tiên: admin > bgh > ttbm > gvcn > gvbm > nhanvienso > ph > hs
-            $priority = ['admin','bgh','ttbm','gvcn','gvbm','nhanvienso','ph','hs'];
+            $priority = ['admin','bgh','ttbm','gvcn','gvbm','nhanvienso','ph','hs','ts'];
             $currentRole = 'guest';
             if (!empty($mappedRoles)) {
                 foreach ($priority as $p) {
@@ -120,6 +120,7 @@ class Auth {
             'hs'    => 'HocSinh',
             'ph'    => 'PhuHuynh',
             'nhanvienso' => 'NhanVienSo',
+            'ts' => 'ThiSinh',
             default => null
         };
 
@@ -151,6 +152,7 @@ class Auth {
             'hs'          => 'hs',           // Học sinh
             'ph'          => 'ph',           // Phụ huynh
             'nhanvienso'  => 'nhanvienso',   // Nhân viên Sở
+            'ts'          => 'ts',           // Thí sinh
             default       => 'guest'
         };
     }

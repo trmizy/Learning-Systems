@@ -55,8 +55,8 @@ function tinhDiemTrungBinh($tx, $gk, $ck) {
                     <i class="fas fa-book"></i>
                     <label for="hocKy" style="margin-right: 8px;">Học kỳ:</label>
                     <select name="hocKy" id="hocKy" onchange="this.form.submit()" style="<?= $selectStyle ?>">
-                        <option value="HK1" <?= $hocKy === 'HK1' ? 'selected' : '' ?>>Học kỳ 1</option>
-                        <option value="HK2" <?= $hocKy === 'HK2' ? 'selected' : '' ?>>Học kỳ 2</option>
+                        <option value="1" <?= $hocKy === '1' ? 'selected' : '' ?>>Học kỳ 1</option>
+                        <option value="2" <?= $hocKy === '2' ? 'selected' : '' ?>>Học kỳ 2</option>
                     </select>
                 </div>
             </form>

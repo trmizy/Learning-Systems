@@ -1,117 +1,119 @@
 <?php
 // File: controllers/gvbm/XepLoaiController.php
-// (ĐÃ CẬP NHẬT LOGIC ĐỀ XUẤT TỰ ĐỘNG CHUẨN XÁC)
 
-require_once __DIR__ . '/../../models/gvbm/XepLoaiModel.php';
-require_once __DIR__ . '/../../models/gvbm/lop.model.php'; 
-require_once __DIR__ . '/../../middlewares/AuthGuard.php';
+// 1. Thiết lập đường dẫn gốc (Root Path) chuẩn xác
+$rootPath = dirname(__DIR__, 2); 
+
+// 2. Gọi các file Model & Middleware bằng đường dẫn tuyệt đối
+require_once $rootPath . '/models/gvbm/XepLoaiModel.php';
+require_once $rootPath . '/middlewares/AuthGuard.php';
 
 class XepLoaiController {
     private $model;
-    private $lopModel;
 
     public function __construct() {
         $this->model = new XepLoaiModel();
-        $this->lopModel = new LopModel();
     }
 
     public function showXepLoaiPage() {
         require_role(['gvcn']);
-        $user = current_user();
-        $maGV = $user['teacher_id'] ?? '';
-
-        // 1. Lấy thông tin lớp
-        // (Sử dụng LopModel để lấy đúng lớp của GVCN)
-        $lopInfo = $this->lopModel->getThongTinLopChuNhiemByMaGV($maGV);
         
+        $user = current_user();
+        $username = $user['username'] ?? '';
+        
+        // --- Xử lý dữ liệu GV & Lớp ---
+        $maGV = $this->model->getMaGVByUsername($username);
+        if (!$maGV) {
+            $_SESSION['flash_error'] = "Không tìm thấy hồ sơ giáo viên.";
+            header('Location: index.php'); exit;
+        }
+
+        $lopInfo = $this->model->getLopChuNhiem($maGV);
         if (!$lopInfo) {
-            $_SESSION['flash_error'] = "Bạn chưa được phân công chủ nhiệm lớp nào.";
-            header('Location: index.php');
-            exit;
+            $_SESSION['flash_error'] = "Bạn chưa được phân công chủ nhiệm.";
+            header('Location: index.php'); exit;
         }
 
         $danhSach = $this->model->getDanhSachXepLoai($lopInfo['maLop']);
         $tenLop = $lopInfo['tenLop'];
 
-        // 2. === 🚀 LOGIC TỰ ĐỘNG ĐỀ XUẤT (Theo quy tắc mới) ===
+        // --- Logic Đề xuất Tự động ---
         foreach ($danhSach as &$hs) {
-            // --- ĐỀ XUẤT HỌC LỰC ---
-            $dtb = is_numeric($hs['diemTrungBinh']) ? (float)$hs['diemTrungBinh'] : -1;
+            $dtb = (isset($hs['diemTrungBinh']) && is_numeric($hs['diemTrungBinh'])) ? (float)$hs['diemTrungBinh'] : -1;
             
-            if ($dtb == -1) {
-                $hs['auto_HL'] = '-'; // Chưa có điểm
-            } elseif ($dtb >= 8.0) {
-                $hs['auto_HL'] = 'Giỏi';
-            } elseif ($dtb >= 6.5) {
-                $hs['auto_HL'] = 'Khá';
-            } elseif ($dtb >= 5.0) {
-                $hs['auto_HL'] = 'Trung bình';
-            } elseif ($dtb >= 3.5) {
-                $hs['auto_HL'] = 'Yếu';
-            } else {
-                $hs['auto_HL'] = 'Kém';
-            }
+            // Auto HL
+            if ($dtb == -1) $hs['auto_HL'] = '-';
+            elseif ($dtb >= 8.0) $hs['auto_HL'] = 'Giỏi';
+            elseif ($dtb >= 6.5) $hs['auto_HL'] = 'Khá';
+            elseif ($dtb >= 5.0) $hs['auto_HL'] = 'Trung bình';
+            elseif ($dtb >= 3.5) $hs['auto_HL'] = 'Yếu';
+            else $hs['auto_HL'] = 'Kém';
 
-            // --- ĐỀ XUẤT HẠNH KIỂM ---
-            // Logic phân cấp: Kiểm tra từ mức thấp nhất (Yếu) lên cao dần
-            $nghi = (int)$hs['soBuoiNghiKhongCoPhep'];
-            $vipham = (int)$hs['soLanViPham'];
+            // Auto HK
+            $nghi = (int)($hs['soBuoiNghiKhongCoPhep'] ?? 0);
+            $vipham = (int)($hs['soLanViPham'] ?? 0);
             
-            if ($nghi > 5 || $vipham > 3) {
-                // Yếu: Nghỉ > 5 HOẶC vi phạm nhiều (>3)
-                $hs['auto_HK'] = 'Yếu';
-            } elseif ($nghi > 3 || $vipham >= 2) {
-                // Trung bình: (Nghỉ 4-5) HOẶC (Vi phạm 2-3)
-                // (Đã loại trừ trường hợp Yếu ở trên, nên ở đây nghi <= 5)
-                $hs['auto_HK'] = 'Trung bình';
-            } elseif ($nghi > 1 || $vipham == 1) {
-                // Khá: (Nghỉ 2-3) HOẶC (Vi phạm 1)
-                // (Đã loại trừ TB/Yếu, nên ở đây nghi <= 3 và vipham <= 1)
-                $hs['auto_HK'] = 'Khá';
-            } else {
-                // Tốt: Còn lại (Nghỉ <= 1 VÀ Vi phạm = 0)
-                $hs['auto_HK'] = 'Tốt';
-            }
+            if ($nghi > 5 || $vipham > 3) $hs['auto_HK'] = 'Yếu';
+            elseif ($nghi > 3 || $vipham >= 2) $hs['auto_HK'] = 'Trung bình';
+            elseif ($nghi > 1 || $vipham == 1) $hs['auto_HK'] = 'Khá';
+            else $hs['auto_HK'] = 'Tốt';
         }
 
-        // 3. Xử lý lọc (nếu có)
+        // --- Logic Lọc ---
         $filterHL = $_GET['filter_hl'] ?? '';
         $filterHK = $_GET['filter_hk'] ?? '';
         if ($filterHL || $filterHK) {
             $danhSach = array_filter($danhSach, function($hs) use ($filterHL, $filterHK) {
-                // So sánh với kết quả đã lưu (hoặc đề xuất nếu chưa lưu)
-                $currentHL = $hs['xepLoaiHocLuc'] ?: $hs['auto_HL'];
-                $currentHK = $hs['loaiHanhKiem'] ?: $hs['auto_HK'];
-                
-                $matchHL = empty($filterHL) || ($currentHL == $filterHL);
-                $matchHK = empty($filterHK) || ($currentHK == $filterHK);
-                return $matchHL && $matchHK;
+                $cHL = !empty($hs['xepLoaiHocLuc']) ? $hs['xepLoaiHocLuc'] : $hs['auto_HL'];
+                $cHK = !empty($hs['loaiHanhKiem']) ? $hs['loaiHanhKiem'] : $hs['auto_HK'];
+                $mHL = empty($filterHL) || (mb_strtolower(trim($cHL)) == mb_strtolower(trim($filterHL)));
+                $mHK = empty($filterHK) || (mb_strtolower(trim($cHK)) == mb_strtolower(trim($filterHK)));
+                return $mHL && $mHK;
             });
         }
 
         $pageTitle = "Xếp loại - $tenLop";
-        require_once __DIR__ . '/../../views/layouts/header.php';
-        require_once __DIR__ . '/../../views/gvbm/xep_loai.php';
-        require_once __DIR__ . '/../../views/layouts/footer.php';
+        $rootPath = dirname(__DIR__, 2); // Khai báo lại root cho chắc chắn
+
+        // === 🚀 PHẦN QUAN TRỌNG NHẤT: GỌI VIEW ===
+        // Gọi Header
+        require_once $rootPath . '/views/layouts/header.php';
+        
+        // Kiểm tra và gọi file View chính
+        $viewPath = $rootPath . '/views/gvbm/xep_loai.php';
+        
+        if (file_exists($viewPath)) {
+            require_once $viewPath;
+        } else {
+            // In ra thông báo lỗi chi tiết đường dẫn để bạn kiểm tra
+            echo "<div style='margin: 20px; padding: 20px; background: #ffebee; border: 2px solid red; color: #b71c1c;'>";
+            echo "<h3>🚨 LỖI: KHÔNG TÌM THẤY FILE VIEW</h3>";
+            echo "<p>PHP đang tìm file tại đường dẫn chính xác sau:</p>";
+            echo "<code style='background: #fff; padding: 5px; display: block;'>$viewPath</code>";
+            echo "<hr>";
+            echo "<p>👉 <strong>Hãy kiểm tra lại:</strong></p>";
+            echo "<ul>";
+            echo "<li>File của bạn có đúng tên là <code>xem_loai.php</code> không? (Cẩn thận nhầm với <code>xep_loai.php</code>)</li>";
+            echo "<li>File có nằm đúng trong thư mục <code>views/gvbm/</code> không?</li>";
+            echo "</ul>";
+            echo "</div>";
+        }
+
+        // Gọi Footer
+        require_once $rootPath . '/views/layouts/footer.php';
     }
 
     public function saveXepLoai() {
         require_role(['gvcn']);
-        
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['data'])) {
             $count = 0;
             foreach ($_POST['data'] as $maHS => $val) {
-                $hl = $val['hl'];
-                $hk = $val['hk'];
-                $nhanXet = $val['nhanXet']; // Lấy nhận xét từ form
-                
-                if ($this->model->updateXepLoai($maHS, $hl, $hk, $nhanXet)) {
+                if ($this->model->updateXepLoai($maHS, $val['hl'], $val['hk'], $val['nhanXet'] ?? '')) {
                     $count++;
                 }
             }
-            $_SESSION['flash_success'] = "Đã lưu kết quả xếp loại cho $count học sinh.";
+            $_SESSION['flash_success'] = "Đã lưu thành công cho $count học sinh.";
         }
-        
         header('Location: index.php?action=xep_loai');
         exit;
     }

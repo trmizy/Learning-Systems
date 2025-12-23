@@ -91,5 +91,20 @@ class XepLoaiModel {
             return false;
         }
     }
+    // === 🚀 HÀM QUAN TRỌNG CÒN THIẾU ===
+    public function getMaGVByUsername($username) {
+        try {
+            $sql = "SELECT gv.maGV 
+                    FROM giaovienbomon gv
+                    JOIN taikhoan tk ON gv.maTaiKhoan = tk.maTaiKhoan
+                    WHERE tk.tenDangNhap = ?";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$username]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ? $result['maGV'] : null;
+        } catch (Exception $e) {
+            return null;
+        }
+    }
 }
 ?>

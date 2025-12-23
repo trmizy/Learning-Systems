@@ -24,7 +24,8 @@ const ROLE_VIEWS = [
     'gvcn' => __DIR__ . '/../views/gvbm/dashboard.php', // GVCN dùng chung dashboard GVBM
     'ttbm' => __DIR__ . '/../views/gvbm/dashboard.php', // TTBM dùng chung dashboard GVBM
     'hs' => __DIR__ . '/../views/hs/dashboard.php',
-    'ph' => __DIR__ . '/../views/ph/dashboard.php'
+    'ph' => __DIR__ . '/../views/ph/dashboard.php',
+    'ts' => __DIR__ . '/../views/ts/dashboard.php'
 ];
 
 // Handle controller routing
@@ -65,9 +66,6 @@ if (isset($_GET['action'])) {
             require_once __DIR__ . '/../controllers/nhanvienso/targetsController.php';
             exit;
             
-        case 'wishRegistration_ph':
-            require_once __DIR__ . '/../controllers/ph/wishRegistrationController.php';
-            exit;
         
     case 'logout':
     // 1. Xóa tất cả các biến trong session
@@ -226,7 +224,7 @@ if (isset($_GET['action'])) {
         // TODO: Tạo QuanLyToController
         $_SESSION['flash_info'] = 'Chức năng đang phát triển';
         header('Location: /public/index.php');
-        break;
+        exit;
 
     case 'ttbm-bao-cao':
         require_login();
@@ -234,7 +232,7 @@ if (isset($_GET['action'])) {
         // TODO: Tạo BaoCaoController cho TTBM
         $_SESSION['flash_info'] = 'Chức năng đang phát triển';
         header('Location: /public/index.php');
-        break;
+        exit;
 
     case 'ttbm-thong-bao':
         require_login();
@@ -242,32 +240,32 @@ if (isset($_GET['action'])) {
         // TODO: Tạo ThongBaoController cho TTBM
         $_SESSION['flash_info'] = 'Chức năng đang phát triển';
         header('Location: /public/index.php');
-        break;
+        exit;
 
     // === PHỤ HUYNH ROUTES ===
     case 'ph-dashboard':
         require_role(['ph']);
         require_once __DIR__ . '/../views/ph/dashboard.php';
-        break;
+        exit;
 
     case 'ph-xem-diem':
         require_role(['ph']);
         require_once __DIR__ . '/../controllers/ph/DiemController.php';
         $controller = new DiemController();
         $controller->xemDiemPhuHuynh();
-        break;
+        exit;
     
     case 'ph-xem-tkb':
         require_role(['ph']);
         require_once __DIR__ . '/../controllers/ph/ThoiKhoaBieuController.php';
         $controller = new ThoiKhoaBieuController();
         $controller->indexPhuHuynh();
-        break;
+        exit;
 
     // ⚠️ THÊM ROUTE MỚI
     case 'ph-family-profile':
         require_once __DIR__ . '/../controllers/ph/FamilyController.php';
-        break;
+        exit;
 
     // ⚠️ THÊM ROUTE MỚI - Quản lý hồ sơ giáo viên
     case 'bgh-quan-ly-giao-vien':
@@ -554,7 +552,31 @@ if (isset($_GET['action'])) {
         $controller->index();
         exit;
         
-    
+    // ========== THÍ SINH (ts) - NGUYỆN VỌNG ==========
+    case 'ts-nguyen-vong':
+        require_once __DIR__ . '/../controllers/ts/NguyenVongController.php';
+        $controller = new NguyenVongController();
+        $controller->index();
+        break;
+
+    case 'ts-dang-ky-nguyen-vong':
+        require_once __DIR__ . '/../controllers/ts/NguyenVongController.php';
+        $controller = new NguyenVongController();
+        $controller->dangKy();
+        break;
+
+    case 'ts-huy-nguyen-vong':
+        require_once __DIR__ . '/../controllers/ts/NguyenVongController.php';
+        $controller = new NguyenVongController();
+        $controller->huyDangKy();
+        break;
+
+    // ========== THÍ SINH (ts) - DASHBOARD ==========
+    case 'ts-dashboard':
+        require_once __DIR__ . '/../controllers/ts/DashboardController.php';
+        $controller = new DashboardController();
+        $controller->index();
+        break;
 
     default:
         http_response_code(404);
@@ -563,23 +585,7 @@ if (isset($_GET['action'])) {
     }
 }
 
-// Handle page routing
-if (isset($_GET['action']) && isset($_SESSION['auth'])) {
-    $page = $_GET['action'];
-    
-    // BGH pages
-   
-    
-    // HS pages
-    if ($_SESSION['auth']['role'] === 'hs') {
-        switch ($page) {
-            
-                
 
-        }
-    }
-
-}
 
 // Display flash messages if they exist
 if ($flash_success || $flash_error || $flash_info): ?>

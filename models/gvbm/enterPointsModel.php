@@ -307,13 +307,13 @@ class EnterPointsModel {
 
         if ($currentMonth >= 9) {
             $namHoc = $currentYear . '-' . ($currentYear + 1);
-            $hocKy  = 'HK1';
+            $hocKy  = '1';
         } elseif ($currentMonth >= 1 && $currentMonth <= 5) {
             $namHoc = ($currentYear - 1) . '-' . $currentYear;
-            $hocKy  = 'HK2';
+            $hocKy  = '2';
         } else { // 6-8: hè, vẫn tính là HK2 của năm trước
             $namHoc = ($currentYear - 1) . '-' . $currentYear;
-            $hocKy  = 'HK2';
+            $hocKy  = '2';
         }
 
         return compact('namHoc', 'hocKy');

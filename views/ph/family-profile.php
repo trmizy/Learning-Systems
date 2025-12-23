@@ -220,14 +220,7 @@ require_once __DIR__ . '/../layouts/header.php';
                             </span>
                         </div>
                     </div>
-                    <div class="col-md-3 text-md-end mt-3 mt-md-0">
-                        <div class="action-buttons justify-content-md-end">
-                            <a href="/public/index.php?action=ph-dashboard&maHS=<?php echo htmlspecialchars($con['maHS']); ?>" 
-                               class="btn btn-view-detail">
-                                <i class="fa-solid fa-eye me-2"></i>Xem chi tiết
-                            </a>
-                        </div>
-                    </div>
+
                 </div>
             </div>
 
@@ -324,7 +317,7 @@ require_once __DIR__ . '/../layouts/header.php';
                        class="btn btn-sm btn-outline-success">
                         <i class="fa-solid fa-calendar me-1"></i>Thời khóa biểu
                     </a>
-                    <a href="/modules/parents/leave-requests/create.php?maHS=<?php echo htmlspecialchars($con['maHS']); ?>" 
+                    <a href="/public/index.php?action=ph-leave-create&maHS=<?php echo htmlspecialchars($con['maHS']); ?>" 
                        class="btn btn-sm btn-outline-danger">
                         <i class="fa-solid fa-file-medical me-1"></i>Tạo đơn xin nghỉ
                     </a>

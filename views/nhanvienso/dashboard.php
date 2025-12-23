@@ -400,11 +400,22 @@ try {
                     <i class="fa-solid fa-building me-2"></i><?php echo htmlspecialchars($department); ?>
                 </span>
             </div>
+            <?php
+            $year = (int)date('Y');
+            $month = (int)date('n');
+
+            // Nếu từ tháng 9 trở đi → năm học mới
+            if ($month >= 9) {
+                $namHoc = $year . '-' . ($year + 1);
+            } else {
+                $namHoc = ($year - 1) . '-' . $year;
+            }
+            ?>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
                 <div class="d-flex flex-column gap-2">
                     <span class="text-white">
                         <i class="fa-solid fa-calendar me-2"></i>
-                        Năm học: 2023-2024
+                        Năm học: <?= $namHoc ?>
                     </span>
                     <span class="text-white">
                         <i class="fa-solid fa-clock me-2"></i>
@@ -733,6 +744,7 @@ try {
     updateTime();
     setInterval(updateTime, 1000);
 </script>
+
 
 <?php
 require_once __DIR__ . '/../layouts/footer.php';

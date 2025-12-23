@@ -6,7 +6,22 @@ require_once __DIR__ . '/../../config/database.php';
 class LopModel {
     private $db;
     public function __construct() { $this->db = Database::getInstance()->getConnection(); }
-
+    // === 🚀 HÀM MỚI CẦN THÊM ===
+    public function getMaGVByUsername($username) {
+        try {
+            // JOIN bảng giaovienbomon với taikhoan để lấy maGV từ username
+            $sql = "SELECT gv.maGV 
+                    FROM giaovienbomon gv
+                    JOIN taikhoan tk ON gv.maTaiKhoan = tk.maTaiKhoan
+                    WHERE tk.tenDangNhap = ?";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$username]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ? $result['maGV'] : null;
+        } catch (Exception $e) {
+            return null;
+        }
+    }
     // Lấy thông tin lớp chủ nhiệm
     public function getThongTinLopChuNhiemByMaGV($maGiaoVien) {
         try {

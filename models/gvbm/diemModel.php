@@ -87,5 +87,21 @@ class DiemModel {
             return [];
         }
     }
+    // === 🚀 HÀM MỚI (Thêm vào class DiemModel) ===
+    // === 🚀 HÀM MỚI (Copy vào trong class DiemModel) ===
+    public function getMaGVByUsername($username) {
+        try {
+            $sql = "SELECT gv.maGV 
+                    FROM giaovienbomon gv
+                    JOIN taikhoan tk ON gv.maTaiKhoan = tk.maTaiKhoan
+                    WHERE tk.tenDangNhap = ?";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$username]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ? $result['maGV'] : null;
+        } catch (Exception $e) {
+            return null;
+        }
+    }
 }
 ?>
