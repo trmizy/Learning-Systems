@@ -51,7 +51,7 @@ switch ($action) {
 
             $_SESSION['message'] = $result['message'];
             $_SESSION['messageType'] = $result['success'] ? 'success' : 'danger';
-            header('Location: /modules/admin/quanLyTaiKhoan.php?action=list');
+            header('Location: /models/admin/quanLyTaiKhoan.php?action=list');
             exit;
         }
         $action = 'create';
@@ -62,7 +62,7 @@ switch ($action) {
         if (!isset($_GET['maTaiKhoan'])) {
             $_SESSION['message'] = 'Mã tài khoản không được cung cấp';
             $_SESSION['messageType'] = 'danger';
-            header('Location: /modules/admin/quanLyTaiKhoan.php?action=list');
+            header('Location: /models/admin/quanLyTaiKhoan.php?action=list');
             exit;
         }
 
@@ -72,9 +72,9 @@ switch ($action) {
             $_SESSION['messageType'] = $result['success'] ? 'success' : 'danger';
             
             if ($result['success']) {
-                header('Location: /modules/admin/quanLyTaiKhoan.php?action=list');
+                header('Location: /models/admin/quanLyTaiKhoan.php?action=list');
             } else {
-                header('Location: /modules/admin/quanLyTaiKhoan.php?action=edit&maTaiKhoan=' . urlencode($_POST['maTaiKhoan']));
+                header('Location: /models/admin/quanLyTaiKhoan.php?action=edit&maTaiKhoan=' . urlencode($_POST['maTaiKhoan']));
             }
             exit;
         }
@@ -87,7 +87,7 @@ switch ($action) {
         if (!isset($_GET['maTaiKhoan'])) {
             $_SESSION['message'] = 'Mã tài khoản không được cung cấp';
             $_SESSION['messageType'] = 'danger';
-            header('Location: /modules/admin/quanLyTaiKhoan.php?action=list');
+            header('Location: /models/admin/quanLyTaiKhoan.php?action=list');
             exit;
         }
 
@@ -95,7 +95,7 @@ switch ($action) {
             $result = $controller->ganVaiTro();
             $_SESSION['message'] = $result['message'];
             $_SESSION['messageType'] = $result['success'] ? 'success' : 'danger';
-            header('Location: /modules/admin/quanLyTaiKhoan.php?action=permissions&maTaiKhoan=' . urlencode($_POST['maTaiKhoan']));
+            header('Location: /models/admin/quanLyTaiKhoan.php?action=permissions&maTaiKhoan=' . urlencode($_POST['maTaiKhoan']));
             exit;
         }
 
@@ -107,7 +107,7 @@ switch ($action) {
             $result = $controller->ganVaiTro();
             $_SESSION['message'] = $result['message'];
             $_SESSION['messageType'] = $result['success'] ? 'success' : 'danger';
-            header('Location: /modules/admin/quanLyTaiKhoan.php?action=permissions&maTaiKhoan=' . urlencode($_POST['maTaiKhoan']));
+            header('Location: /models/admin/quanLyTaiKhoan.php?action=permissions&maTaiKhoan=' . urlencode($_POST['maTaiKhoan']));
             exit;
         }
         break;
@@ -129,7 +129,7 @@ switch ($action) {
                 exit;
             }
 
-            header('Location: /modules/admin/quanLyTaiKhoan.php?action=list');
+            header('Location: /models/admin/quanLyTaiKhoan.php?action=list');
             exit;
         }
         break;

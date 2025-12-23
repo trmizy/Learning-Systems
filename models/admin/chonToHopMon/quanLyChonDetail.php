@@ -9,7 +9,7 @@ $controller = new class {
         $maToHop = $_GET['maToHop'] ?? null;
         
         if (!$maToHop) {
-            header('Location: /modules/chonToHopMon/quanLyChonList.php?error=Mã tổ hợp không hợp lệ');
+            header('Location: /models/chonToHopMon/quanLyChonList.php?error=Mã tổ hợp không hợp lệ');
             exit;
         }
         
@@ -17,7 +17,7 @@ $controller = new class {
         $chiTiet = $model->getChiTietToHopMon($maToHop);
         
         if (empty($chiTiet)) {
-            header('Location: /modules/chonToHopMon/quanLyChonList.php?error=Không tìm thấy tổ hợp môn');
+            header('Location: /models/chonToHopMon/quanLyChonList.php?error=Không tìm thấy tổ hợp môn');
             exit;
         }
         

@@ -292,10 +292,17 @@ if (isset($_GET['action'])) {
         break;
 
     // Thêm route mới cho phân công giảng dạy
+    // Thêm route mới cho phân công giảng dạy
     case 'assign_exam':
         require_once __DIR__ . '/../controllers/ttbm/AssignExamController.php';
         $controller = new AssignExamController();
         $controller->index();
+        break;
+
+    // Xử lý hủy phân công
+    case 'cancel_assign':
+        require_once __DIR__ . '/../controllers/ttbm/AssignExamController.php';
+        (new AssignExamController())->cancel();
         break;
 
     case 'store_assign_exam':

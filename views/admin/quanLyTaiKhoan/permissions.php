@@ -80,7 +80,7 @@ $danhSachVaiTro = $controller->getDanhSachVaiTroCoSan();
                                                     'bgh' => 'Ban Giám Hiệu: Quản lý phê duyệt tổ hợp môn',
                                                     'ph' => 'Phó Hiệu Trưởng: Hỗ trợ quản lý nhân sự',
                                                     'gvbm' => 'Giáo Viên Bộ Môn: Quản lý điểm, lớp học',
-                                                    'gv' => 'Giáo Viên: Nhập điểm, xem danh sách lớp',
+                                                    'gvcn' => 'Giáo Viên: Nhập điểm, xem danh sách lớp',
                                                     'nhanvienso' => 'Nhân Viên Sở: Hỗ trợ quản lý hành chính',
                                                     'hs' => 'Học Sinh: Xem thông tin cá nhân, kết quả học tập'
                                                 ];
