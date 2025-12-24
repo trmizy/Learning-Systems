@@ -18,7 +18,7 @@ $success = $_GET['success'] ?? '';
     <div class="mb-4">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/models/chonToHopMon/quanLyChonList.php">Danh Sách Tổ Hợp Môn</a></li>
+                <li class="breadcrumb-item"><a href="/models/bgh/chonToHopMon/quanLyChonList.php">Danh Sách Tổ Hợp Môn</a></li>
                 <li class="breadcrumb-item active"><?php echo htmlspecialchars($chiTiet['tenToHop'] ?? 'Chi Tiết'); ?></li>
             </ol>
         </nav>
@@ -250,7 +250,7 @@ $success = $_GET['success'] ?? '';
 
     <!-- Back Button -->
     <div class="mt-4">
-        <a href="/models/chonToHopMon/quanLyChonList.php" class="btn btn-outline-secondary">
+        <a href="/models/bgh/chonToHopMon/quanLyChonList.php" class="btn btn-outline-secondary">
             <i class="fa-solid fa-arrow-left me-2"></i>Quay Lại
         </a>
     </div>

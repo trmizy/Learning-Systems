@@ -13,20 +13,20 @@ if (!empty($error)) {
 
 ?>
 <div class="container mt-4">
-    <h2>Chỉnh sửa hồ sơ: <?php echo htmlspecialchars($student['hoTen']); ?></h2>
+    <h2>Chỉnh sửa hồ sơ: <?php echo htmlspecialchars($student['hoTen'] ?? 'Chưa cập nhật'); ?></h2>
     
     <!-- FIX: Action gửi đến controller thay vì file model -->
     <form method="post" action="/public/index.php?action=admin-sua-hs">
-        <input type="hidden" name="maHS" value="<?php echo htmlspecialchars($student['maHS']); ?>">
+        <input type="hidden" name="maHS" value="<?php echo htmlspecialchars($student['maHS'] ?? 'Chưa cập nhật'); ?>">
         
         <div class="form-group mb-3">
             <label>Họ và tên</label>
-            <input name="hoTen" class="form-control" value="<?php echo htmlspecialchars($student['hoTen']); ?>" required>
+            <input name="hoTen" class="form-control" value="<?php echo htmlspecialchars($student['hoTen'] ?? 'Chưa cập nhật'); ?>" required>
         </div>
         
         <div class="form-group mb-3">
             <label>Ngày sinh</label>
-            <input name="ngaySinh" type="date" class="form-control" value="<?php echo htmlspecialchars($student['ngaySinh']); ?>" required>
+            <input name="ngaySinh" type="date" class="form-control" value="<?php echo htmlspecialchars($student['ngaySinh'] ?? 'Chưa cập nhật'); ?>" required>
         </div>
         
         <div class="form-group mb-3">
@@ -53,7 +53,7 @@ if (!empty($error)) {
                 $phSdt = $student['parents'][0]['soDienThoai'] ?? '';
             }
             ?>
-            <input name="ph_sdt" class="form-control" value="<?php echo htmlspecialchars($phSdt); ?>">
+            <input name="ph_sdt" class="form-control" value="<?php echo htmlspecialchars($phSdt ?? 'Chưa cập nhật'); ?>">
         </div>
         
 

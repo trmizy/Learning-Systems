@@ -77,17 +77,21 @@ $q_khoi = $q_khoi ?? trim($_GET['khoi'] ?? '');
                     <?php $i = 1; foreach ($students as $s): ?>
                         <tr>
                             <td><?php echo $i++; ?></td>
-                            <td><?php echo htmlspecialchars($s['maHS']); ?></td>
-                            <td><?php echo htmlspecialchars($s['hoTen']); ?></td>
-                            <td><?php echo !empty($s['ngaySinh']) ? htmlspecialchars($s['ngaySinh']) : '-'; ?></td>
-                            <td><?php echo htmlspecialchars($s['maLop']); ?></td>
-                            <td><?php echo htmlspecialchars($s['xepLoaiHocLuc'] ?? '-'); ?></td>
-                            <td><?php echo htmlspecialchars($s['loaiHanhKiem'] ?? '-'); ?></td>
-                            <td><?php echo is_numeric($s['diemTrungBinhMon']) ? number_format($s['diemTrungBinhMon'],2) : '-'; ?></td>
-                            <td style="max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?php echo htmlspecialchars($s['phuHuynh_info'] ?? '-'); ?></td>
+                            <td><?php echo htmlspecialchars($s['maHS'] ?? 'Chưa cập nhật'); ?></td>
+                            <td><?php echo htmlspecialchars($s['hoTen'] ?? 'Chưa cập nhật'); ?></td>
+                            <td><?php echo !empty($s['ngaySinh']) ? htmlspecialchars($s['ngaySinh']) : 'Chưa cập nhật'; ?></td>
+                            <td><?php echo htmlspecialchars($s['maLop'] ?? 'Chưa cập nhật'); ?></td>
+                            <td><?php echo htmlspecialchars($s['xepLoaiHocLuc'] ?? 'Chưa cập nhật'); ?></td>
+                            <td><?php echo htmlspecialchars($s['loaiHanhKiem'] ?? 'Chưa cập nhật'); ?></td>
+                            <td><?php echo is_numeric($s['diemTrungBinhMon']) ? number_format($s['diemTrungBinhMon'], 2) : 'Chưa cập nhật'; ?></td>
+                            <td style="max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                <?php echo htmlspecialchars($s['phuHuynh_info'] ?? 'Chưa cập nhật'); ?>
+                            </td>
                             <td>
-                                <a href="/public/index.php?action=admin-xem-hs&maHS=<?php echo urlencode($s['maHS']); ?>" class="btn btn-sm btn-outline-primary">Xem</a>
-                                <a href="/public/index.php?action=admin-sua-hs&maHS=<?php echo urlencode($s['maHS']); ?>" class="btn btn-sm btn-outline-secondary">Sửa</a>
+                                <a href="/public/index.php?action=admin-xem-hs&maHS=<?php echo urlencode($s['maHS'] ?? ''); ?>" 
+                                   class="btn btn-sm btn-outline-primary">Xem</a>
+                                <a href="/public/index.php?action=admin-sua-hs&maHS=<?php echo urlencode($s['maHS'] ?? ''); ?>" 
+                                   class="btn btn-sm btn-outline-secondary">Sửa</a>
                             </td>
                         </tr>
                     <?php endforeach; ?>

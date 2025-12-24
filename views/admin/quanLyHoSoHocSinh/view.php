@@ -26,9 +26,9 @@ require __DIR__ . '/../../layouts/header.php';
 
             <!-- Header Section -->
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="fa-solid fa-user-graduate me-2"></i>Hồ sơ học sinh: <?php echo htmlspecialchars($student['hoTen']); ?></h2>
+                <h2><i class="fa-solid fa-user-graduate me-2"></i>Hồ sơ học sinh: <?php echo htmlspecialchars($student['hoTen'] ?? ''); ?></h2>
                 <div>
-                    <a href="/public/index.php?action=admin-sua-hs&maHS=<?php echo urlencode($student['maHS']); ?>" class="btn btn-primary">
+                    <a href="/public/index.php?action=admin-sua-hs&maHS=<?php echo urlencode($student['maHS'] ?? ''); ?>" class="btn btn-primary">
                         <i class="fa-solid fa-edit me-1"></i>Chỉnh sửa
                     </a>
                     <a href="/public/index.php?action=admin-quan-ly-hoc-sinh" class="btn btn-secondary">
@@ -52,32 +52,38 @@ require __DIR__ . '/../../layouts/header.php';
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-bordered">
-                            <tbody>
-                                <tr>
-                                    <th width="200">Mã học sinh</th>
-                                    <td><?php echo htmlspecialchars($student['maHS']); ?></td>
-                                    <th width="200">Họ và tên</th>
-                                    <td><?php echo htmlspecialchars($student['hoTen']); ?></td>
-                                </tr>
-                                <tr>
-                                    <th>Ngày sinh</th>
-                                    <td><?php echo date('d/m/Y', strtotime($student['ngaySinh'])); ?></td>
-                                    <th>Giới tính</th>
-                                    <td><?php echo htmlspecialchars($student['gioiTinh'] ?? 'Chưa cập nhật'); ?></td>
-                                </tr>
-                                <tr>
-                                    <th>Lớp</th>
-                                    <td><?php echo htmlspecialchars($student['maLop']); ?></td>
-                                    <th>Email</th>
-                                    <td><?php echo htmlspecialchars($student['email'] ?? '-'); ?></td>
-                                </tr>
-                                <tr>
-                                    <th>Số điện thoại</th>
-                                    <td><?php echo htmlspecialchars($student['sdt'] ?? '-'); ?></td>
-                                    <th>Địa chỉ</th>
-                                    <td><?php echo htmlspecialchars($student['diaChi'] ?? '-'); ?></td>
-                                </tr>
-                            </tbody>
+                            <tr>
+                                <th width="30%">Mã học sinh</th>
+                                <td><?php echo htmlspecialchars($student['maHS'] ?? 'Chưa cập nhật'); ?></td>
+                            </tr>
+                            <tr>
+                                <th>Họ tên</th>
+                                <td><?php echo htmlspecialchars($student['hoTen'] ?? 'Chưa cập nhật'); ?></td>
+                            </tr>
+                            <tr>
+                                <th>Ngày sinh</th>
+                                <td><?php echo !empty($student['ngaySinh']) ? date('d/m/Y', strtotime($student['ngaySinh'])) : 'Chưa cập nhật'; ?></td>
+                            </tr>
+                            <tr>
+                                <th>Giới tính</th>
+                                <td><?php echo htmlspecialchars($student['gioiTinh'] ?? 'Chưa cập nhật'); ?></td>
+                            </tr>
+                            <tr>
+                                <th>Số CCCD</th>
+                                <td><?php echo htmlspecialchars($student['soCCCD'] ?? 'Chưa cập nhật'); ?></td>
+                            </tr>
+                            <tr>
+                                <th>Địa chỉ</th>
+                                <td><?php echo htmlspecialchars($student['diaChi'] ?? 'Chưa cập nhật'); ?></td>
+                            </tr>
+                            <tr>
+                                <th>Email</th>
+                                <td><?php echo htmlspecialchars($student['email'] ?? 'Chưa cập nhật'); ?></td>
+                            </tr>
+                            <tr>
+                                <th>Số điện thoại</th>
+                                <td><?php echo htmlspecialchars($student['sdt'] ?? '-'); ?></td>
+                            </tr>
                         </table>
                     </div>
                 </div>
@@ -197,7 +203,7 @@ require __DIR__ . '/../../layouts/header.php';
 
             <!-- Action buttons -->
             <div class="d-flex gap-2 mb-4">
-                <a href="/public/index.php?action=admin-sua-hs&maHS=<?php echo urlencode($student['maHS']); ?>" class="btn btn-primary">
+                <a href="/public/index.php?action=admin-sua-hs&maHS=<?php echo urlencode($student['maHS'] ?? ''); ?>" class="btn btn-primary">
                     <i class="fa-solid fa-edit me-1"></i>Chỉnh sửa thông tin
                 </a>
                 <a href="/public/index.php?action=admin-quan-ly-hoc-sinh" class="btn btn-secondary">
