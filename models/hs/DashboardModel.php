@@ -58,11 +58,11 @@ class DashboardModel {
     }
 
     /**
-     * Lấy hạnh kiểm - FIX: Không có bảng hanhkiem trong schema
+     * [DEPRECATED] Lấy hạnh kiểm - Chức năng tạm ngưng
+     * Hiện tại return giá trị mặc định vì chưa có bảng hanhkiem
      */
     public function getHanhKiem($maHS, $hocKy, $namHoc) {
-        // Tạm thời return giá trị mặc định vì chưa có bảng hanhkiem
-        return 'Tốt';
+        return 'Tốt'; // Giá trị mặc định
         
         /* 
         // Code này sẽ dùng khi có bảng hanhkiem
@@ -147,21 +147,36 @@ class DashboardModel {
     }
 
     /**
-     * Lấy lịch học hôm nay - FIX: Lấy từ bảng thoikhoabieu thực tế
+     * Lấy lịch học hôm nay - FIX: Đơn giản hóa query, lấy theo thứ trong tuần
      */
     public function getLichHocHomNay($maLop) {
         try {
             $today = date('Y-m-d');
             $dayOfWeek = date('N'); // 1=T2, 2=T3,..., 7=CN
             
+            // ⚠️ FIX: Đơn giản hóa - Lấy TKB theo thứ trong tuần hiện tại
+            // Tìm thứ 2 của tuần này
+            $monday = date('Y-m-d', strtotime('monday this week'));
+            $sunday = date('Y-m-d', strtotime('sunday this week'));
+            
             // Chuyển đổi: MySQL DAYOFWEEK: 1=CN, 2=T2,..., 7=T7
             $mysqlDayOfWeek = ($dayOfWeek == 7) ? 1 : $dayOfWeek + 1;
+            
+            // DEBUG LOG
+            error_log("=== getLichHocHomNay DEBUG ===");
+            error_log("maLop: $maLop");
+            error_log("today: $today");
+            error_log("PHP dayOfWeek: $dayOfWeek (1=T2, 7=CN)");
+            error_log("MySQL dayOfWeek: $mysqlDayOfWeek (1=CN, 2=T2, 7=T7)");
+            error_log("monday: $monday | sunday: $sunday");
             
             $sql = "SELECT 
                         tkb.tiet as period,
                         mh.tenMon as subject,
                         gv.hoTen as teacher,
-                        ph.tenPhong as room
+                        ph.tenPhong as room,
+                        tkb.ngayHoc,
+                        DAYOFWEEK(tkb.ngayHoc) as ngayTrongTuan
                     FROM thoikhoabieu tkb
                     INNER JOIN monhoc mh ON tkb.maMonHoc = mh.maMonHoc
                     LEFT JOIN phonghoc ph ON tkb.maPhong = ph.maPhong
@@ -170,19 +185,31 @@ class DashboardModel {
                     LEFT JOIN giaovienbomon gv ON pc.maGV = gv.maGV
                     WHERE tkb.maLop = ? 
                       AND DAYOFWEEK(tkb.ngayHoc) = ?
-                      AND tkb.ngayHoc BETWEEN DATE_SUB(CURDATE(), INTERVAL 7 DAY) 
-                                          AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+                      AND tkb.ngayHoc BETWEEN ? AND ?
                     ORDER BY tkb.tiet
                     LIMIT 5";
             
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$maLop, $mysqlDayOfWeek]);
+            $stmt->execute([$maLop, $mysqlDayOfWeek, $monday, $sunday]);
             $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
-            // DEBUG
-            error_log("=== getLichHocHomNay ===");
-            error_log("maLop: $maLop | dayOfWeek: $mysqlDayOfWeek | today: $today");
-            error_log("Rows: " . count($result));
+            error_log("Rows trả về: " . count($result));
+            
+            // ⚠️ DEBUG: Nếu không có dữ liệu, kiểm tra xem có TKB nào trong tuần này không
+            if (count($result) == 0) {
+                $checkStmt = $this->db->prepare("
+                    SELECT 
+                        COUNT(*) as total,
+                        GROUP_CONCAT(DISTINCT DAYOFWEEK(ngayHoc)) as days
+                    FROM thoikhoabieu 
+                    WHERE maLop = ? 
+                      AND ngayHoc BETWEEN ? AND ?
+                ");
+                $checkStmt->execute([$maLop, $monday, $sunday]);
+                $check = $checkStmt->fetch();
+                error_log("Tổng TKB tuần này: " . $check['total']);
+                error_log("Các ngày có TKB: " . ($check['days'] ?? 'NONE'));
+            }
             
             return $result;
             

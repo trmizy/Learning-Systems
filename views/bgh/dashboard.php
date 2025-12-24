@@ -637,28 +637,6 @@ try {
                 </div>
             </div>
         </div>
-
-        <!-- Duyệt hạnh kiểm -->
-        <div class="col-md-6 col-xl-2-4">
-            <div class="card feature-card h-100">
-                <div class="card-body text-center">
-                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-                        <i class="fa-solid fa-clipboard-check"></i>
-                    </div>
-                    <h5 class="card-title fw-bold">Hạnh kiểm</h5>
-                    <p class="text-muted small">Duyệt xếp loại hạnh kiểm</p>
-                    <div class="d-grid gap-2 mt-3">
-                        <a href="/models/bgh/conduct/pending.php" class="btn btn-success btn-sm">
-                            <i class="fa-solid fa-clock me-1"></i>Chờ duyệt (<?php echo $stats['conduct_approvals']; ?>)
-                        </a>
-                        <a href="/models/bgh/conduct/list.php" class="btn btn-outline-success btn-sm">
-                            <i class="fa-solid fa-list me-1"></i>Đã duyệt
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Phân công giảng dạy -->
         <div class="col-md-6 col-xl-2-4">
             <div class="card feature-card h-100">
@@ -689,6 +667,24 @@ try {
                     <div class="d-grid gap-2 mt-3">
                         <a href="/public/index.php?action=bgh-quan-ly-giao-vien" class="btn btn-primary btn-sm">
                             <i class="fa-solid fa-user-tie me-1"></i>Quản lý
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ⚠️ THÊM MỚI: Điểm chuẩn tuyển sinh -->
+        <div class="col-md-6 col-xl-2-4">
+            <div class="card feature-card h-100">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Điểm chuẩn TS</h5>
+                    <p class="text-muted small">Quản lý điểm chuẩn tuyển sinh</p>
+                    <div class="d-grid gap-2 mt-3">
+                        <a href="/public/index.php?action=bgh-diem-chuan" class="btn btn-danger btn-sm">
+                            <i class="fa-solid fa-chart-bar me-1"></i>Quản lý
                         </a>
                     </div>
                 </div>
@@ -939,7 +935,7 @@ try {
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-layer-group text-primary me-2"></i>Chọn Tổ Hợp Môn
                     </h6>
-                    <a href="/models/bgh/quanLyChonList.php" class="btn btn-outline-primary w-100">
+                    <a href="/models/bgh/chonToHopMon/quanLyChonList.php" class="btn btn-outline-primary w-100">
                         <i class="fa-solid fa-list me-2"></i>Quản lý Tổ Hợp Môn
                     </a>
                 </div>

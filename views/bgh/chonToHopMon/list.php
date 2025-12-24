@@ -96,16 +96,16 @@ $success = $_GET['success'] ?? '';
     <!-- Lọc theo trạng thái -->
     <div class="mb-3">
         <div class="btn-group" role="group">
-            <a href="/modules/chonToHopMon/quanLyChonList.php" class="btn btn-outline-primary<?php echo is_null($trangThai) ? ' active' : ''; ?>">
+            <a href="/models/chonToHopMon/quanLyChonList.php" class="btn btn-outline-primary<?php echo is_null($trangThai) ? ' active' : ''; ?>">
                 <i class="fa-solid fa-list me-1"></i>Tất Cả
             </a>
-            <a href="/modules/chonToHopMon/quanLyChonList.php?trangThai=PENDING" class="btn btn-outline-warning<?php echo $trangThai === 'PENDING' ? ' active' : ''; ?>">
+            <a href="/models/chonToHopMon/quanLyChonList.php?trangThai=PENDING" class="btn btn-outline-warning<?php echo $trangThai === 'PENDING' ? ' active' : ''; ?>">
                 <i class="fa-solid fa-hourglass-half me-1"></i>Chờ Duyệt
             </a>
-            <a href="/modules/chonToHopMon/quanLyChonList.php?trangThai=APPROVED" class="btn btn-outline-success<?php echo $trangThai === 'APPROVED' ? ' active' : ''; ?>">
+            <a href="/models/chonToHopMon/quanLyChonList.php?trangThai=APPROVED" class="btn btn-outline-success<?php echo $trangThai === 'APPROVED' ? ' active' : ''; ?>">
                 <i class="fa-solid fa-check me-1"></i>Đã Chọn
             </a>
-            <a href="/modules/chonToHopMon/quanLyChonList.php?trangThai=REJECTED" class="btn btn-outline-danger<?php echo $trangThai === 'REJECTED' ? ' active' : ''; ?>">
+            <a href="/models/chonToHopMon/quanLyChonList.php?trangThai=REJECTED" class="btn btn-outline-danger<?php echo $trangThai === 'REJECTED' ? ' active' : ''; ?>">
                 <i class="fa-solid fa-times me-1"></i>Từ Chối
             </a>
         </div>
@@ -163,7 +163,7 @@ $success = $_GET['success'] ?? '';
                                 ?>
                             </td>
                             <td>
-                                <a href="/modules/chonToHopMon/quanLyChonDetail.php?maToHop=<?php echo urlencode($item['maToHop']); ?>" 
+                                <a href="/models/chonToHopMon/quanLyChonDetail.php?maToHop=<?php echo urlencode($item['maToHop']); ?>" 
                                    class="btn btn-sm btn-primary">
                                     <i class="fa-solid fa-eye me-1"></i>Chi Tiết
                                 </a>

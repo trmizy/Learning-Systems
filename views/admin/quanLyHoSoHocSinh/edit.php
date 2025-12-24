@@ -56,16 +56,6 @@ if (!empty($error)) {
             <input name="ph_sdt" class="form-control" value="<?php echo htmlspecialchars($phSdt); ?>">
         </div>
         
-        <div class="form-group mb-3">
-            <label>Hạnh kiểm</label>
-            <select name="loaiHanhKiem" class="form-control">
-                <option value="">-- Chọn --</option>
-                <option value="Tốt" <?php echo ($student['loaiHanhKiem'] ?? '') === 'Tốt' ? 'selected' : ''; ?>>Tốt</option>
-                <option value="Khá" <?php echo ($student['loaiHanhKiem'] ?? '') === 'Khá' ? 'selected' : ''; ?>>Khá</option>
-                <option value="Trung bình" <?php echo ($student['loaiHanhKiem'] ?? '') === 'Trung bình' ? 'selected' : ''; ?>>Trung bình</option>
-                <option value="Yếu" <?php echo ($student['loaiHanhKiem'] ?? '') === 'Yếu' ? 'selected' : ''; ?>>Yếu</option>
-            </select>
-        </div>
 
         <div class="mt-4">
             <button type="submit" class="btn btn-primary">

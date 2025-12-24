@@ -432,6 +432,22 @@ $notifications = [
                 </div>
             </div>
         </div>
+
+        <!-- Hạnh kiểm & Học lực - THÊM CARD MỚI -->
+        <div class="col-md-6 col-xl-3">
+            <div class="card feature-card h-100">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <i class="fa-solid fa-medal"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Hạnh kiểm & Học lực</h5>
+                    <p class="text-muted small">Xem hạnh kiểm, học lực các kỳ</p>
+                    <a href="/public/index.php?action=hs-hanh-kiem-hoc-luc" class="btn btn-danger w-100 mt-3">
+                        <i class="fa-solid fa-award me-2"></i>Xem chi tiết
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="row g-4">
@@ -574,6 +590,9 @@ $notifications = [
                         <span>Hạnh kiểm:</span>
                         <span class="badge bg-info px-3 py-2"><?php echo $stats['conduct_rating']; ?></span>
                     </div>
+                    <a href="/public/index.php?action=hs-hanh-kiem-hoc-luc" class="btn btn-outline-warning w-100 mt-3">
+                        <i class="fa-solid fa-chart-simple me-2"></i>Xem chi tiết
+                    </a>
                 </div>
             </div>
         </div>

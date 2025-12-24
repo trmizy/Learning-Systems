@@ -9,64 +9,157 @@ class TuyenSinhModel {
     }
 
     /**
-     * Thêm thí sinh - FIX: Thêm cột gioiTinh
+     * Thêm thí sinh - FIX: Bỏ cột ngayTao
      */
     public function themThiSinh($data) {
         try {
+            // BẮT ĐẦU TRANSACTION
+            $this->db->beginTransaction();
+            
             $maThiSinh = $data['maThiSinh'];
             
-            $sql = "INSERT INTO thisinh (
-                        maThiSinh,
-                        hoTen, 
-                        soCCCD, 
-                        ngaySinh,
-                        gioiTinh,
-                        diem, 
-                        soDienThoai, 
-                        noiSinh,
-                        namTuyenSinh
-                    ) VALUES (
-                        :maThiSinh,
-                        :hoTen, 
-                        :soCCCD, 
-                        :ngaySinh,
-                        :gioiTinh,
-                        :diem, 
-                        :soDienThoai, 
-                        :noiSinh,
-                        :namTuyenSinh
-                    )";
+            // ====== BƯỚC 1: TẠO TÀI KHOẢN ======
+            // Tạo mã tài khoản duy nhất: TK + 11 ký tự cuối của mã thí sinh
+            $maTaiKhoan = 'TK' . substr($data['maThiSinh'], -11);
             
-            $stmt = $this->db->prepare($sql);
-            $result = $stmt->execute([
+            // ⚠️ FIX: Bỏ cột ngayTao vì không có trong schema
+            $sqlTaiKhoan = "INSERT INTO taikhoan (
+                                maTaiKhoan,
+                                tenDangNhap,
+                                matKhau,
+                                email,
+                                soDienThoai,
+                                trangThai
+                            ) VALUES (
+                                :maTaiKhoan,
+                                :tenDangNhap,
+                                :matKhau,
+                                :email,
+                                :soDienThoai,
+                                'ACTIVE'
+                            )";
+            
+            $stmtTaiKhoan = $this->db->prepare($sqlTaiKhoan);
+            $resultTaiKhoan = $stmtTaiKhoan->execute([
+                ':maTaiKhoan' => $maTaiKhoan,
+                ':tenDangNhap' => $data['soCCCD'], // Username = CCCD
+                ':matKhau' => '1111', // ⚠️ Mật khẩu mặc định không mã hóa
+                ':email' => '',
+                ':soDienThoai' => $data['soDienThoai']
+            ]);
+            
+            if (!$resultTaiKhoan) {
+                throw new Exception("Không thể tạo tài khoản");
+            }
+            
+            // ====== BƯỚC 2: GÁN VAI TRÒ THÍ SINH ======
+            $sqlVaiTro = "INSERT INTO taikhoan_vaitro (maTaiKhoan, maVaiTro) 
+                          VALUES (:maTaiKhoan, 'ts')";
+            
+            $stmtVaiTro = $this->db->prepare($sqlVaiTro);
+            $resultVaiTro = $stmtVaiTro->execute([':maTaiKhoan' => $maTaiKhoan]);
+            
+            if (!$resultVaiTro) {
+                throw new Exception("Không thể gán vai trò");
+            }
+            
+            // ====== BƯỚC 3: TẠO THÍ SINH ======
+            $sqlThiSinh = "INSERT INTO thisinh (
+                                maThiSinh,
+                                maTaiKhoan,
+                                hoTen, 
+                                soCCCD, 
+                                ngaySinh,
+                                gioiTinh,
+                                diemVan,
+                                diemToan,
+                                diemAnh,
+                                diem,
+                                soDienThoai, 
+                                noiSinh,
+                                namTuyenSinh
+                            ) VALUES (
+                                :maThiSinh,
+                                :maTaiKhoan,
+                                :hoTen, 
+                                :soCCCD, 
+                                :ngaySinh,
+                                :gioiTinh,
+                                :diemVan,
+                                :diemToan,
+                                :diemAnh,
+                                :diem,
+                                :soDienThoai, 
+                                :noiSinh,
+                                :namTuyenSinh
+                            )";
+            
+            $stmtThiSinh = $this->db->prepare($sqlThiSinh);
+            $resultThiSinh = $stmtThiSinh->execute([
                 ':maThiSinh' => $maThiSinh,
+                ':maTaiKhoan' => $maTaiKhoan,
                 ':hoTen' => $data['hoTen'],
                 ':soCCCD' => $data['soCCCD'],
                 ':ngaySinh' => $data['ngaySinh'],
-                ':gioiTinh' => $data['gioiTinh'], // ⚠️ THÊM MỚI
+                ':gioiTinh' => $data['gioiTinh'],
+                ':diemVan' => $data['diemVan'],
+                ':diemToan' => $data['diemToan'],
+                ':diemAnh' => $data['diemAnh'],
                 ':diem' => $data['diem'],
                 ':soDienThoai' => $data['soDienThoai'],
                 ':noiSinh' => $data['noiSinh'],
                 ':namTuyenSinh' => $data['namTuyenSinh']
             ]);
             
-            // DEBUG LOG
-            if ($result) {
-                error_log("✅ Insert thành công: maThiSinh=$maThiSinh, hoTen={$data['hoTen']}, gioiTinh={$data['gioiTinh']}, ngaySinh={$data['ngaySinh']}");
-            } else {
-                error_log("❌ Insert thất bại: " . print_r($stmt->errorInfo(), true));
+            if (!$resultThiSinh) {
+                throw new Exception("Không thể tạo thông tin thí sinh");
             }
             
-            return $result;
+            // ====== COMMIT TRANSACTION ======
+            $this->db->commit();
+            
+            // DEBUG LOG
+            error_log("✅ Tạo thành công:");
+            error_log("  - Thí sinh: $maThiSinh");
+            error_log("  - Tài khoản: $maTaiKhoan (Username: {$data['soCCCD']}, Pass: 123456)");
+            error_log("  - Điểm: Văn={$data['diemVan']}, Toán={$data['diemToan']}, Anh={$data['diemAnh']}");
+            
+            return [
+                'success' => true,
+                'message' => "Thêm thí sinh thành công! Mã: $maThiSinh | Tài khoản: {$data['soCCCD']} | Mật khẩu: 123456",
+                'maTaiKhoan' => $maTaiKhoan,
+                'maThiSinh' => $maThiSinh
+            ];
             
         } catch (PDOException $e) {
-            error_log("Error themThiSinh: " . $e->getMessage());
+            // ROLLBACK nếu có lỗi
+            $this->db->rollBack();
             
-            if ($e->getCode() == 23000) {
-                error_log("❌ Mã thí sinh {$data['maThiSinh']} đã tồn tại!");
+            $errorMsg = $e->getMessage();
+            error_log("❌ Error themThiSinh (PDO): " . $errorMsg);
+            
+            // Xử lý lỗi duplicate key
+            if ($e->getCode() == '23000') {
+                if (strpos($errorMsg, 'soCCCD') !== false) {
+                    return ['success' => false, 'message' => 'Số CCCD đã tồn tại trong hệ thống'];
+                } elseif (strpos($errorMsg, 'maThiSinh') !== false) {
+                    return ['success' => false, 'message' => 'Mã thí sinh đã tồn tại'];
+                } elseif (strpos($errorMsg, 'maTaiKhoan') !== false) {
+                    return ['success' => false, 'message' => 'Mã tài khoản đã tồn tại'];
+                }
+                return ['success' => false, 'message' => 'Dữ liệu đã tồn tại trong hệ thống'];
             }
             
-            return false;
+            return ['success' => false, 'message' => 'Lỗi cơ sở dữ liệu: ' . $errorMsg];
+            
+        } catch (Exception $e) {
+            // ROLLBACK nếu có lỗi
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            
+            error_log("❌ Error themThiSinh (Exception): " . $e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 

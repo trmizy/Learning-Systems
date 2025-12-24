@@ -14,7 +14,6 @@ class QuanLyTaiKhoanController {
      */
     public function taoTaiKhoan() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $maTaiKhoan = trim($_POST['maTaiKhoan'] ?? '');
             $tenDangNhap = trim($_POST['tenDangNhap'] ?? '');
             $matKhau = trim($_POST['matKhau'] ?? '');
             $email = trim($_POST['email'] ?? '');
@@ -25,9 +24,6 @@ class QuanLyTaiKhoanController {
 
             // Validation
             $errors = [];
-            if (empty($maTaiKhoan)) {
-                $errors[] = 'Mã tài khoản không được để trống';
-            }
             if (empty($tenDangNhap)) {
                 $errors[] = 'Tên đăng nhập không được để trống';
             }
@@ -40,25 +36,51 @@ class QuanLyTaiKhoanController {
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $errors[] = 'Email không hợp lệ';
             }
+            if (empty($vaiTro)) {
+                $errors[] = 'Vui lòng chọn loại tài khoản';
+            }
+
+            // Kiểm tra vai trò (chỉ cho phép hs, ph, gvbm)
+            $allowedRoles = ['hs', 'ph', 'gvbm'];
+            foreach ($vaiTro as $role) {
+                if (!in_array($role, $allowedRoles)) {
+                    $errors[] = 'Loại tài khoản không hợp lệ';
+                    break;
+                }
+            }
 
             if (!empty($errors)) {
                 return ['success' => false, 'message' => implode('<br>', $errors)];
             }
 
-            // Tạo tài khoản
+            // Phát sinh mã tài khoản dựa trên vai trò được chọn
+            $selectedRole = $vaiTro[0]; // Lấy vai trò đầu tiên từ danh sách
+            $namVao = date('y'); // Năm hiện tại (2 chữ số)
+            
+            $maTaiKhoan = $this->model->generateMaTaiKhoan($selectedRole, $maTruong, $namVao);
+            
+            if (empty($maTaiKhoan)) {
+                return ['success' => false, 'message' => 'Không thể phát sinh mã tài khoản. Vui lòng thử lại'];
+            }
+
+            // Tạo tài khoản với mã vừa phát sinh
             $result = $this->model->taoTaiKhoan($maTaiKhoan, $tenDangNhap, $matKhau, $email, $soDienThoai, $trangThai, $maTruong);
 
             if ($result['success']) {
-                // Gán vai trò nếu có
-                if (!empty($vaiTro)) {
-                    $vaiTroResult = $this->model->ganVaiTro($maTaiKhoan, $vaiTro);
-                    if (!$vaiTroResult['success']) {
-                        error_log('Lỗi gán vai trò: ' . $vaiTroResult['message']);
+                // Gán vai trò
+                $vaiTroResult = $this->model->ganVaiTro($maTaiKhoan, $vaiTro);
+                if (!$vaiTroResult['success']) {
+                    error_log('Lỗi gán vai trò: ' . $vaiTroResult['message']);
+                }
+
+                // Nếu là tài khoản Học Sinh, tạo thêm bản ghi ở bảng hocsinh
+                if (in_array('hs', $vaiTro, true)) {
+                    $hsRes = $this->model->taoHocSinhLienKet($maTaiKhoan, $maTruong ?: 'TR001', $email, $soDienThoai, $namVao);
+                    if (!$hsRes['success']) {
+                        // Rollback tài khoản nếu tạo HS thất bại
+                        $this->model->hardDeleteTaiKhoan($maTaiKhoan);
+                        return ['success' => false, 'message' => 'Tạo tài khoản HS thất bại: ' . ($hsRes['message'] ?? 'Lỗi không xác định')];
                     }
-                } else {
-                    // Nếu không chọn vai trò, rollback: xóa vĩnh viễn tài khoản vừa tạo
-                    $this->model->hardDeleteTaiKhoan($maTaiKhoan);
-                    return ['success' => false, 'message' => 'Vui lòng chọn ít nhất một vai trò'];
                 }
             }
 
@@ -99,11 +121,99 @@ class QuanLyTaiKhoanController {
                 return ['success' => false, 'message' => implode('<br>', $errors)];
             }
 
-            // Cập nhật tài khoản
+            // Transaction để đảm bảo đồng bộ giữa taikhoan và hồ sơ liên quan
+            $this->model->beginTransaction();
             $result = $this->model->capNhatTaiKhoan($maTaiKhoan, $tenDangNhap, $email, $soDienThoai, $trangThai, $maTruong);
+            error_log('[capNhatTaiKhoan] ma=' . $maTaiKhoan . ' success=' . ($result['success'] ? '1' : '0') . ' msg=' . ($result['message'] ?? ''));
 
             if ($result['success'] && !empty($vaiTro)) {
                 $this->model->ganVaiTro($maTaiKhoan, $vaiTro);
+            }
+
+            // Nếu tài khoản có vai trò HS, cập nhật bảng hocsinh theo dữ liệu form
+            $isHS = (!empty($vaiTro) && in_array('hs', $vaiTro, true));
+            if (!$isHS) {
+                // nếu vaiTrò không gửi, dùng vai trò hiện tại trong DB
+                $rolesNow = $this->getDanhSachVaiTroTaiKhoan($maTaiKhoan);
+                $isHS = in_array('hs', $rolesNow, true);
+            }
+            if ($result['success'] && $isHS) {
+                $hsData = [
+                    'hoTen'      => $_POST['hs_hoTen'] ?? null,
+                    'ngaySinh'   => $_POST['hs_ngaySinh'] ?? null,
+                    'soCCCD'     => $_POST['hs_soCCCD'] ?? null,
+                    'diaChi'     => $_POST['hs_diaChi'] ?? null,
+                    'emailHS'    => $_POST['hs_email'] ?? null,
+                    'gioiTinh'   => $_POST['hs_gioiTinh'] ?? null,
+                    'sdtHS'      => $_POST['hs_sdt'] ?? null,
+                    'maLop'      => $_POST['hs_maLop'] ?? null,
+                    'trangThaiHS'=> $_POST['hs_trangThai'] ?? null,
+                ];
+                $resHS = $this->model->capNhatHocSinhByMaTaiKhoan($maTaiKhoan, $hsData);
+                if (!$resHS['success']) {
+                    $this->model->rollBack();
+                    error_log('Update HS failed for ' . $maTaiKhoan . ': ' . ($resHS['message'] ?? '')); 
+                    return $resHS; // trả lỗi chi tiết cập nhật học sinh
+                }
+            }
+
+            // Nếu tài khoản có vai trò PH, cập nhật bảng phuhuynh theo dữ liệu form
+            $isPH = (!empty($vaiTro) && in_array('ph', $vaiTro, true));
+            if (!$isPH) {
+                $rolesNow = $this->getDanhSachVaiTroTaiKhoan($maTaiKhoan);
+                $isPH = in_array('ph', $rolesNow, true);
+            }
+            if ($result['success'] && $isPH) {
+                $phData = [
+                    'hoTen'       => $_POST['ph_hoTen'] ?? null,
+                    'emailPH'     => $_POST['ph_email'] ?? null,
+                    'sdtPH'       => $_POST['ph_sdt'] ?? null,
+                    'diaChi'      => $_POST['ph_diaChi'] ?? null,
+                    'gioiTinh'    => $_POST['ph_gioiTinh'] ?? null,
+                    'moiQuanHe'   => $_POST['ph_moiQuanHe'] ?? null,
+                ];
+                $resPH = $this->model->capNhatPhuHuynhByMaTaiKhoan($maTaiKhoan, $phData);
+                if (!$resPH['success']) {
+                    $this->model->rollBack();
+                    error_log('Update PH failed for ' . $maTaiKhoan . ': ' . ($resPH['message'] ?? ''));
+                    return $resPH;
+                }
+            }
+
+            // Nếu tài khoản có vai trò GV, cập nhật bảng giaovienbomon theo dữ liệu form
+            $isGV = (!empty($vaiTro) && in_array('gv', $vaiTro, true));
+            if (!$isGV) {
+                $rolesNow = $this->getDanhSachVaiTroTaiKhoan($maTaiKhoan);
+                $isGV = in_array('gv', $rolesNow, true) || in_array('gvbm', $rolesNow, true);
+            }
+            if ($result['success'] && $isGV) {
+                $gvData = [
+                    'hoTen'            => $_POST['gv_hoTen'] ?? null,
+                    'ngaySinh'         => $_POST['gv_ngaySinh'] ?? null,
+                    'gioiTinh'         => $_POST['gv_gioiTinh'] ?? null,
+                    'emailGV'          => $_POST['gv_email'] ?? null,
+                    'sdtGV'            => $_POST['gv_sdt'] ?? null,
+                    'diaChi'           => $_POST['gv_diaChi'] ?? null,
+                    'monHocPhuTrach'   => $_POST['gv_monHocPhuTrach'] ?? null,
+                    'trinhDoHocVan'    => $_POST['gv_trinhDoHocVan'] ?? null,
+                    'chucVu'           => $_POST['gv_chucVu'] ?? null,
+                    'anhDaiDien'       => $_POST['gv_anhDaiDien'] ?? null,
+                    'soCCCD'           => $_POST['gv_soCCCD'] ?? null,
+                    'tinhTrangTaiKhoan'=> $_POST['gv_tinhTrangTaiKhoan'] ?? null,
+                ];
+                $resGV = $this->model->capNhatGiaoVienByMaTaiKhoan($maTaiKhoan, $gvData);
+                if (!$resGV['success']) {
+                    $this->model->rollBack();
+                    error_log('Update GV failed for ' . $maTaiKhoan . ': ' . ($resGV['message'] ?? ''));
+                    return $resGV;
+                }
+            }
+
+            // Commit nếu mọi thứ đều thành công
+            if ($result['success']) {
+                $this->model->commit();
+            } else {
+                $this->model->rollBack();
             }
 
             return $result;
@@ -200,6 +310,21 @@ class QuanLyTaiKhoanController {
         return $this->model->getDanhSachVaiTroTaiKhoan($maTaiKhoan);
     }
 
+    /** Lấy thông tin học sinh theo maTaiKhoan (phục vụ form edit) */
+    public function getHocSinhByMaTaiKhoan($maTaiKhoan) {
+        return $this->model->getHocSinhByMaTaiKhoan($maTaiKhoan);
+    }
+
+    /** Lấy thông tin phụ huynh theo maTaiKhoan (phục vụ form edit) */
+    public function getPhuHuynhByMaTaiKhoan($maTaiKhoan) {
+        return $this->model->getPhuHuynhByMaTaiKhoan($maTaiKhoan);
+    }
+
+    /** Lấy thông tin giáo viên theo maTaiKhoan (phục vụ form edit) */
+    public function getGiaoVienByMaTaiKhoan($maTaiKhoan) {
+        return $this->model->getGiaoVienByMaTaiKhoan($maTaiKhoan);
+    }
+
     /**
      * Lấy danh sách vai trò có sẵn
      */
@@ -212,6 +337,24 @@ class QuanLyTaiKhoanController {
      */
     public function getDanhSachTrangThai() {
         return $this->model->getDanhSachTrangThai();
+    }
+
+    /**
+     * Lấy danh sách trường
+     */
+    public function getDanhSachTruong() {
+        return $this->model->getDanhSachTruong();
+    }
+
+    /**
+     * Phát sinh mã tài khoản dựa trên role
+     * Format:
+     * - Học sinh: TRXXXHSYYZZZZ
+     * - Phụ Huynh: TRXXXPHYYZZZZ
+     * - Giáo viên: TRXXXGVYYZZZZ
+     */
+    public function generateMaTaiKhoan($role, $maTruong = 'TR001', $namVao = null) {
+        return $this->model->generateMaTaiKhoan($role, $maTruong, $namVao);
     }
 }
 ?>

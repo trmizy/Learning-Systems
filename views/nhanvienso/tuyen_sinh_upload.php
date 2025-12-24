@@ -136,9 +136,16 @@ require_once __DIR__ . '/../layouts/header.php';
                         Tải file mẫu
                     </h6>
                     <p class="mb-3">Download file Excel mẫu để tham khảo định dạng</p>
-                    <a href="/public/templates/mau_diem_tuyen_sinh.xlsx" class="btn btn-success" download>
+                    
+                    <!-- ⚠️ SỬA: Đổi link tĩnh thành route dynamic -->
+                    <a href="/public/index.php?action=nhanvienso-export-template" class="btn btn-success">
                         <i class="fa-solid fa-file-excel me-2"></i>Tải file mẫu (.xlsx)
                     </a>
+                    
+                    <p class="text-muted small mt-2 mb-0">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        File mẫu bao gồm 5 dòng dữ liệu mẫu và ghi chú chi tiết
+                    </p>
                 </div>
             </div>
 

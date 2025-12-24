@@ -129,11 +129,20 @@ $taiKhoanList = $controller->getDanhSachTaiKhoan($search, $trangThai);
                                     ?>
                                     <span class="badge bg-<?php echo $statusClass; ?>"><?php echo $statusLabel; ?></span>
                                 </td>
-                                <td class="text-center">
+                                <td>
                                     <a href="/models/admin/quanLyTaiKhoan.php?action=edit&maTaiKhoan=<?php echo urlencode($tk['maTaiKhoan']); ?>" 
-                                       class="btn btn-warning" title="Chỉnh sửa">
-                                        <i class="fas fa-edit"></i> Chỉnh Sửa
+                                       class="btn btn-sm btn-warning" title="Chỉnh sửa">
+                                        <i class="fas fa-edit"></i>
                                     </a>
+                                    <a href="/models/admin/quanLyTaiKhoan.php?action=permissions&maTaiKhoan=<?php echo urlencode($tk['maTaiKhoan']); ?>" 
+                                       class="btn btn-sm btn-info" title="Quản lý quyền">
+                                        <i class="fas fa-lock"></i>
+                                    </a>
+                                    <?php if ($tk['vaiTro'] !== 'admin'): ?>
+                                        <button class="btn btn-sm btn-danger" onclick="xoaTaiKhoan('<?php echo htmlspecialchars($tk['maTaiKhoan']); ?>', '<?php echo htmlspecialchars($tk['tenDangNhap']); ?>')" title="Xóa">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -143,6 +152,51 @@ $taiKhoanList = $controller->getDanhSachTaiKhoan($search, $trangThai);
         </div>
     </div>
 </div>
+
+<!-- Modal xác nhận xóa -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Xác Nhận Xóa Tài Khoản</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Bạn có chắc chắn muốn xóa tài khoản <strong id="accountToDelete"></strong>?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Xóa</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentAccount = null;
+
+function xoaTaiKhoan(maTaiKhoan, tenDangNhap) {
+    currentAccount = maTaiKhoan;
+    document.getElementById('accountToDelete').textContent = tenDangNhap;
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+}
+
+document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+    if (currentAccount) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        // Force posting to module root to avoid carrying over query params (e.g. trangThai filter)
+        form.action = '/models/admin/quanLyTaiKhoan.php';
+        form.innerHTML = `
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="maTaiKhoan" value="${currentAccount}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+});
+</script>
 
 <?php
 require_once __DIR__ . '/../../layouts/footer.php';

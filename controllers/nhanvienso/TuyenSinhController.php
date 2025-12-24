@@ -146,13 +146,16 @@ class TuyenSinhController {
                     // Tính tổng điểm: Toán*2 + Văn*2 + Anh
                     $tongDiem = ($diemToan * 2) + ($diemVan * 2) + $diemAnh;
 
-                    // Tạo dữ liệu thí sinh
+                    // ⚠️ FIX: Thêm diemVan, diemToan, diemAnh vào mảng
                     $thiSinhData = [
                         'maThiSinh' => $maThiSinh,
                         'soCCCD' => $soCCCD,
                         'hoTen' => $hoTen,
                         'ngaySinh' => $ngaySinhFormatted,
                         'gioiTinh' => $gioiTinh,
+                        'diemVan' => $diemVan,      // ⚠️ THÊM
+                        'diemToan' => $diemToan,    // ⚠️ THÊM
+                        'diemAnh' => $diemAnh,      // ⚠️ THÊM
                         'diem' => $tongDiem,
                         'soDienThoai' => $soDienThoai,
                         'noiSinh' => $noiSinh,
@@ -344,5 +347,47 @@ class TuyenSinhController {
         error_log("🔍 convertGioiTinh: '$gioiTinhRaw' (type: " . gettype($gioiTinhRaw) . ") → normalized: '$gioiTinhNormalized' → result: " . ($genderMap[$gioiTinhNormalized] ?? 'NULL'));
         
         return $genderMap[$gioiTinhNormalized] ?? null;
+    }
+
+    public function themThiSinh() {
+        require_role(['nhanvienso']);
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Validate dữ liệu
+            $data = [
+                'maThiSinh' => $_POST['maThiSinh'] ?? '',
+                'hoTen' => $_POST['hoTen'] ?? '',
+                'soCCCD' => $_POST['soCCCD'] ?? '',
+                'ngaySinh' => $_POST['ngaySinh'] ?? '',
+                'gioiTinh' => $_POST['gioiTinh'] ?? '',
+                'diemVan' => floatval($_POST['diemVan'] ?? 0),
+                'diemToan' => floatval($_POST['diemToan'] ?? 0),
+                'diemAnh' => floatval($_POST['diemAnh'] ?? 0),
+                'diem' => 0, // Sẽ tính sau
+                'soDienThoai' => $_POST['soDienThoai'] ?? '',
+                'noiSinh' => $_POST['noiSinh'] ?? '',
+                'namTuyenSinh' => $_POST['namTuyenSinh'] ?? date('Y')
+            ];
+
+            // Tính tổng điểm
+            $data['diem'] = $data['diemVan'] * 2 + $data['diemToan'] * 2 + $data['diemAnh'];
+
+            // Gọi model
+            $result = $this->model->themThiSinh($data);
+
+            // ✅ Hiển thị thông báo
+            if ($result['success']) {
+                $_SESSION['flash_success'] = $result['message'];
+            } else {
+                $_SESSION['flash_error'] = $result['message'];
+            }
+
+            // Redirect về trang danh sách
+            header('Location: /public/index.php?action=nhanvienso-tuyen-sinh');
+            exit;
+        }
+
+        // Hiển thị form thêm mới
+        require_once __DIR__ . '/../../views/nhanvienso/them_thi_sinh.php';
     }
 }

@@ -49,7 +49,13 @@ if (isset($_GET['controller'])) {
 
 // Handle actions
 if (isset($_GET['action'])) {
-    switch ($_GET['action']) {
+    $action = $_GET['action'];
+    
+    // DEBUG: Log action nhận được
+    error_log("=== DEBUG ROUTE ===");
+    error_log("Action received: " . $action);
+
+    switch ($action) {
         case 'statistics_bgh':
             require_once __DIR__ . '/../controllers/bgh/statisticsController.php';
             exit;
@@ -501,7 +507,7 @@ if (isset($_GET['action'])) {
         exit;
 
     // ===== QUẢN LÝ TUYỂN SINH (NHÂN VIÊN SỞ) =====
-    case 'nhanvienso-tuyen-sinh-upload':
+case 'nhanvienso-tuyen-sinh-upload':
         require_login();
         require_role(['nhanvienso']);
         require_once __DIR__ . '/../controllers/nhanvienso/TuyenSinhController.php';
@@ -585,7 +591,98 @@ if (isset($_GET['action'])) {
         $controller->index();
         break;
 
+    case 'nhanvienso-export-template':
+        error_log("✅ Route matched: nhanvienso-export-template");
+        require_once __DIR__ . '/../controllers/nhanvienso/ExportTemplateController.php';
+        
+        if (!class_exists('ExportTemplateController')) {
+            error_log("❌ Class ExportTemplateController NOT FOUND!");
+            die("Error: Class not found");
+        }
+        
+        $controller = new ExportTemplateController();
+        $controller->exportTemplate();
+        break;
+    
+    // ========== HỌC SINH - Hạnh kiểm & Học lực ==========
+    case 'hs-hanh-kiem-hoc-luc':
+        require_once __DIR__ . '/../controllers/hs/HanhKiemHocLucController.php';
+        $controller = new HanhKiemHocLucController();
+        $controller->indexHocSinh();
+        break;
+
+    // ========== PHỤ HUYNH - Hạnh kiểm & Học lực ==========
+    case 'ph-hanh-kiem-hoc-luc':
+        require_once __DIR__ . '/../controllers/hs/HanhKiemHocLucController.php';
+        $controller = new HanhKiemHocLucController();
+        $controller->indexPhuHuynh();
+        break;
+
+    // ========== BGH - Quản lý Điểm chuẩn ==========
+    case 'bgh-diem-chuan':
+        require_once __DIR__ . '/../controllers/bgh/DiemChuanController.php';
+        $controller = new DiemChuanController();
+        $controller->index();
+        break;
+
+    case 'bgh-diem-chuan-them':
+        require_once __DIR__ . '/../controllers/bgh/DiemChuanController.php';
+        $controller = new DiemChuanController();
+        $controller->them();
+        break;
+
+    case 'bgh-diem-chuan-sua':
+        require_once __DIR__ . '/../controllers/bgh/DiemChuanController.php';
+        $controller = new DiemChuanController();
+        $controller->capNhat();
+        break;
+
+    case 'bgh-diem-chuan-xoa':
+        require_once __DIR__ . '/../controllers/bgh/DiemChuanController.php';
+        $controller = new DiemChuanController();
+        $controller->xoa();
+        break;
+
+    // ========== Nhân viên Sở - Xét tuyển ==========
+    case 'nhanvienso-xet-tuyen':
+        require_once __DIR__ . '/../controllers/nhanvienso/XetTuyenController.php';
+        $controller = new XetTuyenController();
+        $controller->index();
+        break;
+
+    case 'nhanvienso-xet-tuyen-one':
+        require_once __DIR__ . '/../controllers/nhanvienso/XetTuyenController.php';
+        $controller = new XetTuyenController();
+        $controller->xetTuyenMotThiSinh();
+        break;
+
+    case 'nhanvienso-xet-tuyen-auto':
+        require_once __DIR__ . '/../controllers/nhanvienso/XetTuyenController.php';
+        $controller = new XetTuyenController();
+        $controller->xetTuyenTuDong();
+        break;
+
+    // ========== Nhân viên Sở - Duyệt điểm chuẩn ==========
+    case 'nhanvienso-duyet-diem-chuan':
+        require_once __DIR__ . '/../controllers/nhanvienso/DiemChuanController.php';
+        $controller = new DiemChuanController();
+        $controller->index();
+        break;
+
+    case 'nhanvienso-duyet-diem-chuan-post':
+        require_once __DIR__ . '/../controllers/nhanvienso/DiemChuanController.php';
+        $controller = new DiemChuanController();
+        $controller->duyetVaCongBo();
+        break;
+
+    case 'nhanvienso-tu-choi-diem-chuan':
+        require_once __DIR__ . '/../controllers/nhanvienso/DiemChuanController.php';
+        $controller = new DiemChuanController();
+        $controller->tuChoi();
+        break;
+
     default:
+        error_log("❌ No route matched for action: $action");
         http_response_code(404);
         require_once __DIR__ . '/../views/errors/404.php';
         exit;
