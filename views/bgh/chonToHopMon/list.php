@@ -163,7 +163,7 @@ $success = $_GET['success'] ?? '';
                                 ?>
                             </td>
                             <td>
-                                <a href="/models/chonToHopMon/quanLyChonDetail.php?maToHop=<?php echo urlencode($item['maToHop']); ?>" 
+                                <a href="/models/bgh/chonToHopMon/quanLyChonDetail.php?maToHop=<?php echo urlencode($item['maToHop']); ?>" 
                                    class="btn btn-sm btn-primary">
                                     <i class="fa-solid fa-eye me-1"></i>Chi Tiết
                                 </a>

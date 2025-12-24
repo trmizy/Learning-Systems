@@ -1,8 +1,8 @@
 <?php
-require_once __DIR__ . '/../../middlewares/AuthGuard.php';
+require_once __DIR__ . '/../../../middlewares/AuthGuard.php';
 require_role(['bgh']);
 
-require_once __DIR__ . '/../../models/bgh/chonToHopMonModel.php';
+require_once __DIR__ . '/../../../models/bgh/chonToHopMonModel.php';
 
 $controller = new class {
     public function detailAction() {
@@ -24,7 +24,7 @@ $controller = new class {
         $danhSachMon = $model->getDanhSachMonTrongToHop($maToHop);
         $danhSachHocSinh = $model->getDanhSachHocSinhDangKy($maToHop);
         
-        require_once __DIR__ . '/../../views/bgh/chonToHopMon/detail.php';
+        require_once __DIR__ . '/../../../views/bgh/chonToHopMon/detail.php';
     }
 };
 
