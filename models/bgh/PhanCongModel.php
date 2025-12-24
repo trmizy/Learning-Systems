@@ -424,7 +424,7 @@ class PhanCongModel {
             'Lịch sử' => 'Sử',
             'Lich su' => 'Sử',
             'Địa lý' => 'Địa',
-            'Dia ly' => 'Địa',
+            'Dia' => 'Địa',
             'Thể dục' => 'TD',
             'The duc' => 'TD',
             'Quốc phòng' => 'QP',
@@ -583,8 +583,15 @@ class PhanCongModel {
                 }
             }
             
-            $maPhanCong = 'PC_' . $maLop . '_' . $maMonHoc . '_' . time();
             
+            foreach (['1', '2'] as $hocKy) {
+                        $maPhanCong = 'PC_' . $maLop . '_' . $maMonHoc . '_HK' . $hocKy . '_' . time();
+                        $stmtAddPC = $this->db->prepare("
+                            INSERT INTO phanconggiangday (maPhanCong, maLop, maMonHoc, maGV, namHoc, hocKy)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        ");
+                        $stmtAddPC->execute([$maPhanCong, $maLop, $maMonHoc, $maGV, $namHoc, $hocKy]);
+                    }
             $stmt = $this->db->prepare("
                 INSERT INTO phanconggiangday 
                 (maPhanCong, maLop, maMonHoc, maGV, namHoc, hocKy, ghiChu)
@@ -668,12 +675,14 @@ class PhanCongModel {
                 return $stmt->execute([$maGV, $maLop, $maMonHoc, $namHoc, $hocKy]);
             } else {
                 // ✅ CHƯA CÓ → INSERT (giống logic ganGVCN)
-                $maPhanCong = 'PC_' . $maLop . '_' . $maMonHoc . '_HK' . $hocKy . '_' . time();
-                $stmt = $this->db->prepare("
-                    INSERT INTO phanconggiangday (maPhanCong, maLop, maMonHoc, maGV, namHoc, hocKy)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ");
-                return $stmt->execute([$maPhanCong, $maLop, $maMonHoc, $maGV, $namHoc, $hocKy]);
+                        foreach (['1', '2'] as $hocKy) {
+                        $maPhanCong = 'PC_' . $maLop . '_' . $maMonHoc . '_HK' . $hocKy . '_' . time();
+                        $stmtAddPC = $this->db->prepare("
+                            INSERT INTO phanconggiangday (maPhanCong, maLop, maMonHoc, maGV, namHoc, hocKy)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        ");
+                        $stmtAddPC->execute([$maPhanCong, $maLop, $maMonHoc, $maGV, $namHoc, $hocKy]);
+                    }
             }
             
         } catch (Exception $e) {

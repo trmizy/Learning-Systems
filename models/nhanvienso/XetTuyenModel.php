@@ -9,280 +9,227 @@ class XetTuyenModel {
     }
 
     /**
-     * Lấy danh sách thí sinh xét tuyển theo trường và năm
+     * Kiểm tra điều kiện sẵn sàng xét tuyển
      */
-    public function getDanhSachThiSinhXetTuyen($maTruong, $namTuyenSinh) {
+    public function kiemTraSanSang() {
+        $errors = [];
+        
         try {
-            $sql = "SELECT 
-                        ts.maThiSinh,
-                        ts.hoTen,
-                        ts.soCCCD,
-                        ts.ngaySinh,
-                        ts.gioiTinh,
-                        ts.soDienThoai,
-                        ts.diemVan,
-                        ts.diemToan,
-                        ts.diemAnh,
-                        (ts.diemVan * 2 + ts.diemToan * 2 + ts.diemAnh) as tongDiem,
-                        nv.thuTuUuTien,
-                        nv.trangThai,
-                        nv.maNguyenVong,
-                        dc.soDiem as diemChuan
-                    FROM thisinh ts
-                    INNER JOIN nguyenvong nv ON ts.maThiSinh = nv.maThiSinh
-                    LEFT JOIN diemchuan dc ON dc.maTruong = nv.maTruong 
-                        AND dc.namTuyenSinh = ts.namTuyenSinh
-                    WHERE nv.maTruong = ?
-                      AND ts.namTuyenSinh = ?
-                      AND nv.trangThai = 'CHO_DUYET'
-                    ORDER BY nv.thuTuUuTien ASC, 
-                             (ts.diemVan * 2 + ts.diemToan * 2 + ts.diemAnh) DESC";
-            
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([$maTruong, $namTuyenSinh]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            // 1. Kiểm tra có điểm chuẩn không
+            $stmtDC = $this->db->query("SELECT COUNT(*) FROM diemchuan");
+            if ($stmtDC->fetchColumn() == 0) {
+                $errors[] = 'Chưa nhập điểm chuẩn';
+            }
+
+            // 2. Kiểm tra có thí sinh nào có điểm thi không
+            $stmtTS = $this->db->query("SELECT COUNT(*) FROM thisinh WHERE diem IS NOT NULL");
+            if ($stmtTS->fetchColumn() == 0) {
+                $errors[] = 'Chưa có thí sinh nào có điểm thi';
+            }
+
+            // 3. Kiểm tra có nguyện vọng nào không
+            $stmtNV = $this->db->query("SELECT COUNT(*) FROM nguyenvong");
+            if ($stmtNV->fetchColumn() == 0) {
+                $errors[] = 'Chưa có nguyện vọng nào được đăng ký';
+            }
+
+            return [
+                'ready' => empty($errors),
+                'errors' => $errors
+            ];
             
         } catch (PDOException $e) {
-            error_log("Error getDanhSachThiSinhXetTuyen: " . $e->getMessage());
-            return [];
+            error_log("Error kiemTraSanSang: " . $e->getMessage());
+            return ['ready' => false, 'errors' => ['Lỗi kiểm tra: ' . $e->getMessage()]];
         }
     }
 
     /**
-     * Lấy điểm chuẩn của trường
+     * THUẬT TOÁN XÉT TUYỂN TOÀN BỘ
      */
-    public function getDiemChuan($maTruong, $namTuyenSinh) {
-        try {
-            $sql = "SELECT soDiem FROM diemchuan 
-                    WHERE maTruong = ? AND namTuyenSinh = ?";
-            
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([$maTruong, $namTuyenSinh]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            return $result ? $result['soDiem'] : null;
-            
-        } catch (PDOException $e) {
-            error_log("Error getDiemChuan: " . $e->getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Xét tuyển một thí sinh - Tạo học sinh + tài khoản
-     */
-    public function xetTuyenThiSinh($maThiSinh, $maLop) {
+    public function chayXetTuyenToanBo() {
         try {
             $this->db->beginTransaction();
-
-            // 1. Lấy thông tin thí sinh
-            $sqlThiSinh = "SELECT * FROM thisinh WHERE maThiSinh = ?";
-            $stmtThiSinh = $this->db->prepare($sqlThiSinh);
-            $stmtThiSinh->execute([$maThiSinh]);
-            $thiSinh = $stmtThiSinh->fetch(PDO::FETCH_ASSOC);
-
-            if (!$thiSinh) {
-                throw new Exception("Không tìm thấy thông tin thí sinh");
+            
+            // BƯỚC 1: Reset trạng thái tất cả nguyện vọng về CHO_DUYET
+            $this->db->exec("UPDATE nguyenvong SET trangThai = 'CHO_DUYET'");
+            
+            // BƯỚC 2: Lấy danh sách tất cả thí sinh có điểm
+            $stmtTS = $this->db->query("
+                SELECT maThiSinh, diem 
+                FROM thisinh 
+                WHERE diem IS NOT NULL
+                ORDER BY diem DESC
+            ");
+            $danhSachThiSinh = $stmtTS->fetchAll(PDO::FETCH_ASSOC);
+            
+            $tongTrungTuyen = 0;
+            $tongTruot = 0;
+            
+            // BƯỚC 3: Xét từng thí sinh
+            foreach ($danhSachThiSinh as $thiSinh) {
+                $ketQua = $this->xetTuyenMotThiSinh($thiSinh['maThiSinh'], $thiSinh['diem']);
+                
+                if ($ketQua == 'TRUNG_TUYEN') {
+                    $tongTrungTuyen++;
+                } else {
+                    $tongTruot++;
+                }
             }
-
-            // 2. Tạo mã học sinh mới
-            $maHS = $this->taoMaHocSinhMoi($maLop, $thiSinh['namTuyenSinh']);
-
-            // 3. Tạo tài khoản
-            $maTaiKhoan = $this->taoTaiKhoanHocSinh($maHS, $thiSinh);
-
-            // 4. Tạo học sinh
-            $this->taoHocSinh($maHS, $maTaiKhoan, $thiSinh, $maLop);
-
-            // 5. Cập nhật trạng thái nguyện vọng
-            $this->capNhatTrangThaiNguyenVong($maThiSinh, 'TRUNG_TUYEN');
-
+            
             $this->db->commit();
-            return ['success' => true, 'message' => 'Xét tuyển thành công', 'maHS' => $maHS];
-
+            
+            return [
+                'success' => true,
+                'tong_trung_tuyen' => $tongTrungTuyen,
+                'tong_truot' => $tongTruot
+            ];
+            
         } catch (Exception $e) {
             $this->db->rollBack();
-            error_log("Error xetTuyenThiSinh: " . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
-        }
-    }
-
-    /**
-     * Xét tuyển hàng loạt
-     */
-    public function xetTuyenHangLoat($maTruong, $namTuyenSinh, $danhSachMaThiSinh) {
-        $ketQua = ['thanh_cong' => 0, 'that_bai' => 0, 'chi_tiet' => []];
-
-        // Lấy danh sách lớp 10 của trường
-        $dsLop = $this->getDanhSachLop10($maTruong);
-        if (empty($dsLop)) {
-            return ['success' => false, 'message' => 'Trường chưa có lớp 10'];
-        }
-
-        foreach ($danhSachMaThiSinh as $maThiSinh) {
-            // Chọn lớp có sĩ số ít nhất
-            $maLop = $this->chonLopItSiSoNhat($dsLop);
-
-            $result = $this->xetTuyenThiSinh($maThiSinh, $maLop);
-
-            if ($result['success']) {
-                $ketQua['thanh_cong']++;
-                // Cập nhật sĩ số lớp trong danh sách tạm
-                foreach ($dsLop as &$lop) {
-                    if ($lop['maLop'] == $maLop) {
-                        $lop['siSoHienTai']++;
-                    }
-                }
-            } else {
-                $ketQua['that_bai']++;
-            }
-
-            $ketQua['chi_tiet'][] = [
-                'maThiSinh' => $maThiSinh,
-                'result' => $result
+            error_log("Error chayXetTuyenToanBo: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
             ];
         }
-
-        return $ketQua;
     }
 
     /**
-     * Tạo mã học sinh mới - Format: TR001HS240001
+     * XÉT TUYỂN 1 THÍ SINH (NV1 → NV2 → NV3)
      */
-    private function taoMaHocSinhMoi($maLop, $namTuyenSinh) {
-        // Lấy mã trường từ mã lớp (giả sử: 10A1 → TR001)
-        $maTruong = 'TR001'; // TODO: Lấy từ bảng lophoc
-
-        // Lấy 2 chữ số cuối của năm
-        $namCuoi2So = substr($namTuyenSinh, -2);
-
-        // Đếm số học sinh hiện tại
-        $sql = "SELECT COUNT(*) as total FROM hocsinh WHERE maHS LIKE ?";
-        $stmt = $this->db->prepare($sql);
-        $pattern = $maTruong . 'HS' . $namCuoi2So . '%';
-        $stmt->execute([$pattern]);
-        $count = $stmt->fetch()['total'];
-
-        $stt = str_pad($count + 1, 4, '0', STR_PAD_LEFT);
-
-        return $maTruong . 'HS' . $namCuoi2So . $stt;
-    }
-
-    /**
-     * Tạo tài khoản cho học sinh
-     */
-    private function taoTaiKhoanHocSinh($maHS, $thiSinh) {
-        $maTaiKhoan = 'TKHS' . substr($maHS, -4); // TKHS0001
-        $tenDangNhap = strtolower($maHS); // tr001hs240001
-        $matKhau = password_hash($thiSinh['soCCCD'] ?? '123456', PASSWORD_DEFAULT);
-
-        $sql = "INSERT INTO taikhoan (maTaiKhoan, tenDangNhap, matKhau, email, soDienThoai, trangThai, ngayTao)
-                VALUES (?, ?, ?, ?, ?, 'ACTIVE', NOW())";
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            $maTaiKhoan,
-            $tenDangNhap,
-            $matKhau,
-            strtolower($maHS) . '@student.edu.vn',
-            $thiSinh['soDienThoai'],
-        ]);
-
-        // Gán vai trò học sinh
-        $sqlRole = "INSERT INTO taikhoan_vaitro (maTaiKhoan, maVaiTro) VALUES (?, 'hs')";
-        $stmtRole = $this->db->prepare($sqlRole);
-        $stmtRole->execute([$maTaiKhoan]);
-
-        return $maTaiKhoan;
-    }
-
-    /**
-     * Tạo bản ghi học sinh
-     */
-    private function taoHocSinh($maHS, $maTaiKhoan, $thiSinh, $maLop) {
-        $sql = "INSERT INTO hocsinh (maHS, hoTen, ngaySinh, soCCCD, gioiTinh, sdt, email, maLop, trangThai, maTaiKhoan)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DANGHOC', ?)";
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            $maHS,
-            $thiSinh['hoTen'],
-            $thiSinh['ngaySinh'],
-            $thiSinh['soCCCD'],
-            $thiSinh['gioiTinh'],
-            $thiSinh['soDienThoai'],
-            strtolower($maHS) . '@student.edu.vn',
-            $maLop,
-            $maTaiKhoan
-        ]);
+    private function xetTuyenMotThiSinh($maThiSinh, $diemThi) {
+        // Lấy 3 nguyện vọng theo thứ tự ưu tiên
+        $stmtNV = $this->db->prepare("
+            SELECT nv.maNguyenVong, nv.maTruong, dc.soDiem
+            FROM nguyenvong nv
+            INNER JOIN diemchuan dc ON nv.maTruong = dc.maTruong
+            WHERE nv.maThiSinh = ?
+            ORDER BY nv.thuTuUuTien
+            LIMIT 3
+        ");
+        $stmtNV->execute([$maThiSinh]);
+        $nguyenVongList = $stmtNV->fetchAll(PDO::FETCH_ASSOC);
+        
+        // LOGIC XÉT TUYỂN
+        foreach ($nguyenVongList as $nv) {
+            $diemChuan = floatval($nv['soDiem']);
+            
+            if ($diemThi >= $diemChuan) {
+                // ĐẬU NV này → Update ĐẬU và DỪNG
+                $this->capNhatTrangThaiNguyenVong($nv['maNguyenVong'], 'DAU');
+                return 'TRUNG_TUYEN';
+            } else {
+                // TRƯỢT NV này → Update TRƯỢT và XÉT NV TIẾP THEO
+                $this->capNhatTrangThaiNguyenVong($nv['maNguyenVong'], 'TRUOT');
+            }
+        }
+        
+        // Hết 3 NV đều trượt
+        return 'TRUOT';
     }
 
     /**
      * Cập nhật trạng thái nguyện vọng
      */
-    private function capNhatTrangThaiNguyenVong($maThiSinh, $trangThai) {
-        $sql = "UPDATE nguyenvong SET trangThai = ? WHERE maThiSinh = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$trangThai, $maThiSinh]);
-    }
-
-    /**
-     * Lấy danh sách lớp 10 của trường
-     */
-    private function getDanhSachLop10($maTruong) {
-        $sql = "SELECT 
-                    lh.maLop,
-                    lh.tenLop,
-                    lh.siSo as siSoToiDa,
-                    COUNT(hs.maHS) as siSoHienTai
-                FROM lophoc lh
-                LEFT JOIN hocsinh hs ON lh.maLop = hs.maLop
-                WHERE lh.khoi = '10' 
-                  AND lh.namHoc = ?
-                GROUP BY lh.maLop
-                HAVING siSoHienTai < lh.siSo
-                ORDER BY siSoHienTai ASC";
-
-        $namHoc = date('Y') . '-' . (date('Y') + 1);
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$namHoc]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    /**
-     * Chọn lớp có sĩ số ít nhất
-     */
-    private function chonLopItSiSoNhat($dsLop) {
-        if (empty($dsLop)) return null;
-
-        usort($dsLop, function($a, $b) {
-            return $a['siSoHienTai'] - $b['siSoHienTai'];
-        });
-
-        return $dsLop[0]['maLop'];
+    private function capNhatTrangThaiNguyenVong($maNguyenVong, $trangThai) {
+        $stmt = $this->db->prepare("UPDATE nguyenvong SET trangThai = ? WHERE maNguyenVong = ?");
+        $stmt->execute([$trangThai, $maNguyenVong]);
     }
 
     /**
      * Lấy thống kê xét tuyển
      */
-    public function getThongKeXetTuyen($maTruong, $namTuyenSinh) {
+    public function getThongKeXetTuyen() {
         try {
-            $sql = "SELECT 
-                        COUNT(*) as tongSoThiSinh,
-                        SUM(CASE WHEN nv.trangThai = 'TRUNG_TUYEN' THEN 1 ELSE 0 END) as soTrungTuyen,
-                        SUM(CASE WHEN nv.trangThai = 'CHO_DUYET' THEN 1 ELSE 0 END) as soChuaXet,
-                        SUM(CASE WHEN nv.trangThai = 'TRUOT' THEN 1 ELSE 0 END) as soTruot
-                    FROM nguyenvong nv
-                    INNER JOIN thisinh ts ON nv.maThiSinh = ts.maThiSinh
-                    WHERE nv.maTruong = ? AND ts.namTuyenSinh = ?";
-
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([$maTruong, $namTuyenSinh]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-
+            $stats = [
+                'tong_thi_sinh' => 0,
+                'tong_trung_tuyen' => 0,
+                'tong_truot' => 0,
+                'ty_le_trung_tuyen' => 0
+            ];
+            
+            // Tổng thí sinh
+            $stmt = $this->db->query("SELECT COUNT(*) FROM thisinh WHERE diem IS NOT NULL");
+            $stats['tong_thi_sinh'] = (int)$stmt->fetchColumn();
+            
+            // Tổng trúng tuyển (nguyện vọng ĐẬU)
+            $stmt = $this->db->query("SELECT COUNT(DISTINCT maThiSinh) FROM nguyenvong WHERE trangThai = 'DAU'");
+            $stats['tong_trung_tuyen'] = (int)$stmt->fetchColumn();
+            
+            // Tổng trượt
+            $stats['tong_truot'] = $stats['tong_thi_sinh'] - $stats['tong_trung_tuyen'];
+            
+            // Tỷ lệ
+            if ($stats['tong_thi_sinh'] > 0) {
+                $stats['ty_le_trung_tuyen'] = round(($stats['tong_trung_tuyen'] / $stats['tong_thi_sinh']) * 100, 1);
+            }
+            
+            return $stats;
+            
         } catch (PDOException $e) {
             error_log("Error getThongKeXetTuyen: " . $e->getMessage());
-            return null;
+            return [
+                'tong_thi_sinh' => 0,
+                'tong_trung_tuyen' => 0,
+                'tong_truot' => 0,
+                'ty_le_trung_tuyen' => 0
+            ];
+        }
+    }
+
+    /**
+     * Lấy kết quả theo từng trường
+     */
+    public function getKetQuaTheoTruong() {
+        try {
+            $stmt = $this->db->query("
+                SELECT 
+                    t.maTruong,
+                    t.tenTruong,
+                    dc.soDiem as soDiem,
+                    COUNT(DISTINCT CASE WHEN nv.trangThai = 'DAU' THEN nv.maThiSinh END) as soTrungTuyen
+                FROM truong t
+                LEFT JOIN diemchuan dc ON t.maTruong = dc.maTruong
+                LEFT JOIN nguyenvong nv ON t.maTruong = nv.maTruong
+                GROUP BY t.maTruong, t.tenTruong, dc.soDiem
+                ORDER BY t.tenTruong
+            ");
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            error_log("Error getKetQuaTheoTruong: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Lấy kết quả chi tiết từng thí sinh
+     */
+    public function getKetQuaChiTiet() {
+        try {
+            $stmt = $this->db->query("
+                SELECT 
+                    ts.maThiSinh,
+                    ts.hoTen,
+                    ts.diem,
+                    nv.thuTuUuTien,
+                    t.tenTruong,
+                    nv.trangThai
+                FROM thisinh ts
+                INNER JOIN nguyenvong nv ON ts.maThiSinh = nv.maThiSinh
+                INNER JOIN truong t ON nv.maTruong = t.maTruong
+                WHERE nv.trangThai IN ('DAU', 'TRUOT')
+                ORDER BY ts.diem DESC, ts.maThiSinh, nv.thuTuUuTien
+                LIMIT 100
+            ");
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            error_log("Error getKetQuaChiTiet: " . $e->getMessage());
+            return [];
         }
     }
 }

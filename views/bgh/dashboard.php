@@ -690,6 +690,24 @@ try {
                 </div>
             </div>
         </div>
+
+        <!-- ⚠️ THÊM CARD MỚI: Nhập học tự động -->
+        <div class="col-md-6 col-xl-2-4">
+            <div class="card feature-card h-100">
+                <div class="card-body text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                        <i class="fa-solid fa-user-plus"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">Nhập học</h5>
+                    <p class="text-muted small">Chuyển thí sinh đậu → Học sinh</p>
+                    <div class="d-grid gap-2 mt-3">
+                        <a href="/public/index.php?action=bgh-nhap-hoc" class="btn btn-success btn-sm">
+                            <i class="fa-solid fa-graduation-cap me-1"></i>Nhập học tự động
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="row g-4">
@@ -881,7 +899,7 @@ try {
                         </div>
                         <?php endforeach; ?>
                     </div>
-                    <a href="/models/bgh/calendar.php" class="btn btn-outline-info w-100 mt-3">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-outline-info w-100 mt-3">
                         <i class="fa-solid fa-calendar me-2"></i>Xem lịch đầy đủ
                     </a>
                 </div>

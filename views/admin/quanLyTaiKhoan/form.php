@@ -110,8 +110,6 @@ $danhSachTruong = $controller->getDanhSachTruong();
                                 <select class="form-select" name="vaiTro[]" id="roleSelect" required>
                                     <option value="">-- Chọn loại tài khoản --</option>
                                     <option value="hs">Học Sinh</option>
-                                    <option value="ph">Phụ Huynh</option>
-                                    <option value="gv">Giáo Viên</option>
                                 </select>
                                 <small class="text-muted">Mã tài khoản sẽ tự động phát sinh dựa trên loại tài khoản được chọn</small>
                             </div>
@@ -198,7 +196,9 @@ $danhSachTruong = $controller->getDanhSachTruong();
                         <div class="mb-3">
                             <label class="form-label" for="tenDangNhap">Tên Đăng Nhập <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="tenDangNhap" name="tenDangNhap" required 
-                                   placeholder="example@email.com" value="<?php echo htmlspecialchars($taiKhoan['tenDangNhap'] ?? $_POST['tenDangNhap'] ?? ''); ?>">
+                                placeholder="example@email.com" 
+                                value="<?php echo htmlspecialchars($taiKhoan['tenDangNhap'] ?? $_POST['tenDangNhap'] ?? ''); ?>"
+                                <?php echo $isEdit ? 'readonly' : ''; ?>>
                         </div>
 
                         <?php if (!$isEdit): ?>

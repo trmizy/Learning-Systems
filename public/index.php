@@ -295,7 +295,7 @@ if (isset($_GET['action'])) {
         require_once __DIR__ . '/../controllers/gvbm/LopGiangDayController.php';
         $controller = new LopGiangDayController();
         $controller->chiTietHocSinh();
-        break;
+        exit;
 
     // Thêm route mới cho phân công giảng dạy
     // Thêm route mới cho phân công giảng dạy
@@ -303,51 +303,51 @@ if (isset($_GET['action'])) {
         require_once __DIR__ . '/../controllers/ttbm/AssignExamController.php';
         $controller = new AssignExamController();
         $controller->index();
-        break;
+        exit;
 
     // Xử lý hủy phân công
     case 'cancel_assign':
         require_once __DIR__ . '/../controllers/ttbm/AssignExamController.php';
         (new AssignExamController())->cancel();
-        break;
+        exit;
 
     case 'store_assign_exam':
         require_once __DIR__ . '/../controllers/ttbm/AssignExamController.php';
         $controller = new AssignExamController();
         $controller->store();
-        break;
+        exit;
 
     // ⚠️ THÊM: Routes cho duyệt sửa điểm BGH
     case 'bgh-duyet-sua-diem':
         require_once __DIR__ . '/../controllers/bgh/DuyetSuaDiemController.php';
         $controller = new DuyetSuaDiemController();
         $controller->index();
-        break;
+        exit;
 
     case 'bgh-duyet-sua-diem-chi-tiet':
         require_once __DIR__ . '/../controllers/bgh/DuyetSuaDiemController.php';
         $controller = new DuyetSuaDiemController();
         $controller->chiTiet();
-        break;
+        exit;
 
     case 'bgh-duyet-sua-diem-duyet':
         require_once __DIR__ . '/../controllers/bgh/DuyetSuaDiemController.php';
         $controller = new DuyetSuaDiemController();
         $controller->duyet();
-        break;
+        exit;
 
     case 'bgh-duyet-sua-diem-tu-choi':
         require_once __DIR__ . '/../controllers/bgh/DuyetSuaDiemController.php';
         $controller = new DuyetSuaDiemController();
         $controller->tuChoi();
-        break;
+        exit;
 
     // ⚠️ THÊM: Route lịch sử duyệt sửa điểm
     case 'bgh-duyet-sua-diem-lich-su':
         require_once __DIR__ . '/../controllers/bgh/DuyetSuaDiemController.php';
         $controller = new DuyetSuaDiemController();
         $controller->lichSu();
-        break;
+        exit;
 
     // ==================== GVBM - Giáo viên bộ môn ====================
 
@@ -361,7 +361,7 @@ if (isset($_GET['action'])) {
         require_once __DIR__ . '/../controllers/gvbm/ViewAssignController.php';
         $controller = new ViewAssignController();
         $controller->index();
-        break;
+        exit;
 
     // ==================== Phụ huynh - Đơn xin nghỉ ====================
     case 'ph-leave-create':
@@ -396,31 +396,31 @@ if (isset($_GET['action'])) {
         require_once __DIR__ . '/../controllers/gvcn/DuyetDonXinNghiController.php';
         $controller = new DuyetDonXinNghiController();
         $controller->pending();
-        break;
+        exit;
 
     case 'gvcn-duyet-don-list':
         require_once __DIR__ . '/../controllers/gvcn/DuyetDonXinNghiController.php';
         $controller = new DuyetDonXinNghiController();
         $controller->list();
-        break;
+        exit;
 
     case 'gvcn-duyet-don-approve':
         require_once __DIR__ . '/../controllers/gvcn/DuyetDonXinNghiController.php';
         $controller = new DuyetDonXinNghiController();
         $controller->approve();
-        break;
+        exit;
 
     case 'gvcn-duyet-don-reject':
         require_once __DIR__ . '/../controllers/gvcn/DuyetDonXinNghiController.php';
         $controller = new DuyetDonXinNghiController();
         $controller->reject();
-        break;
+        exit;
 
     case 'gvcn-duyet-don-detail':
         require_once __DIR__ . '/../controllers/gvcn/DuyetDonXinNghiController.php';
         $controller = new DuyetDonXinNghiController();
         $controller->detail();
-        break;
+        exit;
 
     // ==================== GVBM - Xem lịch dạy ====================
     case 'gvbm-lich-day':
@@ -429,7 +429,7 @@ if (isset($_GET['action'])) {
         require_once __DIR__ . '/../controllers/gvbm/LichDayController.php';
         $controller = new LichDayController();
         $controller->index();
-        break;
+        exit;
 
     // ===== QUẢN LÝ HỌC SINH =====
     case 'admin-quan-ly-hoc-sinh':
@@ -438,7 +438,7 @@ if (isset($_GET['action'])) {
         require_once __DIR__ . '/../controllers/admin/QuanLyHoSoHocSinhController.php';
         $controller = new QuanLyHoSoHocSinhController();
         $controller->index();
-        break;
+        exit;
 
     case 'admin-xem-hs':
         require_login();
@@ -446,7 +446,7 @@ if (isset($_GET['action'])) {
         require_once __DIR__ . '/../controllers/admin/QuanLyHoSoHocSinhController.php';
         $controller = new QuanLyHoSoHocSinhController();
         $controller->view();
-        break;
+        exit;
 
     case 'admin-sua-hs':
         require_login();
@@ -454,14 +454,13 @@ if (isset($_GET['action'])) {
         require_once __DIR__ . '/../controllers/admin/QuanLyHoSoHocSinhController.php';
         $controller = new QuanLyHoSoHocSinhController();
         $controller->edit();
-        break;
+        exit;
 
     case 'admin-them-hoc-sinh':
         require_login();
         require_role(['admin']);
         // TODO: Tạo controller thêm học sinh
         $_SESSION['flash_info'] = 'Chức năng đang phát triển';
-        header('Location: /public/index.php?action=admin-quan-ly-hoc-sinh');
         exit;
 
     // ===== QUẢN LÝ DANH SÁCH HỌC SINH =====
@@ -570,13 +569,13 @@ case 'nhanvienso-tuyen-sinh-upload':
         require_once __DIR__ . '/../controllers/ts/NguyenVongController.php';
         $controller = new NguyenVongController();
         $controller->index();
-        break;
+        exit;
 
     case 'ts-dang-ky-nguyen-vong':
         require_once __DIR__ . '/../controllers/ts/NguyenVongController.php';
         $controller = new NguyenVongController();
         $controller->dangKy();
-        break;
+        exit;
 
     case 'ts-huy-nguyen-vong':
         require_once __DIR__ . '/../controllers/ts/NguyenVongController.php';
@@ -650,16 +649,16 @@ case 'nhanvienso-tuyen-sinh-upload':
         $controller->index();
         break;
 
-    case 'nhanvienso-xet-tuyen-one':
+    case 'nhanvienso-xet-tuyen-chay':
         require_once __DIR__ . '/../controllers/nhanvienso/XetTuyenController.php';
         $controller = new XetTuyenController();
-        $controller->xetTuyenMotThiSinh();
+        $controller->chayXetTuyen();
         break;
 
-    case 'nhanvienso-xet-tuyen-auto':
+    case 'nhanvienso-xet-tuyen-ket-qua':
         require_once __DIR__ . '/../controllers/nhanvienso/XetTuyenController.php';
         $controller = new XetTuyenController();
-        $controller->xetTuyenTuDong();
+        $controller->xemKetQua();
         break;
 
     // ========== Nhân viên Sở - Duyệt điểm chuẩn ==========
@@ -679,6 +678,19 @@ case 'nhanvienso-tuyen-sinh-upload':
         require_once __DIR__ . '/../controllers/nhanvienso/DiemChuanController.php';
         $controller = new DiemChuanController();
         $controller->tuChoi();
+        break;
+
+        // ==================== CODE MỚI CHO NHẬP HỌC ====================
+    case 'bgh-nhap-hoc':
+        require_once __DIR__ . '/../controllers/bgh/NhapHocController.php';
+        $controller = new NhapHocController();
+        $controller->index();
+        break;
+    
+    case 'bgh-nhap-hoc-xac-nhan':
+        require_once __DIR__ . '/../controllers/bgh/NhapHocController.php';
+        $controller = new NhapHocController();
+        $controller->xacNhanNhapHoc();
         break;
 
     default:

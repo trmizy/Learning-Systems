@@ -7,9 +7,9 @@ $MENU_ITEMS = [
             'link' => '/public/index.php?action=admin-danh-sach-hoc-sinh',
             'submenu' => [
                 ['icon' => 'list', 'text' => 'Danh sách học sinh', 'link' => '/public/index.php?action=admin-danh-sach-hoc-sinh'],
-                ['icon' => 'plus', 'text' => 'Thêm học sinh', 'link' => '/public/index.php?action=admin-them-hoc-sinh'],
-                ['icon' => 'file-import', 'text' => 'Nhập từ Excel', 'link' => '/public/index.php?action=admin-import-hoc-sinh'],
-                ['icon' => 'exchange', 'text' => 'Chuyển lớp', 'link' => '/public/index.php?action=admin-chuyen-lop'],
+                ['icon' => 'plus', 'text' => 'Thêm học sinh', 'link' => 'javascript:alert("Chức năng đang phát triển!");'],
+                ['icon' => 'file-import', 'text' => 'Nhập từ Excel', 'link' => 'javascript:alert("Chức năng đang phát triển!");'],
+                ['icon' => 'exchange', 'text' => 'Chuyển lớp', 'link' => 'javascript:alert("Chức năng đang phát triển!");'],
             ]
         ],
         [
@@ -17,8 +17,8 @@ $MENU_ITEMS = [
             'text' => 'Quản lý giảng dạy',
             'link' => '#',
             'submenu' => [
-                ['icon' => 'person-chalkboard', 'text' => 'Giáo viên', 'link' => '/modules/teachers/list.php'],
-                ['icon' => 'book', 'text' => 'Môn học', 'link' => '/modules/subjects/list.php'],
+                ['icon' => 'person-chalkboard', 'text' => 'Giáo viên', 'link' => 'javascript:alert("Chức năng đang phát triển!");'],
+                ['icon' => 'book', 'text' => 'Môn học', 'link' => 'javascript:alert("Chức năng đang phát triển!");'],
                 ['icon' => 'layer-group', 'text' => 'Tổ hợp môn', 'link' => '/controllers/admin/taoCacToHopMon_controller.php'],
             ]
         ],
@@ -29,15 +29,15 @@ $MENU_ITEMS = [
             'submenu' => [
                 ['icon' => 'users-gear', 'text' => 'Quản lý tài khoản', 'link' => '/modules/users/list.php'],
                 ['icon' => 'clock', 'text' => 'Thời khóa biểu', 'link' => '/modules/timetable/list.php'],
-                ['icon' => 'sliders', 'text' => 'Thiết lập năm học', 'link' => '/modules/settings/index.php'],
-                ['icon' => 'database', 'text' => 'Sao lưu dữ liệu', 'link' => '/modules/backup/index.php'],
+                ['icon' => 'sliders', 'text' => 'Thiết lập năm học', 'link' =>'javascript:alert("Chức năng đang phát triển!");'],
+                ['icon' => 'database', 'text' => 'Sao lưu dữ liệu', 'link' => 'javascript:alert("Chức năng đang phát triển!");'],
             ]
         ],
     ],
     'bgh' => [
-        ['icon' => 'fa-user-graduate', 'text' => 'Học sinh', 'link' => '/modules/students/list.php'],
-        ['icon' => 'fa-people-roof', 'text' => 'Lớp học', 'link' => '/modules/classes/list.php'],
-        ['icon' => 'fa-calendar-check', 'text' => 'Điểm danh', 'link' => '/modules/attendance/list.php'],
+        ['icon' => 'fa-user-graduate', 'text' => 'Học sinh', 'link' => 'javascript:alert("Chức năng đang phát triển!");'],
+        ['icon' => 'fa-people-roof', 'text' => 'Lớp học', 'link' => 'javascript:alert("Chức năng đang phát triển!");'],
+        ['icon' => 'fa-calendar-check', 'text' => 'Điểm danh', 'link' => 'javascript:alert("Chức năng đang phát triển!");'],
         [
             'text' => 'Quản lý giáo viên',
             'link' => '/public/index.php?action=bgh-giao-vien-list',
@@ -45,10 +45,11 @@ $MENU_ITEMS = [
         ],
     ],
     'gvcn' => [
-        ['icon' => 'fa-user-graduate', 'text' => 'Lớp chủ nhiệm', 'link' => '/modules/homeroom/index.php'],
-        ['icon' => 'fa-chart-simple', 'text' => 'Tổng kết', 'link' => '/modules/homeroom/summary.php'],
+        ['icon' => 'fa-user-graduate', 'text' => 'Lớp chủ nhiệm', 'link' => 'javascript:alert("Chức năng đang phát triển!");'],
+        ['icon' => 'fa-chart-simple', 'text' => 'Tổng kết', 'link' => 'javascript:alert("Chức năng đang phát triển!");'],
+        ['icon' => 'fa-square-poll-vertical', 'text' => 'Nhập điểm', 'link' => '/public/index.php?action=enterPoints_gvbm'],
     ],
-    'gvbm' => [
+    'gvbm'  => [
         ['icon' => 'fa-square-poll-vertical', 'text' => 'Nhập điểm', 'link' => '/public/index.php?action=enterPoints_gvbm'],
         ['icon' => 'fa-calendar-check', 'text' => 'Điểm danh', 'link' => '/modules/attendance/mark.php'],
     ],

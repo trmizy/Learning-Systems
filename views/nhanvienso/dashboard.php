@@ -696,10 +696,10 @@ try {
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-globe text-primary me-2"></i>Công bố thông tin
                     </h6>
-                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-outline-primary w-100 mb-2">
+                    <a href="/public/index.php?action=nhanvienso-xet-tuyen"   class="btn btn-outline-primary w-100 mb-2">
                         <i class="fa-solid fa-trophy me-2"></i>Điểm chuẩn
                     </a>
-                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-outline-success w-100">
+                    <a href="/public/index.php?action=nhanvienso-xet-tuyen-ket-qua"   class="btn btn-outline-success w-100">
                         <i class="fa-solid fa-list me-2"></i>Kết quả TS
                     </a>
                 </div>
@@ -728,81 +728,6 @@ try {
                     <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-outline-danger w-100">
                         <i class="fa-solid fa-check-double me-2"></i>Xác minh
                     </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Dashboard Nhân viên Sở - Thêm nút -->
-    <div class="container-fluid mt-4">
-        <h2 class="fw-bold mb-4">
-            <i class="fa-solid fa-building text-primary me-2"></i>
-            Dashboard Nhân viên Sở
-        </h2>
-
-        <!-- Main Functions Grid -->
-        <div class="row g-4">
-            <!-- Duyệt Điểm chuẩn -->
-            <div class="col-md-6 col-xl-3">
-                <div class="card feature-card h-100">
-                    <div class="card-body text-center">
-                        <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                            <i class="fa-solid fa-chart-line"></i>
-                        </div>
-                        <h5 class="card-title fw-bold">Duyệt Điểm chuẩn</h5>
-                        <p class="text-muted small">Duyệt và công bố điểm chuẩn các trường</p>
-                        <a href="/public/index.php?action=nhanvienso-duyet-diem-chuan" class="btn btn-primary w-100 mt-3">
-                            <i class="fa-solid fa-check-circle me-2"></i>Quản lý
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Xét tuyển -->
-            <div class="col-md-6 col-xl-3">
-                <div class="card feature-card h-100">
-                    <div class="card-body text-center">
-                        <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-                            <i class="fa-solid fa-user-graduate"></i>
-                        </div>
-                        <h5 class="card-title fw-bold">Kết quả xét tuyển</h5>
-                        <p class="text-muted small">Xem kết quả xét tuyển các trường</p>
-                        <a href="/public/index.php?action=nhanvienso-xet-tuyen" class="btn btn-success w-100 mt-3">
-                            <i class="fa-solid fa-list-check me-2"></i>Xem kết quả
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quản lý trường -->
-            <div class="col-md-6 col-xl-3">
-                <div class="card feature-card h-100">
-                    <div class="card-body text-center">
-                        <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                            <i class="fa-solid fa-school"></i>
-                        </div>
-                        <h5 class="card-title fw-bold">Quản lý trường</h5>
-                        <p class="text-muted small">Danh sách các trường THPT</p>
-                        <a href="/public/index.php?action=nhanvienso-schools" class="btn btn-danger w-100 mt-3">
-                            <i class="fa-solid fa-building me-2"></i>Quản lý
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Báo cáo thống kê -->
-            <div class="col-md-6 col-xl-3">
-                <div class="card feature-card h-100">
-                    <div class="card-body text-center">
-                        <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                            <i class="fa-solid fa-chart-pie"></i>
-                        </div>
-                        <h5 class="card-title fw-bold">Báo cáo</h5>
-                        <p class="text-muted small">Thống kê báo cáo toàn sở</p>
-                        <a href="/public/index.php?action=nhanvienso-reports" class="btn btn-info w-100 mt-3">
-                            <i class="fa-solid fa-file-chart me-2"></i>Xem báo cáo
-                        </a>
-                    </div>
                 </div>
             </div>
         </div>

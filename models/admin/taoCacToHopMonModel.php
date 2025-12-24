@@ -38,6 +38,21 @@ class TaoCacToHopMonModel {
         if (!isset($data['soLuongLop']) || $data['soLuongLop'] <= 0) {
             $errors[] = "Số lượng lớp phải lớn hơn 0";
         }
+        
+        // Kiểm tra ký tự đặc biệt trong Mã tổ hợp
+        if (!empty($data['maToHop'])) {
+            if (!preg_match('/^[a-zA-Z0-9_]+$/', $data['maToHop'])) {
+                $errors[] = "Mã tổ hợp không chứa ký tự đặc biệt";
+            }
+        }
+        
+        // Kiểm tra ký tự đặc biệt trong Tên tổ hợp
+        if (!empty($data['tenToHop'])) {
+            // Cho phép tất cả chữ cái Unicode (bao gồm tiếng Việt có dấu), số, khoảng trắng, dấu gạch ngang và dấu hai chấm
+            if (!preg_match('/^[\p{L}0-9\s\-:]+$/u', $data['tenToHop'])) {
+                $errors[] = "Tên tổ hợp không chứa ký tự đặc biệt";
+            }
+        }
         // Kiểm tra các môn học có tồn tại trong hệ thống không
         if (!empty($data['danhSachMon'])) {
             $monHocIds = explode(',', $data['danhSachMon']);

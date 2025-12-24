@@ -6,95 +6,67 @@ class XetTuyenController {
     private $model;
 
     public function __construct() {
+        require_role(['nhanvienso']);
         $this->model = new XetTuyenModel();
     }
 
     /**
-     * Hiển thị danh sách thí sinh xét tuyển
+     * Hiển thị trang xét tuyển - Dashboard
      */
     public function index() {
-        require_role(['nhanvienso']);
-
-        $maTruong = $_GET['maTruong'] ?? 'TR001';
-        $namTuyenSinh = $_GET['namTuyenSinh'] ?? date('Y');
-
-        // Lấy danh sách thí sinh
-        $danhSachThiSinh = $this->model->getDanhSachThiSinhXetTuyen($maTruong, $namTuyenSinh);
-        $diemChuan = $this->model->getDiemChuan($maTruong, $namTuyenSinh);
-        $thongKe = $this->model->getThongKeXetTuyen($maTruong, $namTuyenSinh);
-
-        // Render view
-        require_once __DIR__ . '/../../views/nhanvienso/xet_tuyen_list.php';
+        // Lấy thống kê trước khi xét tuyển
+        $stats = $this->model->getThongKeXetTuyen();
+        
+        // Kiểm tra điều kiện sẵn sàng
+        $readyCheck = $this->model->kiemTraSanSang();
+        
+        require_once __DIR__ . '/../../views/nhanvienso/xet_tuyen/index.php';
     }
 
     /**
-     * Xét tuyển một thí sinh
+     * Chạy thuật toán xét tuyển
      */
-    public function xetTuyenMotThiSinh() {
-        require_role(['nhanvienso']);
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $maThiSinh = $_POST['maThiSinh'] ?? '';
-            $maLop = $_POST['maLop'] ?? '';
-
-            if (empty($maThiSinh) || empty($maLop)) {
-                $_SESSION['flash_error'] = 'Thiếu thông tin thí sinh hoặc lớp';
+    public function chayXetTuyen() {
+        try {
+            // Kiểm tra điều kiện
+            $readyCheck = $this->model->kiemTraSanSang();
+            
+            if (!$readyCheck['ready']) {
+                $_SESSION['flash_error'] = 'Không đủ điều kiện xét tuyển: ' . implode(', ', $readyCheck['errors']);
                 header('Location: /public/index.php?action=nhanvienso-xet-tuyen');
                 exit;
             }
 
-            $result = $this->model->xetTuyenThiSinh($maThiSinh, $maLop);
-
+            // Chạy xét tuyển
+            $result = $this->model->chayXetTuyenToanBo();
+            
             if ($result['success']) {
-                $_SESSION['flash_success'] = $result['message'] . " - Mã HS: {$result['maHS']}";
+                $_SESSION['flash_success'] = sprintf(
+                    'Xét tuyển thành công! %d thí sinh trúng tuyển, %d thí sinh trượt.',
+                    $result['tong_trung_tuyen'],
+                    $result['tong_truot']
+                );
             } else {
-                $_SESSION['flash_error'] = $result['message'];
+                $_SESSION['flash_error'] = 'Có lỗi xảy ra: ' . $result['message'];
             }
-
-            header('Location: /public/index.php?action=nhanvienso-xet-tuyen');
-            exit;
+            
+        } catch (Exception $e) {
+            $_SESSION['flash_error'] = 'Lỗi hệ thống: ' . $e->getMessage();
         }
+        
+        header('Location: /public/index.php?action=nhanvienso-xet-tuyen-ket-qua');
+        exit;
     }
 
     /**
-     * Xét tuyển tự động (hàng loạt)
+     * Xem kết quả xét tuyển
      */
-    public function xetTuyenTuDong() {
-        require_role(['nhanvienso']);
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $maTruong = $_POST['maTruong'] ?? '';
-            $namTuyenSinh = $_POST['namTuyenSinh'] ?? '';
-
-            $danhSachThiSinh = $this->model->getDanhSachThiSinhXetTuyen($maTruong, $namTuyenSinh);
-            $diemChuan = $this->model->getDiemChuan($maTruong, $namTuyenSinh);
-
-            if (!$diemChuan) {
-                $_SESSION['flash_error'] = 'Chưa có điểm chuẩn cho năm ' . $namTuyenSinh;
-                header('Location: /public/index.php?action=nhanvienso-xet-tuyen');
-                exit;
-            }
-
-            // Lọc thí sinh đạt điểm chuẩn
-            $danhSachDat = [];
-            foreach ($danhSachThiSinh as $ts) {
-                if ($ts['tongDiem'] >= $diemChuan) {
-                    $danhSachDat[] = $ts['maThiSinh'];
-                }
-            }
-
-            if (empty($danhSachDat)) {
-                $_SESSION['flash_warning'] = 'Không có thí sinh nào đạt điểm chuẩn';
-                header('Location: /public/index.php?action=nhanvienso-xet-tuyen');
-                exit;
-            }
-
-            // Xét tuyển hàng loạt
-            $ketQua = $this->model->xetTuyenHangLoat($maTruong, $namTuyenSinh, $danhSachDat);
-
-            $_SESSION['flash_success'] = "Xét tuyển thành công: {$ketQua['thanh_cong']} - Thất bại: {$ketQua['that_bai']}";
-            header('Location: /public/index.php?action=nhanvienso-xet-tuyen');
-            exit;
-        }
+    public function xemKetQua() {
+        // Lấy kết quả xét tuyển
+        $ketQuaTheoTruong = $this->model->getKetQuaTheoTruong();
+        $ketQuaChiTiet = $this->model->getKetQuaChiTiet();
+        $thongKeTongQuat = $this->model->getThongKeXetTuyen();
+        
+        require_once __DIR__ . '/../../views/nhanvienso/xet_tuyen/ket_qua.php';
     }
 }

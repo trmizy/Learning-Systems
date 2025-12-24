@@ -1,17 +1,28 @@
 <?php
-// Biến từ controller:
-// $flash_success, $flash_error
-// $dsNamHoc, $dsHocKy, $namHoc, $hocKy
-// $dsLop, $dsPhong
-// $previewAll, $maLop, $tkbLopDangXem, $conflicts
-// $dsMonCuaLop, $maMonHoc, $slotTrong, $monCoThucHanh
-// Filter:
-// $viewMode, $tuan, $thang, $displayTuan, $displayNgayThu
-// $thongTinHocKy, $tongTuanHocKy, $dsTuanHocKy, $dsThangHocKy
-/** @var string $namHoc */
-/** @var string $hocKy */
-/** @var string $maLop */
-/** @var string $maMonHoc */
+/**
+ * @var string $flash_success
+ * @var string $flash_error
+ * @var array  $dsNamHoc
+ * @var array  $dsHocKy
+ * @var string $namHoc
+ * @var string $hocKy
+ * @var array  $dsLop
+ * @var array  $dsPhong
+ * @var array  $previewAll
+ * @var string $maLop
+ * @var array  $tkbLopDangXem
+ * @var array  $conflicts
+ * @var array  $dsMonCuaLop
+ * @var string $maMonHoc
+ * @var array  $slotTrong
+ * @var string $viewMode
+ * @var int    $displayTuan
+ * @var array  $displayNgayThu
+ * @var array|null $thongTinHocKy
+ * @var int    $tongTuanHocKy
+ * @var array  $dsTuanHocKy
+ * @var array  $dsThangHocKy
+ */
 ?>
 
 <div class="container my-4">
@@ -31,7 +42,7 @@
 
         <?php if (!empty($thongTinHocKy)): ?>
             <div class="small text-white-50 mb-2">
-                Đã sắp xếp áp dụng cho:
+                Áp dụng từ:
                 <b>Tuần <?= (int)$thongTinHocKy['week_start'] ?> đến tuần <?= (int)$thongTinHocKy['week_end'] ?></b>
                 (<?= date('d/m/Y', strtotime($thongTinHocKy['start'])) ?> - <?= date('d/m/Y', strtotime($thongTinHocKy['end'])) ?>)
             </div>
@@ -50,7 +61,7 @@
                 <select name="namHoc" class="form-select form-select-sm">
                     <option value="">-- Chọn năm học --</option>
                     <?php foreach ($dsNamHoc as $nh): ?>
-                        <option value="<?= htmlspecialchars($nh) ?>" <?= $nh === $namHoc ? 'selected' : '' ?>>
+                        <option value="<?= htmlspecialchars($nh) ?>" <?= ($nh === $namHoc) ? 'selected' : '' ?>>
                             <?= htmlspecialchars($nh) ?>
                         </option>
                     <?php endforeach; ?>
@@ -62,8 +73,8 @@
                 <select name="hocKy" class="form-select form-select-sm">
                     <option value="">-- Chọn học kỳ --</option>
                     <?php foreach ($dsHocKy as $hk): ?>
-                        <option value="<?= htmlspecialchars($hk) ?>" <?= $hk === $hocKy ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($hk) ?>
+                        <option value="<?= htmlspecialchars($hk) ?>" <?= ((string)$hk === (string)$hocKy || ('HK'.$hk) === (string)$hocKy) ? 'selected' : '' ?>>
+                            HK<?= htmlspecialchars((string)$hk) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -112,7 +123,7 @@
             <!-- Danh sách lớp -->
             <div class="card mb-4">
                 <div class="card-header bg-light fw-semibold">
-                    Danh sách lớp (<?= $namHoc && $hocKy ? htmlspecialchars("$namHoc - $hocKy") : 'Chưa chọn học kỳ' ?>)
+                    Danh sách lớp (<?= ($namHoc && $hocKy) ? htmlspecialchars($namHoc . ' - HK' . (string)$hocKy) : 'Chưa chọn học kỳ' ?>)
                 </div>
                 <div class="card-body" style="max-height: 320px; overflow:auto;">
                     <?php if ($hocKy === ''): ?>
@@ -126,8 +137,8 @@
                                 $ml = $lop['maLop'];
                                 $hasPreview = !empty($previewAll[$ml]);
                                 ?>
-                                <a href="?module=tkb&namHoc=<?= urlencode($namHoc) ?>&hocKy=<?= urlencode($hocKy) ?>&maLop=<?= urlencode($ml) ?>"
-                                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-center <?= $ml === $maLop ? 'active' : '' ?>">
+                                <a href="?module=tkb&namHoc=<?= urlencode($namHoc) ?>&hocKy=<?= urlencode((string)$hocKy) ?>&maLop=<?= urlencode($ml) ?>"
+                                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-center <?= ($ml === $maLop) ? 'active' : '' ?>">
                                     <span>
                                         <strong><?= htmlspecialchars($ml) ?></strong>
                                         <span class="text-muted small">- <?= htmlspecialchars($lop['tenLop']) ?></span>
@@ -158,7 +169,7 @@
                         <form method="get" class="row g-2 mb-3">
                             <input type="hidden" name="module" value="tkb">
                             <input type="hidden" name="namHoc" value="<?= htmlspecialchars($namHoc) ?>">
-                            <input type="hidden" name="hocKy" value="<?= htmlspecialchars($hocKy) ?>">
+                            <input type="hidden" name="hocKy" value="<?= htmlspecialchars((string)$hocKy) ?>">
                             <input type="hidden" name="maLop" value="<?= htmlspecialchars($maLop) ?>">
 
                             <div class="col-12">
@@ -176,6 +187,11 @@
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
+                                <?php if (empty($dsMonCuaLop)): ?>
+                                    <div class="small text-muted mt-1">
+                                        Không có môn nào: kiểm tra <b>phanconggiangday</b> (maLop/namHoc/hocKy) và giá trị hocKy đang là <b>1/2</b>.
+                                    </div>
+                                <?php endif; ?>
                             </div>
 
                             <div class="col-12 mt-2">
@@ -190,7 +206,7 @@
                                   onsubmit="return confirm('Xác nhận sắp xếp thời khóa biểu cho môn đã chọn?');">
                                 <input type="hidden" name="action" value="manual_add">
                                 <input type="hidden" name="namHoc" value="<?= htmlspecialchars($namHoc) ?>">
-                                <input type="hidden" name="hocKy" value="<?= htmlspecialchars($hocKy) ?>">
+                                <input type="hidden" name="hocKy" value="<?= htmlspecialchars((string)$hocKy) ?>">
                                 <input type="hidden" name="maLop" value="<?= htmlspecialchars($maLop) ?>">
                                 <input type="hidden" name="maMonHoc" value="<?= htmlspecialchars($maMonHoc) ?>">
 
@@ -202,35 +218,26 @@
                                             <?php
                                             $thu = (int)$s['thu'];
                                             $tiet = (int)$s['tiet'];
-                                            $dateShow = $displayNgayThu[$thu] ?? $s['ngayHoc'];
+                                            $dateShow = $displayNgayThu[$thu] ?? null;
                                             $buoi = ($tiet <= 4) ? 'Sáng' : 'Chiều';
                                             ?>
                                             <option value="<?= $thu . '|' . $tiet ?>">
                                                 <?= $buoi ?> - Thứ <?= $thu ?> - Tiết <?= $tiet ?>
-                                                (<?= date('d/m/Y', strtotime($dateShow)) ?>)
+                                                <?php if ($dateShow): ?>
+                                                    (<?= date('d/m/Y', strtotime($dateShow)) ?>)
+                                                <?php endif; ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
                                     <?php if (empty($slotTrong)): ?>
-                                        <div class="small text-muted mt-1">Không còn slot trống trong tuần mẫu.</div>
+                                        <div class="small text-muted mt-1">Không còn slot trống (hoặc bị trùng GV/phòng).</div>
                                     <?php endif; ?>
                                 </div>
 
-                                <?php if (!empty($monCoThucHanh)): ?>
-                                    <div class="col-12">
-                                        <label class="form-label">Phân loại</label>
-                                        <select name="loaiTiet" class="form-select form-select-sm" required>
-                                            <option value="">-- Chọn --</option>
-                                            <option value="Ly_thuyet">Lý thuyết</option>
-                                            <option value="Thuc_hanh">Thực hành</option>
-                                        </select>
-                                    </div>
-                                <?php endif; ?>
-
                                 <div class="col-12">
-                                    <label class="form-label">Phòng học (bỏ trống = tự theo lớp)</label>
+                                    <label class="form-label">Phòng học (bỏ trống = theo lớp)</label>
                                     <select name="maPhong" class="form-select form-select-sm">
-                                        <option value="">-- Tự động theo lớp --</option>
+                                        <option value="">-- Tự theo lớp --</option>
                                         <?php foreach ($dsPhong as $p): ?>
                                             <option value="<?= htmlspecialchars($p['maPhong']) ?>">
                                                 <?= htmlspecialchars($p['maPhong']) ?> - <?= htmlspecialchars($p['tenPhong'] ?? '') ?>
@@ -247,7 +254,7 @@
 
                                 <div class="col-12">
                                     <a class="btn btn-outline-danger btn-sm w-100"
-                                       href="?module=tkb&namHoc=<?= urlencode($namHoc) ?>&hocKy=<?= urlencode($hocKy) ?>&maLop=<?= urlencode($maLop) ?>"
+                                       href="?module=tkb&namHoc=<?= urlencode($namHoc) ?>&hocKy=<?= urlencode((string)$hocKy) ?>&maLop=<?= urlencode($maLop) ?>"
                                        onclick="return confirm('Xác nhận hủy bỏ?');">
                                         <i class="fa-solid fa-ban me-1"></i>Hủy sắp xếp
                                     </a>
@@ -269,7 +276,7 @@
                         <?php if ($maLop): ?>
                             - Lớp <strong><?= htmlspecialchars($maLop) ?></strong>
                             <?php if ($namHoc && $hocKy): ?>
-                                (<?= htmlspecialchars("$namHoc - $hocKy") ?>)
+                                (<?= htmlspecialchars($namHoc . ' - HK' . (string)$hocKy) ?>)
                             <?php endif; ?>
                         <?php endif; ?>
                         <?php if (!empty($displayTuan) && !empty($tongTuanHocKy)): ?>
@@ -282,7 +289,7 @@
                         <form method="get" class="d-flex align-items-center gap-2 mb-0">
                             <input type="hidden" name="module" value="tkb">
                             <input type="hidden" name="namHoc" value="<?= htmlspecialchars($namHoc) ?>">
-                            <input type="hidden" name="hocKy" value="<?= htmlspecialchars($hocKy) ?>">
+                            <input type="hidden" name="hocKy" value="<?= htmlspecialchars((string)$hocKy) ?>">
                             <input type="hidden" name="maLop" value="<?= htmlspecialchars($maLop) ?>">
 
                             <select name="viewMode" class="form-select form-select-sm" style="width:140px;">
@@ -302,15 +309,13 @@
                             <select name="thang" class="form-select form-select-sm" style="width:140px;">
                                 <option value="">-- Tháng --</option>
                                 <?php foreach ($dsThangHocKy as $m): ?>
-                                    <option value="<?= htmlspecialchars($m) ?>" <?= ($m === $thang) ? 'selected' : '' ?>>
+                                    <option value="<?= htmlspecialchars($m) ?>" <?= ($m === ($thang ?? '')) ? 'selected' : '' ?>>
                                         <?= htmlspecialchars($m) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
 
-                            <button class="btn btn-outline-primary btn-sm">
-                                Lọc
-                            </button>
+                            <button class="btn btn-outline-primary btn-sm">Lọc</button>
                         </form>
                     <?php endif; ?>
                 </div>
@@ -319,7 +324,7 @@
                     <?php if (!$maLop): ?>
                         <p class="text-muted mb-0">Chọn học kỳ và một lớp để xem thời khóa biểu.</p>
                     <?php elseif (empty($tkbLopDangXem)): ?>
-                        <p class="text-muted mb-0">Chưa có thời khóa biểu cho lớp này.</p>
+                        <p class="text-muted mb-0">Chưa có thời khóa biểu cho lớp này (tuần đang xem).</p>
                     <?php else: ?>
                         <?php
                         // Build ma trận [thu][tiet]
@@ -369,14 +374,7 @@
                                                     <?php elseif (($cell['loaiTiet'] ?? '') === 'Sinh_hoat'): ?>
                                                         <span class="badge bg-success">Sinh hoạt lớp</span>
                                                     <?php else: ?>
-                                                        <div class="d-flex gap-2 align-items-center">
-                                                            <strong><?= htmlspecialchars($cell['tenMon'] ?? '') ?></strong>
-                                                            <?php if (($cell['loaiTiet'] ?? '') === 'Thuc_hanh'): ?>
-                                                                <span class="badge bg-warning text-dark">Thực hành</span>
-                                                            <?php elseif (($cell['loaiTiet'] ?? '') === 'Ly_thuyet'): ?>
-                                                                <span class="badge bg-secondary">Lý thuyết</span>
-                                                            <?php endif; ?>
-                                                        </div>
+                                                        <div><strong><?= htmlspecialchars($cell['tenMon'] ?? '') ?></strong></div>
                                                         <?php if (!empty($cell['tenGV'])): ?>
                                                             <div class="small text-muted">GV: <?= htmlspecialchars($cell['tenGV']) ?></div>
                                                         <?php endif; ?>
@@ -400,8 +398,8 @@
                                 <form method="post" class="d-flex align-items-center gap-2 mb-0">
                                     <input type="hidden" name="action" value="save_class">
                                     <input type="hidden" name="namHoc" value="<?= htmlspecialchars($namHoc) ?>">
-                                    <input type="hidden" name="hocKy"  value="<?= htmlspecialchars($hocKy) ?>">
-                                    <input type="hidden" name="maLop"  value="<?= htmlspecialchars($maLop) ?>">
+                                    <input type="hidden" name="hocKy" value="<?= htmlspecialchars((string)$hocKy) ?>">
+                                    <input type="hidden" name="maLop" value="<?= htmlspecialchars($maLop) ?>">
                                     <?php if (!empty($conflicts)): ?>
                                         <div class="form-check me-2">
                                             <input class="form-check-input" type="checkbox" id="force_save" name="force_save" value="1">

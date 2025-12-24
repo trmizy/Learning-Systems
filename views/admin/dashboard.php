@@ -310,79 +310,82 @@ $stats = [
                     <h5 class="card-title fw-bold">Phân công</h5>
                     <p class="text-muted small">Phân công lớp, giáo viên, thời khóa biểu</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/models/assignments/teachers.php" class="btn btn-danger btn-sm">
-                            <i class="fa-solid fa-person-chalkboard me-1"></i>Phân công GV
-                        </a>
-                        <a href="/controllers/admin/ArrangeTKBController.php?module=tkb" class="btn btn-outline-danger btn-sm">
-                            <i class="fa-solid fa-calendar me-1"></i>Thời khóa biểu
+                        <a href="/controllers/admin/ArrangeTKBController.php?module=tkb" class="btn btn-danger btn-sm">
+                            <i class="fa-solid fa-person-chalkboard me-1"></i>Thời khóa biểu
                         </a>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Academic Records -->
+        <!-- Academic Records (disabled buttons) -->
         <div class="col-md-6 col-xl-3">
-            <div class="card feature-card h-100">
+            <div class="card feature-card h-100 opacity-75">
                 <div class="card-body text-center">
                     <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
                         <i class="fa-solid fa-folder-open"></i>
                     </div>
                     <h5 class="card-title fw-bold">Học vụ</h5>
-                    <p class="text-muted small">Đơn sửa điểm, hồ sơ học vụ</p>
+                    <p class="text-muted small">Hồ sơ học vụ</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/models/academic/requests.php" class="btn btn-info btn-sm">
+                        <button class="btn btn-info btn-sm disabled" type="button" data-bs-toggle="tooltip" title="Đang phát triển">
                             <i class="fa-solid fa-clipboard-check me-1"></i>Duyệt đơn
-                        </a>
-                        <a href="/models/academic/records.php" class="btn btn-outline-info btn-sm">
+                        </button>
+                        <button class="btn btn-outline-info btn-sm disabled" type="button" data-bs-toggle="tooltip" title="Đang phát triển">
                             <i class="fa-solid fa-archive me-1"></i>Hồ sơ
-                        </a>
+                        </button>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-warning"><i class="fa-solid fa-construction me-1"></i>Đang phát triển</small>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Additional Admin Tools -->
+    <!-- Additional Admin Tools (disabled buttons) -->
     <div class="row g-3">
         <div class="col-md-4">
-            <div class="card feature-card">
+            <div class="card feature-card opacity-75">
                 <div class="card-body">
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-users-gear text-primary me-2"></i>Quản lý người dùng
                     </h6>
                     <p class="text-muted small mb-3">Tài khoản, phân quyền hệ thống</p>
-                    <a href="/models/users/list.php" class="btn btn-outline-primary w-100">
+                    <button class="btn btn-outline-primary w-100 disabled" type="button" data-bs-toggle="tooltip" title="Đang phát triển">
                         <i class="fa-solid fa-list me-2"></i>Danh sách tài khoản
-                    </a>
+                    </button>
+                    <small class="text-warning d-block mt-2"><i class="fa-solid fa-construction me-1"></i>Đang phát triển</small>
                 </div>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="card feature-card">
+            <div class="card feature-card opacity-75">
                 <div class="card-body">
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-sliders text-success me-2"></i>Cấu hình hệ thống
                     </h6>
                     <p class="text-muted small mb-3">Thiết lập tham số, cấu hình</p>
-                    <a href="/models/settings/index.php" class="btn btn-outline-success w-100">
+                    <button class="btn btn-outline-success w-100 disabled" type="button" data-bs-toggle="tooltip" title="Đang phát triển">
                         <i class="fa-solid fa-cog me-2"></i>Cài đặt
-                    </a>
+                    </button>
+                    <small class="text-warning d-block mt-2"><i class="fa-solid fa-construction me-1"></i>Đang phát triển</small>
                 </div>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="card feature-card">
+            <div class="card feature-card opacity-75">
                 <div class="card-body">
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-database text-warning me-2"></i>Sao lưu & Phục hồi
                     </h6>
                     <p class="text-muted small mb-3">Backup dữ liệu hệ thống</p>
-                    <a href="/models/backup/index.php" class="btn btn-outline-warning w-100">
+                    <button class="btn btn-outline-warning w-100 disabled" type="button" data-bs-toggle="tooltip" title="Đang phát triển">
                         <i class="fa-solid fa-download me-2"></i>Sao lưu ngay
-                    </a>
+                    </button>
+                    <small class="text-warning d-block mt-2"><i class="fa-solid fa-construction me-1"></i>Đang phát triển</small>
                 </div>
             </div>
         </div>

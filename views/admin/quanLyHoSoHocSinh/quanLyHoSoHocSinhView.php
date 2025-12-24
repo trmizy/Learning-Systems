@@ -19,11 +19,6 @@ $q_khoi = $q_khoi ?? trim($_GET['khoi'] ?? '');
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="mb-0">Quản lý hồ sơ học sinh</h3>
-        <div>
-            <a href="/public/index.php?action=admin-them-hoc-sinh" class="btn btn-primary btn-sm">
-                <i class="fa-solid fa-plus me-1"></i> Thêm học sinh
-            </a>
-        </div>
     </div>
 
     <?php if ($error): ?>
