@@ -407,55 +407,72 @@ class PhanCongModel {
      * @return PDOStatement
      */
     public function getGiaoVienTheoMon($monHoc) {
-        // Map tên môn đầy đủ về tên viết tắt để tìm kiếm
-        $monHocMap = [
-            'Giáo dục công dân' => 'GDCD',
-            'GDCD' => 'GDCD',
-            'Ngữ văn' => 'Văn',
-            'Ngu van' => 'Văn',
-            'Tiếng Anh' => 'Anh',
-            'Tieng Anh' => 'Anh',
-            'Vật lý' => 'Lý',
-            'Vat ly' => 'Lý',
-            'Hóa học' => 'Hóa',
-            'Hoa hoc' => 'Hóa',
-            'Sinh học' => 'Sinh',
-            'Sinh hoc' => 'Sinh',
-            'Lịch sử' => 'Sử',
-            'Lich su' => 'Sử',
-            'Địa lý' => 'Địa',
-            'Dia' => 'Địa',
-            'Thể dục' => 'TD',
-            'The duc' => 'TD',
-            'Quốc phòng' => 'QP',
-            'GDQP-AN' => 'QP',
-            'Tin học' => 'Tin',
-            'Tin hoc' => 'Tin',
-            'Công nghệ' => 'CN',
-            'Cong nghe' => 'CN',
-            'Toán' => 'Toán',
-            'Toan' => 'Toán',
-        ];
+    // SỬA LẠI: Map tên hiển thị (Tiếng Việt) sang MÃ MÔN trong Database (In hoa, không dấu)
+    $monHocMap = [
+        // Nhóm tự nhiên
+        'Toán' => 'TOAN',
+        'Toan' => 'TOAN',
+        'Vật lý' => 'LY',
+        'Vat ly' => 'LY',
+        'Lý' => 'LY',
+        'Hóa học' => 'HOA',
+        'Hoa hoc' => 'HOA',
+        'Hóa' => 'HOA',
+        'Sinh học' => 'SINH',
+        'Sinh hoc' => 'SINH',
+        'Sinh' => 'SINH',
         
-        // Nếu có trong map thì dùng tên viết tắt, không thì dùng tên gốc
-        $searchKeyword = $monHocMap[$monHoc] ?? $monHoc;
+        // Nhóm xã hội
+        'Ngữ văn' => 'NGUVAN',
+        'Ngu van' => 'NGUVAN',
+        'Văn' => 'NGUVAN',
+        'Lịch sử' => 'SU',
+        'Lich su' => 'SU',
+        'Sử' => 'SU',
+        'Địa lý' => 'DIA',
+        'Dia ly' => 'DIA',
+        'Địa' => 'DIA',
+        'Giáo dục công dân' => 'GDCD',
+        'GDCD' => 'GDCD',
         
-        // CHỈ lấy GV phụ trách đúng môn đó
-        $stmt = $this->db->prepare("
-            SELECT 
-                maGV,
-                hoTen,
-                monHocPhuTrach,
-                email,
-                soDienThoai
-            FROM giaovienbomon
-            WHERE tinhTrangTaiKhoan = 'ACTIVE'
-              AND monHocPhuTrach LIKE ?
-            ORDER BY hoTen
-        ");
-        $stmt->execute(["%$searchKeyword%"]);
-        return $stmt;
-    }
+        // Nhóm ngoại ngữ & khác
+        'Tiếng Anh' => 'ANH',
+        'Tieng Anh' => 'ANH',
+        'Anh' => 'ANH',
+        'Tin học' => 'TIN',
+        'Tin hoc' => 'TIN',
+        'Tin' => 'TIN',
+        'Công nghệ' => 'CN',
+        'Cong nghe' => 'CN',
+        'Thể dục' => 'TD',
+        'The duc' => 'TD',
+        'Quốc phòng' => 'QPAN', // Lưu ý: DB của bạn là QPAN chứ không phải QP
+        'GDQP' => 'QPAN',
+        'GDQP-AN' => 'QPAN'
+    ];
+    
+    // Nếu tìm thấy trong map thì lấy mã, không thì lấy chính nó (và viết hoa lên cho chắc)
+    $searchKeyword = $monHocMap[$monHoc] ?? strtoupper($monHoc);
+    
+    // Query tìm kiếm
+    $stmt = $this->db->prepare("
+        SELECT 
+            maGV,
+            hoTen,
+            monHocPhuTrach,
+            email,
+            soDienThoai
+        FROM giaovienbomon
+        WHERE tinhTrangTaiKhoan = 'ACTIVE'
+          AND monHocPhuTrach LIKE ?
+        ORDER BY hoTen
+    ");
+    
+    // Thêm % để tìm kiếm tương đối (Dù map đúng rồi nhưng giữ % vẫn an toàn)
+    $stmt->execute(["%$searchKeyword%"]);
+    
+    return $stmt;
+}
 
     /**
      * Lấy danh sách phân công giảng dạy của 1 lớp
@@ -1036,6 +1053,67 @@ public function huyPhanCongGVCN($maGV, $maLop) {
         } catch (PDOException $e) {
             error_log("Error getDanhSachLopChuaCoGVCN: " . $e->getMessage());
             return [];
+        }
+    }
+
+    /**
+     * Lấy mã giáo viên phân công theo maLop + maMonHoc.
+     * Tham số hocKy, namHoc là tùy chọn để khớp chính xác hơn.
+     * Trả về array ['maGV'=>..., 'hoTen'=>...] hoặc null nếu không tìm.
+     */
+    public function getGiaoVienPhanCongChoMon($maLop, $maMonHoc) {
+        try {
+            $maMonHocClean = strtoupper(trim($maMonHoc));
+
+            // 1) Kiểm tra bảng phanconggiangday trước
+            $sql = "SELECT maGV FROM phanconggiangday
+                    WHERE maLop = :maLop AND maMonHoc = :maMonHoc
+                    LIMIT 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['maLop' => $maLop, 'maMonHoc' => $maMonHocClean]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($row && !empty($row['maGV'])) {
+                // Lấy thông tin GV chi tiết
+                $gv = $this->getGiaoVienByMaGV($row['maGV']);
+                if ($gv) return $gv;
+                // nếu maGV tồn nhưng thông tin GV không có -> tiếp fallback
+                error_log("PhanCongModel: maGV tìm thấy nhưng không có thông tin chi tiết: " . $row['maGV']);
+            }
+
+            // Fallback: tìm giáo viên theo giaovienbomon.monHocPhuTrach (case-insensitive)
+            $sql2 = "SELECT maGV, hoTen FROM giaovienbomon
+                     WHERE TRIM(UPPER(monHocPhuTrach)) = :maMonHoc
+                     LIMIT 1";
+            $stmt2 = $this->db->prepare($sql2);
+            $stmt2->execute(['maMonHoc' => $maMonHocClean]);
+            $gv2 = $stmt2->fetch(PDO::FETCH_ASSOC);
+
+            if ($gv2) {
+                return $gv2;
+            }
+
+            // Nếu vẫn không tìm thấy => log chi tiết để debug
+            error_log("PhanCongModel::getGiaoVienPhanCongChoMon - Not found. maLop={$maLop} maMonHoc={$maMonHocClean} hocKy=" . ($hocKyClean ?? 'NULL') . " namHoc=" . ($namHoc ?? 'NULL'));
+            return null;
+
+        } catch (PDOException $e) {
+            error_log("Error getGiaoVienPhanCongChoMon: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Lấy thông tin giáo viên theo maGV
+     */
+    private function getGiaoVienByMaGV($maGV) {
+        try {
+            $stmt = $this->db->prepare("SELECT maGV, hoTen, monHocPhuTrach FROM giaovienbomon WHERE maGV = :maGV LIMIT 1");
+            $stmt->execute(['maGV' => $maGV]);
+            return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        } catch (PDOException $e) {
+            error_log("Error getGiaoVienByMaGV: " . $e->getMessage());
+            return null;
         }
     }
 }
