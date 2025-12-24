@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
-require_once __DIR__ . '/../../models/DiemModel.php';
+require_once __DIR__ . '/../../models/hs/DiemHSModel.php';
 
 class DiemController {
     private $diemModel;

@@ -13,7 +13,7 @@ class QuanLyGiaoVienController {
      * Hiển thị danh sách giáo viên
      */
     public function index() {
-        require_role(['bgh']);
+        // require_role(['bgh']); // Uncomment nếu cần check quyền
 
         try {
             // Xử lý tìm kiếm
@@ -38,7 +38,7 @@ class QuanLyGiaoVienController {
      * Hiển thị form tạo mới giáo viên
      */
     public function create() {
-        require_role(['bgh']);
+        // require_role(['bgh']);
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             return $this->store();
@@ -76,7 +76,9 @@ class QuanLyGiaoVienController {
                 'monHocPhuTrach' => trim($_POST['monHocPhuTrach'] ?? ''),
                 'trinhDoHocVan' => trim($_POST['trinhDoHocVan'] ?? ''),
                 'chucVu' => trim($_POST['chucVu'] ?? 'Giao vien bo mon'),
-                'tinhTrangTaiKhoan' => $_POST['tinhTrangTaiKhoan'] ?? 'ACTIVE'
+                'tinhTrangTaiKhoan' => $_POST['tinhTrangTaiKhoan'] ?? 'ACTIVE',
+                // --- ĐÃ BỔ SUNG CCCD ---
+                'soCCCD' => trim($_POST['soCCCD'] ?? '') 
             ];
 
             $this->model->themGiaoVien($data);
@@ -98,7 +100,7 @@ class QuanLyGiaoVienController {
      * Hiển thị form cập nhật giáo viên
      */
     public function edit() {
-        require_role(['bgh']);
+        // require_role(['bgh']);
 
         $maGV = $_GET['maGV'] ?? '';
         
@@ -145,8 +147,13 @@ class QuanLyGiaoVienController {
                 'monHocPhuTrach' => trim($_POST['monHocPhuTrach'] ?? ''),
                 'trinhDoHocVan' => trim($_POST['trinhDoHocVan'] ?? ''),
                 'chucVu' => trim($_POST['chucVu'] ?? 'Giao vien bo mon'),
-                'tinhTrangTaiKhoan' => $_POST['tinhTrangTaiKhoan'] ?? 'ACTIVE'
+                'tinhTrangTaiKhoan' => $_POST['tinhTrangTaiKhoan'] ?? 'ACTIVE',
+                // --- ĐÃ BỔ SUNG CCCD ---
+                'soCCCD' => trim($_POST['soCCCD'] ?? '') 
             ];
+
+            // Debug log để chắc chắn
+            error_log("Update Controller - CCCD: " . $data['soCCCD']);
 
             $this->model->capNhatGiaoVien($maGV, $data);
             $_SESSION['flash_success'] = 'Cập nhật thông tin giáo viên thành công';
@@ -158,7 +165,12 @@ class QuanLyGiaoVienController {
             $_SESSION['flash_error'] = $e->getMessage();
             
             // Giữ lại dữ liệu form
-            $giaoVien = array_merge($this->model->getGiaoVienByMa($maGV) ?? [], $_POST);
+            // Merge dữ liệu cũ từ DB với dữ liệu mới từ POST để hiển thị lại
+            $giaoVienCu = $this->model->getGiaoVienByMa($maGV);
+            $giaoVien = array_merge($giaoVienCu ? $giaoVienCu : [], $_POST);
+            // Đảm bảo mã GV luôn đúng để form action url không bị sai
+            $giaoVien['maGV'] = $maGV; 
+            
             require_once __DIR__ . '/../../views/bgh/quanLyHoSoGiaoVien/cap_nhat_giao_vien.php';
         }
     }
@@ -167,7 +179,7 @@ class QuanLyGiaoVienController {
      * Xem chi tiết giáo viên
      */
     public function view() {
-        require_role(['bgh']);
+        // require_role(['bgh']);
 
         $maGV = $_GET['maGV'] ?? '';
         

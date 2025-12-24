@@ -160,7 +160,7 @@ class QuanLyPhanCongController {
             $danhSachPhanCong = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // Render view
-            require_once __DIR__ . '/../../../views/bgh/phan_cong_list.php';
+            
             
         } catch (PDOException $e) {
             error_log("Error QuanLyPhanCongController::index: " . $e->getMessage());

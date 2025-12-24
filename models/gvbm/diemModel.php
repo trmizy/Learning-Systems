@@ -8,22 +8,31 @@ class DiemModel {
         $this->db = Database::getInstance()->getConnection();
     }
 
-    // Lấy danh sách các lớp mà GV này được phân công giảng dạy
+    /**
+     * Lấy danh sách Lớp & Môn GIÁO VIÊN ĐANG DẠY.
+     * Nguyên tắc: Chỉ lấy dữ liệu từ bảng phanconggiangday.
+     * Không quan tâm có phải chủ nhiệm hay không.
+     */
     public function getLopGiangDay($maGV) {
         try {
-            // JOIN bảng PhanCongGiangDay với LopHoc và MonHoc
-            $sql = "SELECT pc.maLop, lh.tenLop, pc.maMonHoc, mh.tenMon
+            // Chỉ truy vấn bảng Phân công giảng dạy
+            $sql = "SELECT DISTINCT pc.maLop, lh.tenLop, pc.maMonHoc, mh.tenMon
                     FROM phanconggiangday pc
                     JOIN lophoc lh ON pc.maLop = lh.maLop
                     JOIN monhoc mh ON pc.maMonHoc = mh.maMonHoc
                     WHERE pc.maGV = ?";
+
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$maGV]);
-            return $stmt->fetchAll();
-        } catch (Exception $e) { return []; }
+            $stmt->execute([$maGV]); // Chỉ truyền 1 tham số maGV
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) { 
+            error_log("Lỗi getLopGiangDay: " . $e->getMessage());
+            return []; 
+        }
     }
 
-    // Lấy bảng điểm của một lớp cho môn học cụ thể
+    // ... Các hàm khác (getBangDiemLop, taoYeuCauSuaDiem...) giữ nguyên không đổi ...
+    
     public function getBangDiemLop($maLop, $maMonHoc) {
         try {
             $sql = "SELECT 
@@ -32,19 +41,18 @@ class DiemModel {
                         bd.diemThuongXuyen, bd.diemGiuaKy, bd.diemCuoiKy
                     FROM bangdiem bd
                     JOIN hocsinh hs ON bd.maHS = hs.maHS
-                    WHERE bd.maHS IN (SELECT maHS FROM hocsinh WHERE maLop = ?)
+                    WHERE hs.maLop = ? 
                     AND bd.maMonHoc = ?
                     ORDER BY hs.hoTen ASC";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$maLop, $maMonHoc]);
-            return $stmt->fetchAll();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) { return []; }
     }
 
-    // Lưu yêu cầu sửa điểm
     public function taoYeuCauSuaDiem($maBangDiem, $loaiDiem, $diemCu, $diemMoi, $lyDo, $monHoc) {
         try {
-            $maYeuCau = 'YC_' . uniqid();
+            $maYeuCau = 'YC' . time() . rand(10,99); 
             $sql = "INSERT INTO yeucausuadiem 
                     (maYeuCau, maBangDiem, loaiDiem, monHoc, diemCu, diemMoi, lyDo, ngayYeuCau, trangThai)
                     VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 'CHO_DUYET')";
@@ -52,12 +60,10 @@ class DiemModel {
             $stmt = $this->db->prepare($sql);
             return $stmt->execute([$maYeuCau, $maBangDiem, $loaiDiem, $monHoc, $diemCu, $diemMoi, $lyDo]);
         } catch (Exception $e) {
-            error_log($e->getMessage());
             return false;
         }
     }
     
-    // Kiểm tra xem đã có yêu cầu nào đang chờ duyệt cho ô điểm này chưa
     public function checkYeuCauPending($maBangDiem, $loaiDiem) {
         $sql = "SELECT count(*) FROM yeucausuadiem 
                 WHERE maBangDiem = ? AND loaiDiem = ? AND trangThai = 'CHO_DUYET'";
@@ -65,9 +71,7 @@ class DiemModel {
         $stmt->execute([$maBangDiem, $loaiDiem]);
         return $stmt->fetchColumn() > 0;
     }
-    /**
-     * Lấy lịch sử các yêu cầu sửa điểm của một lớp + môn cụ thể
-     */
+
     public function getLichSuYeuCau($maLop, $maMonHoc) {
         try {
             $sql = "SELECT 
@@ -82,13 +86,12 @@ class DiemModel {
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$maLop, $maMonHoc]);
-            return $stmt->fetchAll();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             return [];
         }
     }
-    // === 🚀 HÀM MỚI (Thêm vào class DiemModel) ===
-    // === 🚀 HÀM MỚI (Copy vào trong class DiemModel) ===
+
     public function getMaGVByUsername($username) {
         try {
             $sql = "SELECT gv.maGV 

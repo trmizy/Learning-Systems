@@ -510,7 +510,7 @@ try {
                     <h5 class="card-title fw-bold">Quản lý trường</h5>
                     <p class="text-muted small">Giám sát, cấp tài khoản</p>
                     <div class="d-grid gap-2 mt-3">
-                        <a href="/modules/sogd/schools/list.php" class="btn btn-success btn-sm">
+                        <a href="/public/index.php?action=schoolAccount_nhanvienso" class="btn btn-success btn-sm">
                             <i class="fa-solid fa-building me-1"></i>Danh sách
                         </a>
                         <a href="/public/index.php?action=schoolAccount_nhanvienso" class="btn btn-outline-success btn-sm">

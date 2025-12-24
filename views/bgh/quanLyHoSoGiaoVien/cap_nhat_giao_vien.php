@@ -91,6 +91,16 @@ require_once __DIR__ . '/../../layouts/header.php';
                                 <input type="email" name="email" class="form-control" 
                                        value="<?php echo htmlspecialchars($giaoVien['email']); ?>" required>
                             </div>
+
+                            <!-- Thêm: Số CCCD (bắt buộc) -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">
+                                    Số CCCD <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" name="soCCCD" class="form-control"
+                                    value="<?php echo htmlspecialchars($giaoVien['soCCCD'] ?? ''); ?>"
+                                    pattern="[0-9]{9,12}" title="Nhập 9-12 chữ số" required>
+                            </div>
                         </div>
 
                         <div class="mb-3">

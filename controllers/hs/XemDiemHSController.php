@@ -6,7 +6,7 @@
  */
 
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
-require_once __DIR__ . '/../../models/hs/DiemModel.php';
+require_once __DIR__ . '/../../models/hs/DiemHSModel.php';
 
 class XemDiemController {
     private $model;
@@ -17,7 +17,7 @@ class XemDiemController {
 
     public function index() {
         // Kiểm tra đăng nhập và quyền
-        require_role(['hs']);
+        require_role(['hs','ph']);
 
         // Lấy thông tin user hiện tại
         $user = $_SESSION['auth'];

@@ -6,7 +6,7 @@ require_once __DIR__ . '/../../middlewares/AuthGuard.php';
 require_role(['hs']); // ⚠️ THAY ĐỔI: 'hocsinh' → 'hs'
 
 // Lấy thông tin học sinh từ database
-require_once __DIR__ . '/../../models/hs/DiemModel.php';
+require_once __DIR__ . '/../../models/hs/DiemHSModel.php';
 require_once __DIR__ . '/../../models/hs/DashboardModel.php';
 
 $diemModel = new DiemModel();
@@ -565,7 +565,7 @@ $notifications = [
                         </div>
                     </div>
                     <?php endforeach; ?>
-                    <a href="/public/index.php?action=hs-thong-bao" class="btn btn-outline-info w-100 mt-3">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-outline-info w-100 mt-3">
                         <i class="fa-solid fa-envelope-open me-2"></i>Xem tất cả
                     </a>
                 </div>
@@ -603,13 +603,13 @@ $notifications = [
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-book text-primary me-2"></i>Học liệu
                     </h6>
-                    <a href="/public/index.php?action=hs-tai-lieu" class="d-block text-decoration-none text-dark mb-2 hover-link">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="d-block text-decoration-none text-dark mb-2 hover-link">
                         <i class="fa-solid fa-file-pdf text-danger me-2"></i>Tài liệu học tập
                     </a>
-                    <a href="/public/index.php?action=hs-de-thi" class="d-block text-decoration-none text-dark mb-2 hover-link">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="d-block text-decoration-none text-dark mb-2 hover-link">
                         <i class="fa-solid fa-file-lines text-warning me-2"></i>Đề thi - Đáp án
                     </a>
-                    <a href="/public/index.php?action=hs-thu-vien" class="d-block text-decoration-none text-dark hover-link">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="d-block text-decoration-none text-dark hover-link">
                         <i class="fa-solid fa-book-open text-success me-2"></i>Thư viện
                     </a>
                 </div>
@@ -622,13 +622,13 @@ $notifications = [
                     <h6 class="fw-bold mb-3">
                         <i class="fa-solid fa-headset text-success me-2"></i>Hỗ trợ
                     </h6>
-                    <a href="/public/index.php?action=hs-lien-he-gvcn" class="d-block text-decoration-none text-dark mb-2 hover-link">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="d-block text-decoration-none text-dark mb-2 hover-link">
                         <i class="fa-solid fa-comments text-primary me-2"></i>Liên hệ GVCN
                     </a>
-                    <a href="/public/index.php?action=hs-gop-y" class="d-block text-decoration-none text-dark mb-2 hover-link">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="d-block text-decoration-none text-dark mb-2 hover-link">
                         <i class="fa-solid fa-message text-info me-2"></i>Góp ý, phản hồi
                     </a>
-                    <a href="/public/index.php?action=hs-faq" class="d-block text-decoration-none text-dark hover-link">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="d-block text-decoration-none text-dark hover-link">
                         <i class="fa-solid fa-circle-question text-warning me-2"></i>Câu hỏi thường gặp
                     </a>
                 </div>

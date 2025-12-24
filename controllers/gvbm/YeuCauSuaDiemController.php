@@ -10,7 +10,7 @@ class YeuCauSuaDiemController {
     }
 
     public function index() {
-        require_role(['gvbm']);
+        require_role(['gvbm', 'gvcn', 'ttbm']);
 
         $user = current_user();
         if (!$user) {
@@ -73,7 +73,7 @@ class YeuCauSuaDiemController {
     }
 
     public function guiYeuCau() {
-        require_role(['gvbm']);
+        require_role(['gvbm','gvcn', 'ttbm']);
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: /public/index.php?action=yeu_cau_sua_diem');

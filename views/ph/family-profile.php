@@ -321,7 +321,7 @@ require_once __DIR__ . '/../layouts/header.php';
                        class="btn btn-sm btn-outline-danger">
                         <i class="fa-solid fa-file-medical me-1"></i>Tạo đơn xin nghỉ
                     </a>
-                    <a href="/modules/parents/contact-teacher.php?maHS=<?php echo htmlspecialchars($con['maHS']); ?>" 
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;"
                        class="btn btn-sm btn-outline-info">
                         <i class="fa-solid fa-comments me-1"></i>Liên hệ GVCN
                     </a>

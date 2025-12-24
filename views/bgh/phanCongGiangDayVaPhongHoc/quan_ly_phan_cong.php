@@ -5,7 +5,6 @@ $pageTitle = 'Phân công giảng dạy và phòng học - BGH';
 require_once __DIR__ . '/../../layouts/header.php';
 ?>
 
-<link rel="stylesheet" href="/assets/css/phan_cong.css">
 
 <div class="assignment-container">
     <!-- Page Header -->

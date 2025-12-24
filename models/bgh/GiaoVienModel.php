@@ -471,6 +471,7 @@ class GiaoVienModel {
                 monHocPhuTrach,
                 trinhDoHocVan,
                 chucVu,
+                soCCCD,
                 tinhTrangTaiKhoan
             FROM giaovienbomon
             WHERE maGV LIKE ? 

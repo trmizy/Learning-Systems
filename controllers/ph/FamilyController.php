@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../../middlewares/AuthGuard.php';
 require_once __DIR__ . '/../../models/ph/FamilyModel.php';
-require_once __DIR__ . '/../../models/ph/DiemModel.php';
+require_once __DIR__ . '/../../models/ph/DiemPHModel.php';
 
 class FamilyController {
     private $familyModel;

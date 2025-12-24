@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../middlewares/AuthGuard.php';
 require_role(['ph']);
 
 // Lấy thông tin phụ huynh và con từ database
-require_once __DIR__ . '/../../models/ph/DiemModel.php';
+require_once __DIR__ . '/../../models/ph/DiemPHModel.php';
 require_once __DIR__ . '/../../models/hs/DashboardModel.php'; // ⚠️ THÊM MODEL
 require_once __DIR__ . '/../../config/database.php';
 
@@ -532,7 +532,7 @@ $violations = [];
                 </p>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                <a href="/modules/parents/contact-teacher.php?maHS=<?php echo htmlspecialchars($childInfo['student_id']); ?>" class="btn btn-primary">
+                <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-primary">
                     <i class="fa-solid fa-comments me-2"></i>Liên hệ GVCN
                 </a>
             </div>
@@ -638,7 +638,7 @@ $violations = [];
                     </div>
                     <h5 class="card-title fw-bold">Hạnh kiểm</h5>
                     <p class="text-muted small">Vi phạm, khen thưởng</p>
-                    <a href="/modules/parents/conduct.php?maHS=<?php echo htmlspecialchars($childInfo['student_id']); ?>" class="btn btn-success w-100 mt-3">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-success w-100 mt-3">
                         <i class="fa-solid fa-clipboard-check me-2"></i>Xem chi tiết
                     </a>
                 </div>
@@ -654,7 +654,7 @@ $violations = [];
                     </div>
                     <h5 class="card-title fw-bold">Thông báo</h5>
                     <p class="text-muted small">Tin từ GVCN, BGH</p>
-                    <a href="/modules/parents/notifications.php" class="btn btn-info w-100 mt-3">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-info w-100 mt-3">
                         <i class="fa-solid fa-envelope me-2"></i>Xem tất cả
                         <?php if ($stats['unread_notifications'] > 0): ?>
                         <span class="badge bg-danger rounded-pill ms-2"><?php echo $stats['unread_notifications']; ?></span>
@@ -752,7 +752,7 @@ $violations = [];
                         </div>
                     <?php endif; ?>
                     
-                    <a href="/modules/parents/conduct.php" class="btn btn-outline-success w-100 mt-3">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-outline-success w-100 mt-3">
                         <i class="fa-solid fa-clipboard-list me-2"></i>Xem chi tiết
                     </a>
                 </div>
@@ -793,7 +793,7 @@ $violations = [];
                         </div>
                     </div>
                     <?php endforeach; ?>
-                    <a href="/modules/parents/notifications.php" class="btn btn-outline-info w-100 mt-3">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-outline-info w-100 mt-3">
                         <i class="fa-solid fa-envelope-open me-2"></i>Xem tất cả
                     </a>
                 </div>
@@ -824,7 +824,7 @@ $violations = [];
                         <i class="fa-solid fa-messages text-success me-2"></i>Tin nhắn với GVCN
                     </h6>
                     <p class="text-muted small mb-3">Trao đổi trực tiếp với giáo viên chủ nhiệm</p>
-                    <a href="/modules/parents/messages.php?maHS=<?php echo htmlspecialchars($childInfo['student_id']); ?>" class="btn btn-outline-success w-100">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-outline-success w-100">
                         <i class="fa-solid fa-envelope me-2"></i>Tin nhắn
                     </a>
                 </div>
@@ -838,7 +838,7 @@ $violations = [];
                         <i class="fa-solid fa-money-bill text-warning me-2"></i>Học phí
                     </h6>
                     <p class="text-muted small mb-3">Tra cứu và thanh toán học phí</p>
-                    <a href="/modules/parents/tuition.php?maHS=<?php echo htmlspecialchars($childInfo['student_id']); ?>" class="btn btn-outline-warning w-100">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-outline-warning w-100">
                         <i class="fa-solid fa-receipt me-2"></i>Xem chi tiết
                     </a>
                 </div>

@@ -25,7 +25,7 @@ $teacherId = null;
 $teacherInfo = [
     'subject'        => 'Chưa cập nhật',
     'department'     => 'Tổ bộ môn',
-    'homeroom_class' => $currentRole === 'gvcn' ? '12A1' : null,
+    'homeroom_class' => $currentRole === 'gvcn' ? getHomeroomClassForCurrentUser() : null
 ];
 
 if (!empty($username)) {

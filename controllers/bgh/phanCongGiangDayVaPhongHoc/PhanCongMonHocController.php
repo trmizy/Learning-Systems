@@ -188,7 +188,7 @@ class PhanCongMonHocController {
             $danhSachGiaoVien = $stmtGV->fetchAll(PDO::FETCH_ASSOC);
 
             // Render view
-            require_once __DIR__ . '/../../../views/bgh/phan_cong_mon_hoc.php';
+            
             
         } catch (PDOException $e) {
             error_log("Error PhanCongMonHocController::index: " . $e->getMessage());

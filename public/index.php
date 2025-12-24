@@ -256,7 +256,7 @@ if (isset($_GET['action'])) {
 
     case 'ph-xem-diem':
         require_role(['ph']);
-        require_once __DIR__ . '/../controllers/ph/DiemController.php';
+        require_once __DIR__ . '/../controllers/ph/XemDiemPHController.php';
         $controller = new DiemController();
         $controller->xemDiemPhuHuynh();
         exit;
@@ -537,7 +537,7 @@ case 'nhanvienso-tuyen-sinh-upload':
         $controller->diemTuyenSinh();
         exit;  
     case 'hs-xem-diem':
-        require_once __DIR__ . '/../controllers/hs/XemDiemController.php';
+        require_once __DIR__ . '/../controllers/hs/XemDiemHSController.php';
         $controller = new XemDiemController(); // ← Tạo instance
         $controller->index();                   // ← Gọi method
         exit;
