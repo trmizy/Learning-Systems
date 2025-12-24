@@ -200,7 +200,7 @@ require_once __DIR__ . '/../layouts/header.php';
                         </span>
                     </td>
                 </tr>
-                <?php for ($tiet = 1; $tiet <= 5; $tiet++): ?>
+                <?php for ($tiet = 1; $tiet <= 4; $tiet++): ?>
                 <tr>
                     <td class="period-label">
                         Tiết <?php echo $tiet; ?>
@@ -244,7 +244,7 @@ require_once __DIR__ . '/../layouts/header.php';
                         </span>
                     </td>
                 </tr>
-                <?php for ($tiet = 6; $tiet <= 10; $tiet++): ?>
+                <?php for ($tiet = 5; $tiet <= 8; $tiet++): ?>
                 <tr>
                     <td class="period-label afternoon">
                         Tiết <?php echo $tiet; ?>
@@ -296,11 +296,11 @@ require_once __DIR__ . '/../layouts/header.php';
                     <div class="small">
                         <div class="mb-2">
                             <i class="fa-solid fa-sun me-2 text-primary"></i>
-                            <strong>Buổi sáng:</strong> 7h00 - 11h00
+                            <strong>Buổi sáng:</strong> 7h30 - 11h00
                         </div>
                         <div>
                             <i class="fa-solid fa-cloud-sun me-2 text-warning"></i>
-                            <strong>Buổi chiều:</strong> 13h00 - 17h00
+                            <strong>Buổi chiều:</strong> 13h00 - 16h30
                         </div>
                     </div>
                 </div>
