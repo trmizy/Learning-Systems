@@ -87,31 +87,41 @@ class AssignExamController {
             'ghiChu'    => $_POST['ghiChu'] ?? ''
         ];
 
-        // 8.3
+        /* ===== VALIDATE ===== */
+
+        // 1️⃣ Giáo viên
+        if (empty($data['listGV'])) {
+            $_SESSION['flash_error'] = 'Vui lòng chọn ít nhất một giáo viên.';
+            header('Location: /public/index.php?action=assign_exam');
+            exit;
+        }
+
+        // 2️⃣ Học kỳ – Kỳ thi
         if (empty($data['hocKy']) || empty($data['kyThi'])) {
-            $_SESSION['flash_error'] = 'Vui lòng chọn Học kỳ và Kỳ thi';
+            $_SESSION['flash_error'] = 'Vui lòng chọn Học kỳ và Kỳ thi.';
             header('Location: /public/index.php?action=assign_exam');
             exit;
         }
 
-        // 8.2
+        // 3️⃣ Số lượng đề
         if ($data['soLuongDe'] <= 0) {
-            $_SESSION['flash_error'] = 'Số lượng đề thi không hợp lệ';
+            $_SESSION['flash_error'] = 'Số lượng đề thi phải lớn hơn 0.';
             header('Location: /public/index.php?action=assign_exam');
             exit;
         }
 
-        // 8.1
-        if (empty($data['thoiHan']) || strtotime($data['thoiHan']) <= time()) {
-            $_SESSION['flash_error'] = 'Thời hạn không hợp lệ';
+        // 4️⃣ Thời hạn (nới điều kiện tránh lỗi âm thầm)
+        if (empty($data['thoiHan']) || strtotime($data['thoiHan']) < time() + 60) {
+            $_SESSION['flash_error'] = 'Thời hạn phải lớn hơn thời điểm hiện tại.';
             header('Location: /public/index.php?action=assign_exam');
             exit;
         }
 
+        /* ===== LƯU ===== */
         if ($this->model->luuPhanCong($data)) {
             $_SESSION['flash_success'] = 'Đã lưu phân công ra đề!';
         } else {
-            $_SESSION['flash_error'] = 'Có lỗi xảy ra, vui lòng thử lại.';
+            $_SESSION['flash_error'] = 'Có lỗi xảy ra khi lưu phân công.';
         }
 
         header('Location: /public/index.php?action=assign_exam');

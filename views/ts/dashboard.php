@@ -169,7 +169,7 @@ require_once __DIR__ . '/../layouts/header.php';
                 </p>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                <a href="/public/index.php?action=ts-profile" class="quick-action-btn btn">
+                <a href="#" onclick="alert('Chức năng đang phát triển'); return false;"class="quick-action-btn btn">
                     <i class="fa-solid fa-user me-2"></i>Hồ sơ của tôi
                 </a>
             </div>
@@ -238,7 +238,7 @@ require_once __DIR__ . '/../layouts/header.php';
                     </div>
                     <h5 class="card-title fw-bold">Điểm thi</h5>
                     <p class="text-muted small">Xem điểm các môn thi THPT Quốc gia</p>
-                    <a href="/public/index.php?action=ts-xem-diem" class="btn btn-primary w-100 mt-3">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-primary w-100 mt-3">
                         <i class="fa-solid fa-eye me-2"></i>Xem điểm thi
                     </a>
                 </div>
@@ -270,7 +270,7 @@ require_once __DIR__ . '/../layouts/header.php';
                     </div>
                     <h5 class="card-title fw-bold">Hồ sơ cá nhân</h5>
                     <p class="text-muted small">Xem và cập nhật thông tin cá nhân</p>
-                    <a href="/public/index.php?action=ts-profile" class="btn btn-danger w-100 mt-3">
+                    <a href="#" onclick="alert('Chức năng đang phát triển'); return false;" class="btn btn-danger w-100 mt-3">
                         <i class="fa-solid fa-address-card me-2"></i>Xem hồ sơ
                     </a>
                 </div>

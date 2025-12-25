@@ -27,8 +27,8 @@ $MENU_ITEMS = [
             'text' => 'Cấu hình hệ thống',
             'link' => '#',
             'submenu' => [
-                ['icon' => 'users-gear', 'text' => 'Quản lý tài khoản', 'link' => '/modules/users/list.php'],
-                ['icon' => 'clock', 'text' => 'Thời khóa biểu', 'link' => '/modules/timetable/list.php'],
+                ['icon' => 'users-gear', 'text' => 'Quản lý tài khoản', 'link' => 'javascript:alert("Chức năng đang phát triển!");'],
+                ['icon' => 'clock', 'text' => 'Thời khóa biểu', 'link' => 'javascript:alert("Chức năng đang phát triển!");'],
                 ['icon' => 'sliders', 'text' => 'Thiết lập năm học', 'link' =>'javascript:alert("Chức năng đang phát triển!");'],
                 ['icon' => 'database', 'text' => 'Sao lưu dữ liệu', 'link' => 'javascript:alert("Chức năng đang phát triển!");'],
             ]

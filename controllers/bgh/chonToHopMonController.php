@@ -28,13 +28,13 @@ class chonToHopMonController {
         $maToHop = $_POST['maToHop'] ?? null;
 
         if (!$maToHop) {
-            header('Location: /modules/chonToHopMon/quanLyChonList.php?error=Mã tổ hợp không hợp lệ');
+            header('Location: /models/bgh/chonToHopMon/quanLyChonList.php?error=Mã tổ hợp không hợp lệ');
             exit;
         }
 
         // Kiểm tra tổ hợp môn có tồn tại
         if (!$this->model->checkExist($maToHop)) {
-            header('Location: /modules/chonToHopMon/quanLyChonList.php?error=Tổ hợp môn không tồn tại');
+            header('Location: /models/bgh/chonToHopMon/quanLyChonList.php?error=Tổ hợp môn không tồn tại');
             exit;
         }
 
@@ -45,23 +45,23 @@ class chonToHopMonController {
             if ($action === 'pheDuyet') {
                 $lyDo = $_POST['lyDo'] ?? '';
                 $this->model->pheDuyetToHopMon($maToHop, $lyDo, $nguoiDuyet);
-                header('Location: /modules/chonToHopMon/quanLyChonDetail.php?maToHop=' . urlencode($maToHop) . '&success=Phê duyệt tổ hợp môn thành công');
+                header('Location: models/bgh/chonToHopMon/quanLyChonDetail.php?maToHop=' . urlencode($maToHop) . '&success=Phê duyệt tổ hợp môn thành công');
                 exit;
             } elseif ($action === 'tuChoi') {
                 $lyDo = $_POST['lyDo'] ?? '';
                 if (empty($lyDo)) {
-                    header('Location: /modules/chonToHopMon/quanLyChonDetail.php?maToHop=' . urlencode($maToHop) . '&error=Lý do từ chối không được để trống');
+                    header('Location: /models/bgh/chonToHopMon/quanLyChonDetail.php?maToHop=' . urlencode($maToHop) . '&error=Lý do từ chối không được để trống');
                     exit;
                 }
                 $this->model->tuChoiDuyetToHopMon($maToHop, $lyDo, $nguoiDuyet);
-                header('Location: /modules/chonToHopMon/quanLyChonDetail.php?maToHop=' . urlencode($maToHop) . '&success=Từ chối tổ hợp môn thành công');
+                header('Location: /models/bgh/chonToHopMon/quanLyChonDetail.php?maToHop=' . urlencode($maToHop) . '&success=Từ chối tổ hợp môn thành công');
                 exit;
             } else {
-                header('Location: /modules/chonToHopMon/quanLyChonList.php?error=Hành động không hợp lệ');
+                header('Location: /models/bgh/chonToHopMon/quanLyChonList.php?error=Hành động không hợp lệ');
                 exit;
             }
         } catch (Exception $e) {
-            header('Location: /modules/chonToHopMon/quanLyChonDetail.php?maToHop=' . urlencode($maToHop) . '&error=' . urlencode($e->getMessage()));
+            header('Location: /models/bgh/chonToHopMon/quanLyChonDetail.php?maToHop=' . urlencode($maToHop) . '&error=' . urlencode($e->getMessage()));
             exit;
         }
     }
